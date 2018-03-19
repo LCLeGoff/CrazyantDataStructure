@@ -14,7 +14,7 @@ class AnalyseStarter:
 		]:
 			ref_names[key] = dict()
 			ref_names[key]['label'] = key
-			ref_names[key]['category'] = 'raw'
+			ref_names[key]['category'] = 'Raw'
 			ref_names[key]['object_type'] = 'TimeSeries'
 
 		ref_names['major_axis_length']['label'] = 'major axis length'
