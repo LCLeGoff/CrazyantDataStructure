@@ -11,23 +11,18 @@ class DataLoader:
 		self.name_builder = NameBuilder(root, group)
 		self.time_series_loader = TimeSeriesLoader(root, group)
 		self.events_loader = EventsLoader(root, group)
-		self.list_loaded_names = []
 
 	def load(self, name):
-		if name in self.list_loaded_names:
-			print(name+' already loaded')
+		name_class = self.name_builder.build(name)
+		object_type = name_class.object_type
+		category = name_class.category
+		if object_type == 'TimeSeries':
+			res = self.time_series_loader.load(category, name)
+		elif object_type == 'Events':
+			res = self.events_loader.load(category, name)
 		else:
-			name_class = self.name_builder.build(name)
-			object_type = name_class.object_type
-			category = name_class.category
-			if object_type == 'TimeSeries':
-				res = self.time_series_loader.load(category, name)
-			elif object_type == 'Events':
-				res = self.events_loader.load(category, name)
-			else:
-				res = None
-			self.list_loaded_names.append(name)
-			return res
+			res = None
+		return res
 
 
 class TimeSeriesLoader:
