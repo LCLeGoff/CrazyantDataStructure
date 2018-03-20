@@ -7,4 +7,4 @@ class NameBuilder:
 		self.reference_dict = js.import_obj(root+group+'/ref_names.json')
 
 	def build(self, name):
-		return Names(self.reference_dict[name])
+		return Names(name, self.reference_dict[name])
