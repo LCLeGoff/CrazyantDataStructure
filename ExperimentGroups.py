@@ -8,5 +8,9 @@ class ExperimentGroups:
 		self.group = group
 		self.data_loader = DataLoader(root, group)
 
-	def load(self, name):
-		self.__dict__[name] = self.data_loader.load(name)
+	def load(self, names):
+		if isinstance(names, list):
+			for name in names:
+				self.__dict__[name] = self.data_loader.load(name)
+		else:
+			self.__dict__[names] = self.data_loader.load(names)
