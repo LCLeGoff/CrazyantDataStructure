@@ -10,24 +10,28 @@ class AnalyseStarter:
 		ref_names = dict()
 
 		for key in [
-			'x', 'y', 'orientation', 'area', 'eccentricity', 'major_axis_length', 'minor_axis_length', 'perimeter'
+			'x', 'y', 'orientation', 'area', 'eccentricity',
+			'major_axis_length', 'minor_axis_length', 'perimeter', 'markings'
 		]:
 			ref_names[key] = dict()
-			ref_names[key]['label'] = key
+			ref_names[key]['label'] = key.capitalize()
 			ref_names[key]['category'] = 'Raw'
 			ref_names[key]['object_type'] = 'TimeSeries'
 
+		ref_names['x']['description'] = 'x coordinate (in the cropped image)'
+		ref_names['x']['label'] = 'x'
+		ref_names['y']['description'] = 'y coordinate (in the cropped image)'
+		ref_names['y']['label'] = 'y'
+		ref_names['orientation']['description'] = 'absolute orientation'
+		ref_names['area']['description'] = 'area'
+		ref_names['eccentricity']['description'] = 'eccentricity'
+		ref_names['major_axis_length']['description'] = 'major axis length'
+		ref_names['minor_axis_length']['description'] = 'minor axis length'
 		ref_names['major_axis_length']['label'] = 'major axis length'
 		ref_names['minor_axis_length']['label'] = 'minor axis length'
+		ref_names['perimeter']['description'] = 'perimeter'
 
-		end_txt = ' of the blob number "id_ant" at frame number "frame"'
-		ref_names['x']['description'] = 'x coordinate (in the cropped image)'+end_txt
-		ref_names['y']['description'] = 'y coordinate (in the cropped image)'+end_txt
-		ref_names['orientation']['description'] = 'absolute orientation'+end_txt
-		ref_names['area']['description'] = 'area'+end_txt
-		ref_names['eccentricity']['description'] = 'eccentricity'+end_txt
-		ref_names['major_axis_length']['description'] = 'major axis length'+end_txt
-		ref_names['minor_axis_length']['description'] = 'minor axis length'+end_txt
-		ref_names['perimeter']['description'] = 'perimeter'+end_txt
+		ref_names['markings']['description'] = 'Marking events'
+		ref_names['markings']['object_type'] = 'Events'
 
 		JsonFiles.write_obj(self.root+'ref_names.json', ref_names)
