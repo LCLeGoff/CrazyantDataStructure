@@ -10,7 +10,7 @@ class AnalyseStarter:
 		ref_names = dict()
 
 		for key in [
-			'x', 'y', 'orientation', 'area', 'eccentricity',
+			'area', 'eccentricity',
 			'major_axis_length', 'minor_axis_length', 'perimeter', 'markings'
 		]:
 			ref_names[key] = dict()
@@ -18,11 +18,21 @@ class AnalyseStarter:
 			ref_names[key]['category'] = 'Raw'
 			ref_names[key]['object_type'] = 'TimeSeries'
 
-		ref_names['x']['description'] = 'x coordinate (in the cropped image)'
-		ref_names['x']['label'] = 'x'
-		ref_names['y']['description'] = 'y coordinate (in the cropped image)'
-		ref_names['y']['label'] = 'y'
-		ref_names['orientation']['description'] = 'absolute orientation'
+		for key in ['x', 'y']:
+			key2 = key+'0'
+			ref_names[key2] = dict()
+			ref_names[key2]['label'] = key2
+			ref_names[key2]['category'] = 'Raw'
+			ref_names[key2]['object_type'] = 'TimeSeries'
+			ref_names[key2]['description'] = key+' coordinate (in the cropped image system)'
+
+		key = 'absoluteOrientation'
+		ref_names[key] = dict()
+		ref_names[key]['label'] = 'absolute orientation'
+		ref_names[key]['category'] = 'Raw'
+		ref_names[key]['object_type'] = 'TimeSeries'
+		ref_names[key]['description'] = 'absolute orientation'
+
 		ref_names['area']['description'] = 'area'
 		ref_names['eccentricity']['description'] = 'eccentricity'
 		ref_names['major_axis_length']['description'] = 'major axis length'
