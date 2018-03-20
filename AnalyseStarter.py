@@ -28,7 +28,7 @@ class AnalyseStarter:
 
 		key = 'absoluteOrientation'
 		ref_names[key] = dict()
-		ref_names[key]['label'] = 'absolute orientation'
+		ref_names[key]['label'] = 'Absolute orientation'
 		ref_names[key]['category'] = 'Raw'
 		ref_names[key]['object_type'] = 'TimeSeries'
 		ref_names[key]['description'] = 'absolute orientation'
@@ -43,5 +43,36 @@ class AnalyseStarter:
 
 		ref_names['markings']['description'] = 'Marking events'
 		ref_names['markings']['object_type'] = 'Events'
+
+		for key in [
+			'session', 'trial', 'n_frames', 'fps', 'mm2px', 'food_radius',
+			'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y',
+			'entrance', 'ref_pts'
+		]:
+			ref_names[key] = dict()
+			ref_names[key]['label'] = key.capitalize()
+			ref_names[key]['category'] = 'Raw'
+			ref_names[key]['object_type'] = 'Characteristics'
+
+		ref_names['session']['description'] = 'trial number of the experiment'
+		ref_names['trial']['description'] = 'session number of the experiment'
+		ref_names['n_frames']['description'] = 'number of frames of the experiment'
+		ref_names['n_frames']['label'] = 'Frame number'
+		ref_names['fps']['description'] = 'frame per second of the movie'
+		ref_names['mm2px']['description'] = 'ratio to convert millimeters to pixels'
+		ref_names['mm2px']['label'] = 'mm to px'
+		ref_names['food_radius']['description'] = 'radius of the food piece'
+		ref_names['food_radius']['label'] = 'Food radius'
+		ref_names['food_center']['description'] = 'coordinates of the center of the food piece'
+		ref_names['food_center']['label'] = 'Food center'
+		ref_names['traj_translation']['description'] = 'Translation vector between the picture and the cropped picture'
+		ref_names['traj_translation']['label'] = 'Trajectory translation'
+		ref_names['crop_limit_x']['description'] = 'limits of the crop on the x coordinates'
+		ref_names['crop_limit_x']['label'] = 'Crop limit x'
+		ref_names['crop_limit_y']['description'] = 'limits of the crop on the y coordinates'
+		ref_names['crop_limit_y']['label'] = 'Crop limit y'
+		ref_names['entrance']['description'] = 'Three points: two to delimit the gate and one inside the setup'
+		ref_names['ref_pts']['description'] = 'Two reference points'
+		ref_names['ref_pts']['label'] = 'Reference points'
 
 		JsonFiles.write_obj(self.root+'ref_names.json', ref_names)
