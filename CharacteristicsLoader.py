@@ -43,7 +43,6 @@ class CharacteristicsLoader:
 				columns=['x1', 'y1', 'x2', 'y2', 'x3', 'y3'])
 			res.index.name = 'id_exp'
 		else:
-			print(name+' is not a characteristic')
-			res = None
+			raise ValueError(name+' is not a characteristic')
 
 		return Characteristics(res, name)

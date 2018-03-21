@@ -33,7 +33,7 @@ class JsonFiles:
 			res.pop(key)
 			self.write_obj(add, res)
 		else:
-			print(key + 'does not exist')
+			raise KeyError(key + 'does not exist')
 
 	def import_from_dict_json(self, add, key, arr=True):
 		if arr:

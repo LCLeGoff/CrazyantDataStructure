@@ -21,6 +21,5 @@ class DataLoader:
 		elif name_class.object_type == 'Characteristics':
 			res = self.characteristics_builder.build(name_class)
 		else:
-			print(name+' has no defined object type')
-			res = None
+			raise ValueError(name+' has no defined object type')
 		return res
