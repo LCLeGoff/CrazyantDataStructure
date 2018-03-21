@@ -3,10 +3,11 @@ from DataLoader import DataLoader
 
 class ExperimentGroups:
 
-	def __init__(self, root, group):
+	def __init__(self, root, group, id_exp_list):
 		self.root = root
 		self.group = group
 		self.data_loader = DataLoader(root, group)
+		self.id_exp_list = id_exp_list
 
 	def load(self, names):
 		if isinstance(names, list):

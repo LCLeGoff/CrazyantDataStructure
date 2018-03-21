@@ -12,4 +12,4 @@ class TimeSeriesLoader:
 		add = self.root+name.category+'/TimeSeries.csv'
 		if not(name.category in self.categories.keys()):
 			self.categories[name.category] = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
-		return TimeSeries(self.categories[name.category][name.name], name)
+		return TimeSeries(pd.DataFrame(self.categories[name.category][name.name]), name)
