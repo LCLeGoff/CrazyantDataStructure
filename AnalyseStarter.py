@@ -46,8 +46,7 @@ class AnalyseStarter:
 
 		for key in [
 			'session', 'trial', 'n_frames', 'fps', 'mm2px', 'food_radius',
-			'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y',
-			'entrance', 'ref_pts'
+			'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y'
 		]:
 			ref_names[key] = dict()
 			ref_names[key]['label'] = key.capitalize()
@@ -71,8 +70,21 @@ class AnalyseStarter:
 		ref_names['crop_limit_x']['label'] = 'Crop limit x'
 		ref_names['crop_limit_y']['description'] = 'limits of the crop on the y coordinates'
 		ref_names['crop_limit_y']['label'] = 'Crop limit y'
-		ref_names['entrance']['description'] = 'Three points: two to delimit the gate and one inside the setup'
-		ref_names['ref_pts']['description'] = 'Two reference points'
-		ref_names['ref_pts']['label'] = 'Reference points'
+		for i in [1, 2]:
+			key = 'entrance'+str(i)
+			ref_names[key] = dict()
+			ref_names[key]['label'] = 'Entrance point '+str(i)
+			ref_names[key]['category'] = 'Raw'
+			ref_names[key]['object_type'] = 'Characteristics'
+			ref_names[key]['description'] = 'One of the two points delimiting the entrance'
+
+		for i in [1, 2]:
+			key = 'ref_pts'+str(i)
+			ref_names[key] = dict()
+			ref_names[key]['label'] = key.capitalize()
+			ref_names[key]['category'] = 'Raw'
+			ref_names[key]['object_type'] = 'Characteristics'
+			ref_names[key]['description'] = 'One of the two reference points'
+			ref_names[key]['label'] = 'Reference points '+str(i)
 
 		JsonFiles.write_obj(self.root+'ref_names.json', ref_names)
