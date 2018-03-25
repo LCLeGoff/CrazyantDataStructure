@@ -19,7 +19,7 @@ class DataLoader:
 		elif name_class.object_type == 'Events':
 			res = self.events_loader.load(name_class)
 		elif name_class.object_type == 'Characteristics':
-			res = self.characteristics_builder.build(name_class)
+			res = self.characteristics_builder.load(name_class)
 		else:
 			raise ValueError(name+' has no defined object type')
 		return res

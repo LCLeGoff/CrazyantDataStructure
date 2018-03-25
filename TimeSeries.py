@@ -1,7 +1,8 @@
-from ObjectClassBuilder import ObjectClassBuilder
+from CharacteristicObjectBuilder import CharacteristicObjectBuilder
+from ExpAntFrameIndexedSeries import ExpAntFrameIndexedSeries
 
 
-class TimeSeries:
+class TimeSeries(ExpAntFrameIndexedSeries):
 	def __init__(self, array, name):
-		ObjectClassBuilder.build(self, array, name)
-		self.series = self.array[self.name]
+		ExpAntFrameIndexedSeries.__init__(self, array)
+		CharacteristicObjectBuilder.build(self, name)
