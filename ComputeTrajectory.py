@@ -9,10 +9,10 @@ class ComputeTrajectory:
 		if id_exp_list is None:
 			id_exp_list = self.experiment.id_exp_list
 		self.experiment.load(['x0', 'y0', 'entrance1', 'entrance2', 'food_center', 'mm2px'])
-		self.experiment.x0.operation_with_characteristics(self.experiment.food_center, 'x', lambda x, y: x-y)
-		self.experiment.y0.operation_with_characteristics(self.experiment.food_center, 'y', lambda x, y: x-y)
-		self.experiment.x0.operation_with_characteristics1d(self.experiment.mm2px, lambda x, y: x/y)
-		self.experiment.y0.operation_with_characteristics1d(self.experiment.mm2px, lambda x, y: x/y)
+		self.experiment.operation('x0', 'food_center', lambda x, y: x-y, 'x')
+		self.experiment.operation('x0', 'mm2px', lambda x, y: x/y)
+		self.experiment.operation('y0', 'food_center', lambda x, y: x-y, 'y')
+		self.experiment.operation('y0', 'mm2px', lambda x, y: x/y)
 
 		# for id_exp in id_exp_list:
 		# 	food_center = np.array(

@@ -16,3 +16,12 @@ class ExperimentGroups:
 					self.__dict__[name] = self.data_loader.load(name)
 		else:
 			self.__dict__[names] = self.data_loader.load(names)
+
+	def operation(self, name1, name2, fct, name_col=None):
+		if self.__dict__[name1].object_type == 'TimeSeries':
+			if self.__dict__[name2].object_type == 'Characteristics1d':
+				self.__dict__[name1].operation_with_characteristics1d(self.__dict__[name2], fct)
+			elif self.__dict__[name2].object_type == 'Characteristics2d':
+				self.__dict__[name1].operation_with_characteristics2d(self.__dict__[name2], name_col, fct)
+		else:
+			raise IndexError(name1+' index names does not contains '+name2+' index names')

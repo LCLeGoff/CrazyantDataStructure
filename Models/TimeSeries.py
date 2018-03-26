@@ -10,6 +10,6 @@ class TimeSeries(ExpAntFrameIndexedSeries):
 	def operation_with_characteristics1d(self, chara, fct):
 		self.array[self.name_col] = fct(self.array[self.name_col], chara.array[chara.name_col])
 
-	def operation_with_characteristics(self, chara, name_col, fct):
+	def operation_with_characteristics2d(self, chara, name_col, fct):
 		self.array[self.name_col] = fct(self.array[self.name_col], chara.array[name_col])
 
