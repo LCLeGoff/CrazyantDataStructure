@@ -1,8 +1,4 @@
-import numpy as np
-
-from Geometry import pts2vect, angle
-from ExperimentGroupBuilder import ExperimentGroupBuilder
-from math import pi
+from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 
 
 class ComputeTrajectory:
@@ -13,13 +9,11 @@ class ComputeTrajectory:
 		if id_exp_list is None:
 			id_exp_list = self.experiment.id_exp_list
 		self.experiment.load(['x0', 'y0', 'entrance1', 'entrance2', 'food_center', 'mm2px'])
-		self.experiment.x0.array['x0'] -= self.experiment.food_center.array['x']
+		self.experiment.x0.operation_with_characteristics(self.experiment.food_center, 'x', lambda x, y: x-y)
+		self.experiment.y0.operation_with_characteristics(self.experiment.food_center, 'y', lambda x, y: x-y)
+		self.experiment.x0.operation_with_characteristics1d(self.experiment.mm2px, lambda x, y: x/y)
+		self.experiment.y0.operation_with_characteristics1d(self.experiment.mm2px, lambda x, y: x/y)
 
-			# .operation(lambda z: z-self.experiment.food_center.array['x'])
-		self.experiment.y0.operation(lambda z: z-self.experiment.food_center.array['y'])
-
-		# self.experiment.x0.operation(lambda z: z-self.experiment.mm2px.array['mm2px'])
-		# self.experiment.y0.operation(lambda z: z-self.experiment.mm2px.array['mm2px'])
 		# for id_exp in id_exp_list:
 		# 	food_center = np.array(
 		# 		[self.experiment.food_center.array.loc[id_exp, 'x'], self.experiment.food_center.array.loc[id_exp, 'y']])

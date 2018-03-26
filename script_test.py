@@ -1,24 +1,27 @@
 from AnalyseStarter import AnalyseStarter
-from CharacteristicsLoader import CharacteristicsLoader
-from ComputeTrajectory import ComputeTrajectory
-from EventsLoader import EventsLoader
-from ExperimentGroupBuilder import ExperimentGroupBuilder
-from NameBuilder import NameBuilder
-from TimeSeriesLoader import TimeSeriesLoader
+from Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
+from Builders.NameBuilder import NameBuilder
 
 root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 group = 'FMAB'
 
 AnalyseStarter(root, group).start()
 
-# NameBuild = NameBuilder(root, group)
-# CharaLoad = CharacteristicsLoader(root, group)
-# for name in ['food_radius', 'entrance1']:
-# 	Chara = CharaLoad.load(NameBuild.build(name))
-# 	print(Chara.array.head())
-# 	Chara.operation(lambda x: x/10.)
-# 	print(Chara.array.head())
-#
+NameBuild = NameBuilder(root, group)
+CharaLoad = Characteristics1dLoader(root, group)
+for name in ['food_radius', 'mm2px']:
+	Chara = CharaLoad.load(NameBuild.build(name))
+	Chara.print()
+	Chara.operation(lambda x: x/10.)
+	Chara.print()
+
+CharaLoad = Characteristics2dLoader(root, group)
+for name in ['ref_pts1', 'entrance1']:
+	Chara = CharaLoad.load(NameBuild.build(name))
+	Chara.print()
+	Chara.operation(lambda x: x/10.)
+	Chara.print()
+
 # TSLoad = TimeSeriesLoader(root, group)
 # for name in ['x0', 'major_axis_length']:
 # 	TS = TSLoad.load(NameBuild.build(name))
@@ -42,5 +45,5 @@ AnalyseStarter(root, group).start()
 # print(FMAB.ref_pts.description, FMAB.ref_pts.name)
 # print(FMAB.entrance.description, FMAB.entrance.name)
 
-traj = ComputeTrajectory(root, group)
-traj.centered_x_y()
+# traj = ComputeTrajectory(root, group)
+# traj.centered_x_y()

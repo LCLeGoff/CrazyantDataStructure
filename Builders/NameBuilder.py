@@ -1,5 +1,5 @@
-from JsonFiles import JsonFiles as js
-from Names import Names
+from Tools.JsonFiles import JsonFiles as js
+from Models.Names import Names
 
 
 class NameBuilder:

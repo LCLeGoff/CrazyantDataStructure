@@ -1,6 +1,6 @@
 import pandas as pd
 
-from TimeSeries import TimeSeries
+from Models.TimeSeries import TimeSeries
 
 
 class TimeSeriesLoader:

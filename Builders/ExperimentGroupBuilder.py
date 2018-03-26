@@ -1,5 +1,5 @@
-from ExperimentGroups import ExperimentGroups
-from JsonFiles import JsonFiles
+from Models.ExperimentGroups import ExperimentGroups
+from Tools.JsonFiles import JsonFiles
 import numpy as np
 
 

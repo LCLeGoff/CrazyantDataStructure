@@ -1,4 +1,4 @@
-from BaseSeries import BaseSeries
+from IndexedSeries.BaseIndexedSeries import BaseSeries
 
 
 class ExpIndexedMultiSeries(BaseSeries):

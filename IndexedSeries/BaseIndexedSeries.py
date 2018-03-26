@@ -8,3 +8,9 @@ class BaseSeries:
 		:param fct: function applied
 		"""
 		self.array = fct(self.array)
+
+	def print(self, short=True):
+		if short:
+			print(self.array.head())
+		else:
+			print(self.array)

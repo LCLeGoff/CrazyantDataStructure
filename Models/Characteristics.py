@@ -1,6 +1,6 @@
-from ExpIndexedMultiSeries import ExpIndexedMultiSeries
-from ExpIndexedSeries import ExpIndexedSeries
-from CharacteristicObjectBuilder import CharacteristicObjectBuilder
+from IndexedSeries.ExpIndexedMultiSeries import ExpIndexedMultiSeries
+from IndexedSeries.ExpIndexedSeries import ExpIndexedSeries
+from Builders.CharacteristicObjectBuilder import CharacteristicObjectBuilder
 
 
 class Characteristics1d(ExpIndexedSeries):

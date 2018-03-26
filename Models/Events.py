@@ -1,5 +1,5 @@
-from CharacteristicObjectBuilder import CharacteristicObjectBuilder
-from ExpAntFrameIndexedSeries import ExpAntFrameIndexedSeries
+from Builders.CharacteristicObjectBuilder import CharacteristicObjectBuilder
+from IndexedSeries.ExpAntFrameIndexedSeries import ExpAntFrameIndexedSeries
 
 
 class Events(ExpAntFrameIndexedSeries):

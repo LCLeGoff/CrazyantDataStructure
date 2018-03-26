@@ -1,4 +1,4 @@
-from JsonFiles import JsonFiles
+from Tools.JsonFiles import JsonFiles
 
 
 class AnalyseStarter:
@@ -51,7 +51,7 @@ class AnalyseStarter:
 			ref_names[key] = dict()
 			ref_names[key]['label'] = key.capitalize()
 			ref_names[key]['category'] = 'Raw'
-			ref_names[key]['object_type'] = 'Characteristics'
+			ref_names[key]['object_type'] = 'Characteristics1d'
 
 		ref_names['session']['description'] = 'trial number of the experiment'
 		ref_names['trial']['description'] = 'session number of the experiment'
@@ -64,18 +64,22 @@ class AnalyseStarter:
 		ref_names['food_radius']['label'] = 'Food radius'
 		ref_names['food_center']['description'] = 'coordinates of the center of the food piece'
 		ref_names['food_center']['label'] = 'Food center'
+		ref_names['food_center']['object_type'] = 'Characteristics2d'
 		ref_names['traj_translation']['description'] = 'Translation vector between the picture and the cropped picture'
 		ref_names['traj_translation']['label'] = 'Trajectory translation'
+		ref_names['traj_translation']['object_type'] = 'Characteristics2d'
 		ref_names['crop_limit_x']['description'] = 'limits of the crop on the x coordinates'
 		ref_names['crop_limit_x']['label'] = 'Crop limit x'
+		ref_names['crop_limit_x']['object_type'] = 'Characteristics2d'
 		ref_names['crop_limit_y']['description'] = 'limits of the crop on the y coordinates'
 		ref_names['crop_limit_y']['label'] = 'Crop limit y'
+		ref_names['crop_limit_y']['object_type'] = 'Characteristics2d'
 		for i in [1, 2]:
 			key = 'entrance'+str(i)
 			ref_names[key] = dict()
 			ref_names[key]['label'] = 'Entrance point '+str(i)
 			ref_names[key]['category'] = 'Raw'
-			ref_names[key]['object_type'] = 'Characteristics'
+			ref_names[key]['object_type'] = 'Characteristics2d'
 			ref_names[key]['description'] = 'One of the two points delimiting the entrance'
 
 		for i in [1, 2]:
@@ -83,7 +87,7 @@ class AnalyseStarter:
 			ref_names[key] = dict()
 			ref_names[key]['label'] = key.capitalize()
 			ref_names[key]['category'] = 'Raw'
-			ref_names[key]['object_type'] = 'Characteristics'
+			ref_names[key]['object_type'] = 'Characteristics2d'
 			ref_names[key]['description'] = 'One of the two reference points'
 			ref_names[key]['label'] = 'Reference points '+str(i)
 

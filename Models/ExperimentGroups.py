@@ -1,4 +1,4 @@
-from DataLoader import DataLoader
+from Loaders.DataLoader import DataLoader
 
 
 class ExperimentGroups:

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from Events import Events
+from Models.Events import Events
 
 
 class EventsLoader:

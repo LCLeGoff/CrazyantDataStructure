@@ -1,16 +1,19 @@
-from BaseSeries import BaseSeries
+from IndexedSeries.BaseIndexedSeries import BaseSeries
 
 
-class ExpAntFrameIndexedSeries(BaseSeries):
+class ExpIndexedSeries(BaseSeries):
 	"""
-	Class to deal with pandas object indexed by id_exp
+	Class to deal with pandas object indexed by (id_exp, id_ant, frame)
 	"""
 	def __init__(self, array):
 		BaseSeries.__init__(self, array)
-		if array.index.names != ['id_exp', 'id_ant', 'frame']:
-			raise IndexError('Index names are not (id_exp, id_ant, frame)')
+		if array.index.names != ['id_exp']:
+			raise IndexError('Index names are not id_exp')
 		elif array.shape[1] != 1:
 			raise ValueError('Shape not correct')
+		else:
+			self.array = array
+			self.name_col = self.array.columns[0]
 
 	def operation_on_id_exp(self, id_exp, fct, inplace=True):
 		"""
@@ -20,6 +23,6 @@ class ExpAntFrameIndexedSeries(BaseSeries):
 		:param inplace: if True, change the original pandas object, if False return a new pandas object
 		"""
 		if inplace is True:
-			self.array.loc[id_exp, :, :] = fct(self.array.loc[id_exp, :, :])
+			self.array.loc[id_exp, :, :] = fct(self.array.loc[id_exp])
 		else:
-			return fct(self.array.loc[id_exp, :, :])
+			return fct(self.array.loc[id_exp])
