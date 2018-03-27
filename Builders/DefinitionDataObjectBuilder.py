@@ -1,4 +1,4 @@
-class DefinitionObjectBuilder:
+class DefinitionDataObjectBuilder:
 	def __init__(self):
 		pass
 

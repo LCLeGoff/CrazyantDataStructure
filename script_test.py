@@ -1,4 +1,5 @@
-from ComputeTrajectory import ComputeTrajectory
+from AnalyseClasses.AnalyseMarkings import AnalyseMarkings
+from AnalyseClasses.AnalyseTrajectory import AnalyseTrajectory
 
 root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 group = 'FMAB'
@@ -44,5 +45,8 @@ group = 'FMAB'
 # print(FMAB.ref_pts2.description, FMAB.ref_pts2.name)
 # print(FMAB.entrance0.description, FMAB.entrance0.name)
 
-traj = ComputeTrajectory(root, group)
-traj.centered_x_y()
+# traj = AnalyseTrajectory(root, group)
+# traj.centered_x_y()
+
+mark = AnalyseMarkings(root, group)
+mark.spatial_repartition_markings()

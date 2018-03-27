@@ -1,7 +1,7 @@
 from IndexedSeries.BaseIndexedSeries import BaseSeries
 
 
-class ExpIndexedMultiSeries(BaseSeries):
+class ExpIndexed2dSeries(BaseSeries):
 	"""
 	Class to deal with pandas object indexed by id_exp
 	"""
@@ -9,7 +9,7 @@ class ExpIndexedMultiSeries(BaseSeries):
 		BaseSeries.__init__(self, array)
 		if array.index.names != ['id_exp']:
 			raise IndexError('Index names are not id_exp')
-		elif array.shape[1] < 2:
+		elif array.shape[1] != 2:
 			raise ValueError('Shape not correct')
 
 	def operation_on_columns(self, col_name, fct):

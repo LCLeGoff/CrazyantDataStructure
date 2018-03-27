@@ -1,4 +1,4 @@
-from Models.ExperimentGroups import ExperimentGroups
+from ExperimentGroups import ExperimentGroups
 from Tools.JsonFiles import import_id_exp_list
 
 

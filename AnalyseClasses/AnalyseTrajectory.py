@@ -5,7 +5,7 @@ from Tools.Geometry import pts2vect, angle
 from math import pi
 
 
-class ComputeTrajectory:
+class AnalyseTrajectory:
 	def __init__(self, root, group):
 		self.exp = ExperimentGroupBuilder(root).build(group)
 
@@ -16,16 +16,16 @@ class ComputeTrajectory:
 		self.exp.copy(
 			name='x0', new_name='x',
 			category='Trajectory',
-			description='x coordinate (in the food system)',
+			object_type=self.exp.x0.object_type,
 			label='x',
-			object_type=self.exp.x0.object_type
+			description='x coordinate (in the food system)'
 		)
 		self.exp.copy(
 			name='y0', new_name='y',
 			category='Trajectory',
-			description='y coordinate (in the food system)',
+			object_type=self.exp.y0.object_type,
 			label='y',
-			object_type=self.exp.y0.object_type
+			description='y coordinate (in the food system)'
 		)
 
 		self.exp.operation('x', 'food_center', lambda x, y: x - y, 'x')

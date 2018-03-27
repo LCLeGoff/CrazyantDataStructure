@@ -1,5 +1,5 @@
 from Tools.JsonFiles import import_obj
-from Models.Definitions import Definitions
+from DataObjects.Definitions import Definitions
 
 
 class DefinitionLoader:

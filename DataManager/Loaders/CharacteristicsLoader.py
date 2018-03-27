@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from Models.Characteristics import Characteristics1d, Characteristics2d
+from DataObjects.Characteristics import Characteristics1d, Characteristics2d
 from Tools.JsonFiles import import_obj
 
 
