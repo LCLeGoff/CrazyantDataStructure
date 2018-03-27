@@ -1,0 +1,43 @@
+import os
+import pandas as pd
+
+from DataManager.Loaders.DataLoader import DataLoader
+from DataManager.Writers.DataWriter import DataWriter
+from Tools.JsonFiles import import_id_exp_list, write_obj
+
+
+class DataFileManager:
+
+	def __init__(self, root, group):
+		self.root = root+group+'/'
+		self.data_loader = DataLoader(root, group)
+		self.data_writer = DataWriter(root, group)
+		self.existing_categories = set([
+			self.data_loader.definition_loader.definition_dict[key]['category']
+			for key in self.data_loader.definition_loader.definition_dict.keys()])
+		self.id_exp_list = import_id_exp_list(self.root)
+		self.exp_ant_frame_index = self.data_loader.time_series_loader.categories['Raw'].index
+
+	def load(self, name):
+		if name in self.data_loader.definition_loader.definition_dict.keys():
+			return self.data_loader.load(name)
+		else:
+			raise(name+' does not exist')
+
+	def create_new_category(self, category):
+		if not(category in self.existing_categories):
+			add = self.root+category+'/'
+			try:
+				os.mkdir(add)
+			except FileExistsError:
+				pass
+			chara = dict()
+			for id_exp in self.id_exp_list:
+				chara[str(id_exp)] = dict()
+			write_obj(add+'Characteristics.json', chara)
+			array = pd.DataFrame(index=self.exp_ant_frame_index)
+			array.to_csv(add+'TimeSeries.csv')
+
+	def write(self, obj):
+		self.create_new_category(obj.category)
+		self.data_writer.write(obj)

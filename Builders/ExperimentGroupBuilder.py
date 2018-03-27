@@ -1,6 +1,5 @@
 from Models.ExperimentGroups import ExperimentGroups
-from Tools.JsonFiles import JsonFiles
-import numpy as np
+from Tools.JsonFiles import import_id_exp_list
 
 
 class ExperimentGroupBuilder:
@@ -8,5 +7,5 @@ class ExperimentGroupBuilder:
 		self.root = root
 
 	def build(self, group):
-		id_exp_list = np.array(list(JsonFiles.import_obj(self.root+group+'/Raw/Characteristics.json').keys()), dtype=int)
+		id_exp_list = import_id_exp_list(self.root+group+'/')
 		return ExperimentGroups(self.root, group, id_exp_list)

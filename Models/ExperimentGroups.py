@@ -1,4 +1,4 @@
-from Loaders.DataLoader import DataLoader
+from DataManager.DataFileManager import DataFileManager
 
 
 class ExperimentGroups:
@@ -6,16 +6,30 @@ class ExperimentGroups:
 	def __init__(self, root, group, id_exp_list):
 		self.root = root
 		self.group = group
-		self.data_loader = DataLoader(root, group)
+		self.data_manager = DataFileManager(root, group)
 		self.id_exp_list = id_exp_list
+		self.names = set()
+
+	def add_object(self, name, obj):
+		self.__dict__[name] = obj
+		self.names.add(name)
 
 	def load(self, names):
-		if isinstance(names, list):
-			for name in names:
-				if name not in self.__dict__.keys():
-					self.__dict__[name] = self.data_loader.load(name)
-		else:
-			self.__dict__[names] = self.data_loader.load(names)
+		if isinstance(names, str):
+			names = [names]
+		for name in names:
+			if name not in self.__dict__.keys():
+				self.add_object(name, self.data_manager.load(name))
+
+	def write(self, names):
+		if isinstance(names, str):
+			names = [names]
+		for name in names:
+			self.data_manager.write(self.__dict__[name])
+
+	def copy(self, name, new_name, category, description, label, object_type):
+		array = self.__dict__[name].copy(new_name, category, description, label, object_type)
+		self.add_object(new_name, array)
 
 	def operation(self, name1, name2, fct, name_col=None):
 		if self.__dict__[name1].object_type == 'TimeSeries':

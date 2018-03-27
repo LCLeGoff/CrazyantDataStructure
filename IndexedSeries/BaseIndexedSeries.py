@@ -14,3 +14,6 @@ class BaseSeries:
 			print(self.array.head())
 		else:
 			print(self.array)
+
+	def get_value(self, idx):
+		return self.array.loc[idx, :]

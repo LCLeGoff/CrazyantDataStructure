@@ -1,8 +1,8 @@
-from Builders.CharacteristicObjectBuilder import CharacteristicObjectBuilder
+from Builders.DefinitionObjectBuilder import DefinitionObjectBuilder
 from IndexedSeries.ExpAntFrameIndexedSeries import ExpAntFrameIndexedSeries
 
 
 class Events(ExpAntFrameIndexedSeries):
-	def __init__(self, array, name):
+	def __init__(self, array, definition):
 		ExpAntFrameIndexedSeries.__init__(self, array)
-		CharacteristicObjectBuilder.build(self, name)
+		DefinitionObjectBuilder.build(self, definition)
