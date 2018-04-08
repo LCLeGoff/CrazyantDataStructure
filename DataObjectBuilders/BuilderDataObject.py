@@ -1,4 +1,7 @@
-class BaseSeries:
+from PandasIndexManager.PandasIndexManager import PandasIndexManager
+
+
+class BuilderDataObject:
 	def __init__(self, array):
 		self.array = array
 
@@ -17,3 +20,6 @@ class BaseSeries:
 
 	def get_value(self, idx):
 		return self.array.loc[idx, :]
+
+	def get_id_exp_index(self):
+		return PandasIndexManager().get_id_exp_index(self.array)

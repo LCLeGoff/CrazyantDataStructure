@@ -1,11 +1,11 @@
 from DataObjects.Definitions import DefinitionBuilder
 from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
-from IndexedSeries.ExpAntFrameIndexedSeries import ExpAntFrameIndexedSeries
+from DataObjectBuilders.BuilderExpAntFrameIndexed1dDataObject import BuilderExpAntFrameIndexed1dDataObject
 
 
-class Events(ExpAntFrameIndexedSeries):
+class Events(BuilderExpAntFrameIndexed1dDataObject):
 	def __init__(self, array, definition):
-		ExpAntFrameIndexedSeries.__init__(self, array)
+		BuilderExpAntFrameIndexed1dDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
 	def copy(self, name, category, label, description):

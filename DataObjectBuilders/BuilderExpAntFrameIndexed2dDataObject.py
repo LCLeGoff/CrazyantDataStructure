@@ -1,12 +1,12 @@
-from IndexedSeries.BaseIndexed2dSeries import BaseIndexed2dSeries
+from DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 
 
-class ExpAntFrameIndexed2dSeries(BaseIndexed2dSeries):
+class BuilderExpAntFrameIndexed2dDataObject(Builder2dDataObject):
 	"""
 	Class to deal with pandas object indexed by id_exp
 	"""
 	def __init__(self, array):
-		BaseIndexed2dSeries.__init__(self, array)
+		Builder2dDataObject.__init__(self, array)
 		if array.index.names != ['id_exp', 'id_ant', 'frame']:
 			raise IndexError('Index names are not (id_exp, id_ant, frame)')
 		elif array.shape[1] != 2:
