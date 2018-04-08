@@ -20,7 +20,7 @@ class DefinitionBuilder:
 		def_dict['object_type'] = object_type
 		if xlabel is not None and ylabel is not None:
 			def_dict['xlabel'] = xlabel
-			def_dict['xlabel'] = ylabel
+			def_dict['ylabel'] = ylabel
 		return def_dict
 
 	@staticmethod

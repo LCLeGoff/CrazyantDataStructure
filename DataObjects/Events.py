@@ -8,6 +8,9 @@ class Events(ExpAntFrameIndexedSeries):
 		ExpAntFrameIndexedSeries.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
+	def copy(self, name, category, label, description):
+			return EventsBuilder.build(self.array, name, category, label, description)
+
 
 class EventsBuilder:
 	def __init__(self):

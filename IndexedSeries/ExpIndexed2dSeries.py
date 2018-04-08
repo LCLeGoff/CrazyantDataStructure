@@ -1,12 +1,12 @@
-from IndexedSeries.BaseIndexedSeries import BaseSeries
+from IndexedSeries.BaseIndexed2dSeries import BaseIndexed2dSeries
 
 
-class ExpIndexed2dSeries(BaseSeries):
+class ExpIndexed2dSeries(BaseIndexed2dSeries):
 	"""
 	Class to deal with pandas object indexed by id_exp
 	"""
 	def __init__(self, array):
-		BaseSeries.__init__(self, array)
+		BaseIndexed2dSeries.__init__(self, array)
 		if array.index.names != ['id_exp']:
 			raise IndexError('Index names are not id_exp')
 		elif array.shape[1] != 2:

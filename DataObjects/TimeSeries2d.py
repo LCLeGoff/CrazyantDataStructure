@@ -16,12 +16,12 @@ class TimeSeries2dBuilder:
 		pass
 
 	@staticmethod
-	def build(ts1, ts2, name, category, label, xlabel, ylabel, description):
+	def build(ts1, ts2, name, xname, yname, category, label, xlabel, ylabel, description):
 		array = pd.DataFrame(index=ts1.array.index)
-		array[ts1.name] = ts1.array
-		array[ts2.name] = ts2.array
+		array[xname] = ts1.array
+		array[yname] = ts2.array
 		definition = DefinitionBuilder().build2d(
-			name=name, category=category, object_type='TimeSeries',
+			name=name, category=category, object_type='TimeSeries2d',
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description
 		)
 		return TimeSeries2d(array, definition)
