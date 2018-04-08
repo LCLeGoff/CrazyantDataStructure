@@ -3,7 +3,7 @@ import pandas as pd
 from DataObjects.Events2d import Events2d
 
 
-class Data2dLoader:
+class Events2dLoader:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
 
