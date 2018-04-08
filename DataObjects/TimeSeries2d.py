@@ -2,12 +2,12 @@ import pandas as pd
 
 from DataObjects.Definitions import DefinitionBuilder
 from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
-from IndexedSeries.ExpAntFrameIndexed2dSeries import ExpAntFrameIndexed2dSeries
+from DataObjectBuilders.BuilderExpAntFrameIndexed2dDataObject import BuilderExpAntFrameIndexed2dDataObject
 
 
-class TimeSeries2d(ExpAntFrameIndexed2dSeries):
+class TimeSeries2d(BuilderExpAntFrameIndexed2dDataObject):
 	def __init__(self, array, definition):
-		ExpAntFrameIndexed2dSeries.__init__(self, array)
+		BuilderExpAntFrameIndexed2dDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
 

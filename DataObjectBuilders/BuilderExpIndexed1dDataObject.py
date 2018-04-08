@@ -1,12 +1,12 @@
-from IndexedSeries.BaseIndexedSeries import BaseIndexedSeries
+from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
 
 
-class ExpIndexedSeries(BaseIndexedSeries):
+class BuilderExpIndexed1dDataObject(Builder1dDataObject):
 	"""
 	Class to deal with pandas object indexed by (id_exp, id_ant, frame)
 	"""
 	def __init__(self, array):
-		BaseIndexedSeries.__init__(self, array)
+		Builder1dDataObject.__init__(self, array)
 		if array.index.names != ['id_exp']:
 			raise IndexError('Index names are not id_exp')
 		elif array.shape[1] != 1:

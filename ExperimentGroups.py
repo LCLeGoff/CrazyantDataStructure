@@ -51,7 +51,7 @@ class ExperimentGroups:
 				raise TypeError(object_type1+' can not be gathered in 2d')
 
 	def plot_repartition(self, name, ls=None):
-		return self.plotter2d.repartition(self.__dict__[name], title_pref=self.group, ls=ls)
+		return self.plotter2d.repartition(self.__dict__[name], title_prefix=self.group, ls=ls)
 
 	def plot_repartition_hist(self, name):
 		return self.plotter2d.hist2d(self.__dict__[name], bins=[75, 50])

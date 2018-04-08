@@ -1,15 +1,15 @@
-from IndexedSeries.ExpIndexed2dSeries import ExpIndexed2dSeries
-from IndexedSeries.ExpIndexedSeries import ExpIndexedSeries
+from DataObjectBuilders.BuilderExpIndexed2dDataObject import BuilderExpIndexed2dDataObject
+from DataObjectBuilders.BuilderExpIndexed1dDataObject import BuilderExpIndexed1dDataObject
 from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
 
 
-class Characteristics1d(ExpIndexedSeries):
+class Characteristics1d(BuilderExpIndexed1dDataObject):
 	def __init__(self, array, definition):
-		ExpIndexedSeries.__init__(self, array)
+		BuilderExpIndexed1dDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
 
-class Characteristics2d(ExpIndexed2dSeries):
+class Characteristics2d(BuilderExpIndexed2dDataObject):
 	def __init__(self, array, definition):
-		ExpIndexed2dSeries.__init__(self, array)
+		BuilderExpIndexed2dDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
