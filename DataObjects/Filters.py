@@ -6,7 +6,8 @@ class Filters:
 		pass
 
 	@staticmethod
-	def filter(obj, event, name, label, category, description):
+	def filter(obj, event, name, label=None, category=None, description=None):
 		index = event.array.index
 		array = obj.array.loc[index, :]
-		return EventsBuilder.build(array, name, category, label, description)
+		return EventsBuilder.build(
+			array=array, name=name, category=category, label=label, description=description)

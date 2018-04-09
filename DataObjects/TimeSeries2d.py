@@ -18,7 +18,7 @@ class TimeSeries2dBuilder:
 		pass
 
 	@staticmethod
-	def build(ts1, ts2, name, xname, yname, category, label, xlabel, ylabel, description):
+	def build(ts1, ts2, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
 		array = pd.DataFrame(index=ts1.array.index)
 		array[xname] = ts1.array
 		array[yname] = ts2.array

@@ -12,8 +12,8 @@ class TimeSeries(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
-	def copy(self, name, category, label, description):
-			return TimeSeriesBuilder.build(self.array, name, category, label, description)
+	def copy(self, name, category=None, label=None, description=None):
+			return TimeSeriesBuilder.build(array=self.array, name=name, category=category, label=label, description=description)
 
 	def operation_with_characteristics1d(self, chara, fct):
 		self.array[self.name_col] = fct(self.array[self.name_col], chara.array[chara.name_col])
@@ -27,7 +27,7 @@ class TimeSeriesBuilder:
 		pass
 
 	@staticmethod
-	def build(array, name, category, label, description):
+	def build(array, name, category=None, label=None, description=None):
 		definition = DefinitionBuilder().build1d(
 			name=name, category=category, object_type='TimeSeries',
 			label=label, description=description

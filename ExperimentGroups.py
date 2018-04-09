@@ -26,7 +26,10 @@ class ExperimentGroups:
 			if name not in self.__dict__.keys():
 				self.add_object(name, self.data_manager.load(name))
 
-	def to_2d(self, name1, name2, new_name, category, label, xlabel, ylabel, description, new_name1=None, new_name2=None):
+	def to_2d(
+			self, name1, name2, new_name,
+			new_name1=None, new_name2=None,
+			category=None, label=None, xlabel=None, ylabel=None, description=None):
 		object_type1 = self.__dict__[name1].object_type
 		object_type2 = self.__dict__[name2].object_type
 		if object_type1 == object_type2 and self.__dict__[name1].array.index.equals(self.__dict__[name2].array.index):
@@ -64,22 +67,28 @@ class ExperimentGroups:
 		for name in names:
 			self.data_manager.write(self.__dict__[name])
 
-	def copy(self, name, new_name, category, label, description):
-		array = self.__dict__[name].copy(new_name, category, label, description)
+	def copy(self, name, new_name, category=None, label=None, description=None):
+		array = self.__dict__[name].copy(new_name=new_name, category=category, label=label, description=description)
 		self.add_object(new_name, array)
 
-	def copy2d(self, name, new_name, new_xname, new_yname, category, label, xlabel, ylabel, description):
-		array = self.__dict__[name].copy(new_name, new_xname, new_yname, category, label, xlabel, ylabel, description)
+	def copy2d(
+			self, name, new_name, new_xname, new_yname,
+			category=None, label=None, xlabel=None, ylabel=None, description=None):
+		array = self.__dict__[name].copy(
+			new_name=new_name, new_xname=new_xname, new_yname=new_yname,
+			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(new_name, array)
 
-	def filter(self, name1, name2, new_name, label, category, description):
+	def filter(self, name1, name2, new_name, label=None, category=None, description=None):
 		object_type1 = self.__dict__[name1].object_type
 		object_type2 = self.__dict__[name2].object_type
 		if object_type1 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']\
 			and object_type2 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']:
 			self.add_object(
 				new_name,
-				Filters().filter(self.__dict__[name1], self.__dict__[name2], new_name, label, category, description))
+				Filters().filter(
+					obj=self.__dict__[name1], event=self.__dict__[name2],
+					name=new_name, label=label, category=category, description=description))
 		else:
 			raise TypeError('Filter can not be applied on '+object_type1+' or '+object_type2)
 

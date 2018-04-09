@@ -12,7 +12,7 @@ class DefinitionBuilder:
 		pass
 
 	@staticmethod
-	def create_dict(category, object_type, label, description, xlabel=None, ylabel=None):
+	def create_dict(object_type, category=None, label=None, description=None, xlabel=None, ylabel=None):
 		def_dict = dict()
 		def_dict['category'] = category
 		def_dict['description'] = description
@@ -27,14 +27,14 @@ class DefinitionBuilder:
 	def from_dict(name, def_dict):
 		return Definitions(name, def_dict)
 
-	def build1d(self, name, category, object_type, label, description):
+	def build1d(self, name, object_type, category=None, label=None, description=None):
 		def_dict = self.create_dict(
 			category=category, object_type=object_type,
 			label=label, description=description
 		)
 		return Definitions(name, def_dict)
 
-	def build2d(self, name, category, object_type, label, xlabel, ylabel, description):
+	def build2d(self, name, object_type, category=None, label=None, xlabel=None, ylabel=None, description=None):
 		def_dict = self.create_dict(
 			category=category, object_type=object_type,
 			label=label, description=description,
