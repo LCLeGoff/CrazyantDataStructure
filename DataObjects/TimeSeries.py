@@ -1,13 +1,15 @@
 from DataObjects.Definitions import DefinitionBuilder
 from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
-from DataObjectBuilders.BuilderExpAntFrameIndexed1dDataObject import BuilderExpAntFrameIndexed1dDataObject
+from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
+from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 
 
-class TimeSeries(BuilderExpAntFrameIndexed1dDataObject):
+class TimeSeries(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 	def __init__(self, array, definition):
 		# TODO: Fix this conception mistake
 		array.columns = [definition.name]
-		BuilderExpAntFrameIndexed1dDataObject.__init__(self, array)
+		Builder1dDataObject.__init__(self, array)
+		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
 	def copy(self, name, category, label, description):

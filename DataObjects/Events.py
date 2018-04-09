@@ -1,11 +1,13 @@
 from DataObjects.Definitions import DefinitionBuilder
 from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
-from DataObjectBuilders.BuilderExpAntFrameIndexed1dDataObject import BuilderExpAntFrameIndexed1dDataObject
+from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
+from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 
 
-class Events(BuilderExpAntFrameIndexed1dDataObject):
+class Events(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 	def __init__(self, array, definition):
-		BuilderExpAntFrameIndexed1dDataObject.__init__(self, array)
+		Builder1dDataObject.__init__(self, array)
+		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
 		DefinitionDataObjectBuilder.build(self, definition)
 
 	def copy(self, name, category, label, description):
