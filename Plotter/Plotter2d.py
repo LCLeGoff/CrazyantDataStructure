@@ -79,7 +79,7 @@ class Plotter2d(BasePlotters):
 	def repartition(self, obj, title_prefix=''):
 		self.check_type(obj)
 
-		mark_indexes = obj.get_id_exp_index()
+		mark_indexes = obj.get_id_exp_array()
 		cols = ColorObject(self.c[0], self.c[1], mark_indexes).colors
 		fig, ax = self.create_plot((6.5, 5))
 		self.draw_setup(fig, ax)

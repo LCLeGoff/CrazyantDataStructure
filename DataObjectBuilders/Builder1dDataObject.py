@@ -1,4 +1,5 @@
 from DataObjectBuilders.BuilderDataObject import BuilderDataObject
+import numpy as np
 
 
 class Builder1dDataObject(BuilderDataObject):
@@ -10,3 +11,9 @@ class Builder1dDataObject(BuilderDataObject):
 
 	def get_values(self):
 		return self.array[self.array.columns[0]]
+
+	def get_array(self):
+		return np.array(self.array[self.array.columns[0]])
+
+	def replace_values(self, vals):
+		self.array[self.array.columns[0]] = vals
