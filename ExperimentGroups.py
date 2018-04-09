@@ -76,7 +76,7 @@ class ExperimentGroups:
 			self, name, new_name, new_xname, new_yname,
 			category=None, label=None, xlabel=None, ylabel=None, description=None):
 		array = self.__dict__[name].copy(
-			new_name=new_name, new_xname=new_xname, new_yname=new_yname,
+			name=new_name, xname=new_xname, yname=new_yname,
 			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(new_name, array)
 

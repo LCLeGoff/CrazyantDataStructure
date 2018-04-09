@@ -45,7 +45,7 @@ class DataFileManager:
 			array.to_csv(add+'TimeSeries.csv')
 
 	def write(self, obj):
-		if obj.category is None or obj.label is None or obj.desciption is None:
+		if obj.category is None or obj.label is None or obj.description is None:
 			raise ValueError(obj.name+' definition not properly set')
 		else:
 			self.create_new_category(obj.category)
