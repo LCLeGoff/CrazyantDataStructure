@@ -1,4 +1,4 @@
-from Tools.JsonFiles import write_obj
+from Tools.JsonFiles import write_obj, import_obj
 
 
 class AnalyseStarter:
@@ -6,8 +6,11 @@ class AnalyseStarter:
 		self.root = root+group+'/'
 		self.group = group
 
-	def start(self):
-		def_dict = dict()
+	def start(self, redo):
+		if redo:
+			def_dict = dict()
+		else:
+			def_dict = import_obj(self.root+'definition_dict.json')
 
 		for key in [
 			'area', 'eccentricity',
@@ -45,7 +48,7 @@ class AnalyseStarter:
 		def_dict['markings']['object_type'] = 'Events'
 
 		for key in [
-			'session', 'trial', 'n_frames', 'fps', 'mm2px', 'food_radius',
+			'session', 'trial', 'n_frames', 'fps', 'mm2px', 'food_radius', 'setup_orientation',
 			'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y'
 		]:
 			def_dict[key] = dict()
@@ -90,5 +93,8 @@ class AnalyseStarter:
 			def_dict[key]['object_type'] = 'Characteristics2d'
 			def_dict[key]['description'] = 'One of the two reference points'
 			def_dict[key]['label'] = 'Reference points '+str(i)
+
+		def_dict['setup_orientation']['description'] = 'Setup orientation'
+		def_dict['setup_orientation']['label'] = 'Setup orientation'
 
 		write_obj(self.root+'definition_dict.json', def_dict)
