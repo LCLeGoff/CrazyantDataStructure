@@ -30,6 +30,8 @@ class PandasIndexManager:
 				res[id_exp].append(id_ant)
 			else:
 				res[id_exp] = [id_ant]
+		for id_exp in res:
+			res[id_exp].sort()
 		return res
 
 	@staticmethod
@@ -42,15 +44,18 @@ class PandasIndexManager:
 			return np.array([[id_exp, id_ant, frame] for (id_exp, id_ant, frame) in idx_set])
 
 	def get_id_exp_ant_frame_dict(self, array):
-		index_array = self.get_id_exp_ant_array(array)
+		index_array = self.get_id_exp_ant_frame_array(array)
 		res = dict()
 		for (id_exp, id_ant, frame) in index_array:
 			if id_exp in res:
 				if id_ant in res[id_exp]:
-					res[id_exp][id_exp].append(frame)
+					res[id_exp][id_ant].append(frame)
 				else:
-					res[id_exp][id_exp] = [frame]
+					res[id_exp][id_ant] = [frame]
 			else:
 				res[id_exp] = dict()
 				res[id_exp][id_ant] = [frame]
+		for id_exp in res:
+			for id_ant in res[id_exp]:
+				res[id_exp][id_ant].sort()
 		return res

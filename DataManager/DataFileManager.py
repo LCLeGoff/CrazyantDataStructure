@@ -28,7 +28,7 @@ class DataFileManager:
 		if name in self.data_loader.definition_loader.definition_dict.keys():
 			return self.data_loader.load(name)
 		else:
-			raise(name+' does not exist')
+			raise NameError(name+' does not exist')
 
 	def create_new_category(self, category):
 		add = self.root+category+'/'

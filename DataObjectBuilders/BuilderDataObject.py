@@ -27,8 +27,8 @@ class BuilderDataObject:
 		return PandasIndexManager().get_id_exp_ant_frame_array(self.array)
 
 	def get_id_exp_ant_dict(self):
-		return PandasIndexManager().get_id_exp_ant_array(self.array)
+		return PandasIndexManager().get_id_exp_ant_dict(self.array)
 
 	def get_id_exp_ant_frame_dict(self):
-		return PandasIndexManager().get_id_exp_ant_frame_array(self.array)
+		return PandasIndexManager().get_id_exp_ant_frame_dict(self.array)
 
