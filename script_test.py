@@ -1,11 +1,15 @@
 from AnalyseClasses.AnalyseMarkings import AnalyseMarkings
 from AnalyseClasses.AnalyseTrajectory import AnalyseTrajectory
+from matplotlib import pyplot as plt
+
+from AnalyseStarter import AnalyseStarter
 
 root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
-group = 'FMAB'
+# group = 'FMABW'
 
-# AnalyseStarter(root, group).start()
-#
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+# 	AnalyseStarter(root, group).start(False)
+
 # DefinitionBuilder = DefinitionBuilder(root, group)
 #
 # CharaLoad = Characteristics1dLoader(root, group)
@@ -45,8 +49,26 @@ group = 'FMAB'
 # print(FMAB.ref_pts2.description, FMAB.ref_pts2.name)
 # print(FMAB.entrance0.description, FMAB.entrance0.name)
 
-# traj = AnalyseTrajectory(root, group)
-# traj.centered_x_y()
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+# 	traj = AnalyseTrajectory(root, group)
+# 	traj.centered_x_y()
+# 	traj.xy_polar()
 
-mark = AnalyseMarkings(root, group)
-mark.spatial_repartition_markings()
+for group in ['FMAB']:
+	mark = AnalyseMarkings(root, group)
+	# mark.compute_xy_marking()
+	# mark.compute_xy_marking_polar()
+	# mark.compute_first_marking_ant()
+	mark.compute_first_marking_ant_setup_orientation()
+	# mark.compute_first_marking_ant_setup_orientation_circle()
+plt.show()
+#
+
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+# 	mark = AnalyseMarkings(root, group)
+# 	# mark.spatial_repartition_xy_markings()
+# 	# mark.spatial_repartition_xy_markings_2d_hist()
+# 	# mark.spatial_repartition_first_markings()
+#
+# 	# mark.spatial_repartition_first_markings_2d_hist()
+# plt.show()
