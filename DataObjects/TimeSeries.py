@@ -1,6 +1,11 @@
+import pandas as pd
+from pandas import DataFrame
+import numpy as np
+
 from DataObjects.Definitions import DefinitionBuilder
 from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
+from DataObjects.Events import EventsBuilder
 
 
 class TimeSeries(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
@@ -15,11 +20,19 @@ class TimeSeries(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 			return TimeSeriesBuilder.build(
 				array=self.array.copy(), name=name, category=category, label=label, description=description)
 
-	def operation_with_characteristics1d(self, chara, fct):
-		self.array[self.name_col] = fct(self.array[self.name_col], chara.array[chara.name_col])
+	def operation_with_data1d(self, obj, fct):
+		self.replace_values(fct(self.array[self.name_col], obj.array[obj.name_col]))
 
-	def operation_with_characteristics2d(self, chara, name_col, fct):
-		self.array[self.name_col] = fct(self.array[self.name_col], chara.array[name_col])
+	def operation_with_data2d(self, obj, obj_name_col, fct):
+		self.replace_values(fct(self.array[self.name_col], obj.array[obj_name_col]))
+
+	def extract_event(self, name, category=None, label=None, description=None):
+		ts_array = self.get_array()
+		ts_array2 = ts_array[1:]-ts_array[:-1]
+		mask = [0]+list(np.where(ts_array2 != 0)[0]+1)
+		event = self.array.iloc[mask]
+		event.columns = [name]
+		return EventsBuilder().build(array=event, name=name, category=category, label=label, description=description)
 
 
 class TimeSeriesBuilder:

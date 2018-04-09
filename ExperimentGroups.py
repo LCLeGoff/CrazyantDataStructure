@@ -13,6 +13,7 @@ class ExperimentGroups:
 		self.data_manager = DataFileManager(root, group)
 		self.plotter2d = Plotter2d()
 		self.id_exp_list = id_exp_list
+		self.id_exp_list.sort()
 		self.names = set()
 
 	def add_object(self, name, obj):
@@ -68,8 +69,8 @@ class ExperimentGroups:
 			self.data_manager.write(self.__dict__[name])
 
 	def copy(self, name, new_name, category=None, label=None, description=None):
-		array = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
-		self.add_object(new_name, array)
+		obj = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
+		self.add_object(new_name, obj)
 
 	def copy2d(
 			self, name, new_name, new_xname, new_yname,
@@ -94,9 +95,18 @@ class ExperimentGroups:
 
 	def operation(self, name1, name2, fct, name_col=None):
 		if self.__dict__[name1].object_type == 'TimeSeries':
-			if self.__dict__[name2].object_type == 'Characteristics1d':
-				self.__dict__[name1].operation_with_characteristics1d(self.__dict__[name2], fct)
+			if self.__dict__[name2].object_type == 'TimeSeries':
+				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
+			elif self.__dict__[name2].object_type == 'Characteristics1d':
+				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
 			elif self.__dict__[name2].object_type == 'Characteristics2d':
-				self.__dict__[name1].operation_with_characteristics2d(self.__dict__[name2], name_col, fct)
+				self.__dict__[name1].operation_with_data2d(self.__dict__[name2], name_col, fct)
+			else:
+				raise TypeError('Operation not defined between TimeSeries and '+self.__dict__[name2].object_type)
 		else:
 			raise IndexError(name1+' index names does not contains '+name2+' index names')
+
+	def extract_event(self, name, new_name, label=None, category=None, description=None):
+		if self.__dict__[name].object_type == 'TimeSeries':
+			event = self.__dict__[name].extract_event(name=new_name, category=category, label=label, description=description)
+			self.add_object(new_name, event)
