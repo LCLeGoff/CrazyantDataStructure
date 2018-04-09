@@ -1,7 +1,6 @@
 import pandas as pd
 
 from DataObjects.Definitions import DefinitionBuilder
-from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
 from DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 
@@ -10,11 +9,11 @@ class Events2d(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
 	def __init__(self, array, definition):
 		Builder2dDataObject.__init__(self, array)
 		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
-		DefinitionDataObjectBuilder.build(self, definition)
+		DefinitionBuilder.build_from_definition(self, definition)
 
 	def copy(self, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
 			return Events2dBuilder.build_from_array(
-				self.array, name=name, xname=xname, yname=yname,
+				self.array.copy(), name=name, xname=xname, yname=yname,
 				category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
 

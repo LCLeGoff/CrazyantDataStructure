@@ -1,7 +1,6 @@
 import pandas as pd
 
 from DataObjects.Definitions import DefinitionBuilder
-from Builders.DefinitionDataObjectBuilder import DefinitionDataObjectBuilder
 from DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 
@@ -10,7 +9,7 @@ class TimeSeries2d(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
 	def __init__(self, array, definition):
 		Builder2dDataObject.__init__(self, array)
 		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
-		DefinitionDataObjectBuilder.build(self, definition)
+		DefinitionBuilder.build_from_definition(self, definition)
 
 
 class TimeSeries2dBuilder:

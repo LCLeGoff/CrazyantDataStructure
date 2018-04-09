@@ -68,7 +68,7 @@ class ExperimentGroups:
 			self.data_manager.write(self.__dict__[name])
 
 	def copy(self, name, new_name, category=None, label=None, description=None):
-		array = self.__dict__[name].copy(new_name=new_name, category=category, label=label, description=description)
+		array = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
 		self.add_object(new_name, array)
 
 	def copy2d(

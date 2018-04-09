@@ -27,6 +27,13 @@ class DefinitionBuilder:
 	def from_dict(name, def_dict):
 		return Definitions(name, def_dict)
 
+	@staticmethod
+	def build_from_definition(class_self, definition):
+		class_self.name = definition.name
+		class_self.definition = definition
+		for key, value in definition.dict.items():
+			class_self.__dict__[key] = value
+
 	def build1d(self, name, object_type, category=None, label=None, description=None):
 		def_dict = self.create_dict(
 			category=category, object_type=object_type,
