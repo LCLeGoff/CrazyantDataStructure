@@ -1,10 +1,12 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from Plotter.ColorObject import ColorObject
+from Plotter.BasePlotters import BasePlotters
 
 
-class Plotter2d:
-	def __init__(self):
+class Plotter2d(BasePlotters):
+	def __init__(self, **kwargs):
+		BasePlotters.__init__(self, ls='o', c=('cmap', 'hot'), alpha=0.6, **kwargs)
 		self.food_color = 'paleturquoise'
 		self.arena_color = 'paleturquoise'
 		self.arena_length = 420.
@@ -17,42 +19,6 @@ class Plotter2d:
 	def check_type(obj):
 		if obj.object_type[-2:] != '2d':
 			raise TypeError(obj.name+' is not a 2d data')
-
-	@staticmethod
-	def black_background(fig, ax):
-		bg_color = 'black'
-		fg_color = 'white'
-		fig.set_facecolor(bg_color)
-		ax.patch.set_facecolor(bg_color)
-		ax.spines['right'].set_color(fg_color)
-		ax.spines['left'].set_color(fg_color)
-		ax.spines['bottom'].set_color(fg_color)
-		ax.spines['top'].set_color(fg_color)
-		ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color, which='both')
-		ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color, which='both')
-		ax.xaxis.label.set_color(fg_color)
-		ax.yaxis.label.set_color(fg_color)
-		ax.title.set_color('w')
-
-	def create_plot(self, figsize):
-		fig, ax = plt.subplots(figsize=figsize)
-		self.black_background(fig, ax)
-		return fig, ax
-
-	@staticmethod
-	def remove_axis(fig, ax):
-		ax.axis('off')
-		fig.subplots_adjust(left=0, right=1, bottom=0, top=0.95)
-
-	@staticmethod
-	def init_plot_arg(c=None, ls=None, title_prefix=None):
-		if ls is None:
-			ls = 'o'
-		if title_prefix is None:
-			title_prefix = ''
-		if c is None:
-			c = ('cmap', 'hot')
-		return c, ls, title_prefix
 
 	@staticmethod
 	def make_circle(radius=5., center=None):
@@ -110,12 +76,11 @@ class Plotter2d:
 	def display_title(ax, obj, title_prefix):
 		ax.set_title(title_prefix+': '+obj.definition.label)
 
-	def repartition(self, obj, c=None, ls=None, title_prefix=None, alpha=0.6):
+	def repartition(self, obj, title_prefix=''):
 		self.check_type(obj)
-		c, ls, title_prefix = self.init_plot_arg(c, ls, title_prefix)
 
 		mark_indexes = obj.get_id_exp_index()
-		cols = ColorObject(c[0], c[1], mark_indexes).colors
+		cols = ColorObject(self.c[0], self.c[1], mark_indexes).colors
 		fig, ax = self.create_plot((6.5, 5))
 		self.draw_setup(fig, ax)
 		self.display_title(ax, obj, title_prefix)
@@ -123,15 +88,16 @@ class Plotter2d:
 		for id_exp in mark_indexes:
 			ax.plot(
 				obj.get_x_values().loc[id_exp, :, :], obj.get_y_values().loc[id_exp, :, :],
-				ls, ms=3, alpha=alpha, color=cols[id_exp])
+				self.ls, ms=self.ms, alpha=self.alpha, color=cols[id_exp])
 
 		return ax
 
-	def hist2d(self, obj, bins=100, cmap='jet', normed=False, title_prefix=''):
+	def hist2d(self, obj, bins=100, normed=False, title_prefix=''):
 
 		fig, ax = self.create_plot((9, 5))
 		self.display_labels(ax, obj)
 		self.display_title(ax, obj, title_prefix)
-		plt.hist2d(obj.get_x_values(), obj.get_y_values(), bins=bins, cmap=cmap, normed=normed)
+		self.draw_setup(fig, ax)
+		plt.hist2d(obj.get_x_values(), obj.get_y_values(), bins=bins, cmap=self.c[1], normed=normed)
 		plt.colorbar()
 		plt.axis('equal')
