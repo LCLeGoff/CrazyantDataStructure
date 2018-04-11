@@ -17,10 +17,19 @@ class TimeSeries2dBuilder:
 		pass
 
 	@staticmethod
-	def build(ts1, ts2, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
+	def build_from_1d(ts1, ts2, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
 		array = pd.DataFrame(index=ts1.array.index)
 		array[xname] = ts1.array
 		array[yname] = ts2.array
+		definition = DefinitionBuilder().build2d(
+			name=name, category=category, object_type='TimeSeries2d',
+			label=label, xlabel=xlabel, ylabel=ylabel, description=description
+		)
+		return TimeSeries2d(array, definition)
+
+	@staticmethod
+	def build_from_array(array, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
+		array.columns = [xname, yname]
 		definition = DefinitionBuilder().build2d(
 			name=name, category=category, object_type='TimeSeries2d',
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description

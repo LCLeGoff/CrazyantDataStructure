@@ -1,10 +1,12 @@
+import pandas as pd
+
 from PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class BuilderDataObject:
 	def __init__(self, array):
 		self.array = array
-		self.array.sort_index(inplace=True)
+		# self.array.sort_index(inplace=True)
 
 	def operation(self, fct):
 		self.array = fct(self.array)
@@ -15,8 +17,14 @@ class BuilderDataObject:
 		else:
 			print(self.array)
 
-	def get_value(self, idx):
+	def get_row(self, idx):
 		return self.array.loc[idx, :]
+
+	def get_row_id_exp(self, id_exp):
+		return self.array.loc[pd.IndexSlice[id_exp, :, :], :]
+
+	def get_row_id_exp_ant(self, id_exp, id_ant):
+		return self.array.loc[pd.IndexSlice[id_exp, id_ant, :], :]
 
 	def get_id_exp_array(self):
 		return PandasIndexManager().get_id_exp_array(self.array)

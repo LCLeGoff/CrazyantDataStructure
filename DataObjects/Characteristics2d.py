@@ -26,4 +26,5 @@ class Characteristics2dBuilder:
 			name=name, category=category, object_type='Characteristics2d',
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description
 		)
+		array.sort_index(inplace=True)
 		return Characteristics2d(array, definition)

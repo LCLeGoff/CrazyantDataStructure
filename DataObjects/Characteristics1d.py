@@ -24,4 +24,5 @@ class Characteristics1dBuilder:
 			name=name, category=category, object_type='Characteristics1d',
 			label=label, description=description
 		)
+		array.sort_index(inplace=True)
 		return Characteristics1d(array.copy(), definition)

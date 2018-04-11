@@ -22,7 +22,8 @@ class Events2dBuilder:
 		pass
 
 	@staticmethod
-	def build(event1, event2, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
+	def build_from_1d(
+			event1, event2, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
 		array = pd.DataFrame(index=event1.array.index)
 		array[xname] = event1.array
 		array[yname] = event2.array
