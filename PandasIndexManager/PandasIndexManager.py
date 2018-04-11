@@ -1,5 +1,3 @@
-import numpy as np
-
 
 class PandasIndexManager:
 	def __init__(self):
@@ -11,7 +9,8 @@ class PandasIndexManager:
 		if 'id_exp' not in arr.columns:
 			raise IndexError('array does not have id_exp as index')
 		else:
-			return np.array([idx for idx in set([idx for idx in arr.set_index(['id_exp']).index])])
+			idx_set = set([idx for idx in arr.set_index(['id_exp']).index])
+			return sorted(idx_set)
 
 	@staticmethod
 	def get_id_exp_ant_array(array):
@@ -20,7 +19,7 @@ class PandasIndexManager:
 			raise IndexError('array does not have id_exp or id_ant as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp', 'id_ant']).index])
-			return np.array([[id_exp, id_ant] for (id_exp, id_ant) in idx_set])
+			return sorted(idx_set)
 
 	def get_id_exp_ant_dict(self, array):
 		index_array = self.get_id_exp_ant_array(array)
@@ -41,7 +40,7 @@ class PandasIndexManager:
 			raise IndexError('array does not have id_exp or id_ant or frame as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp', 'id_ant', 'frame']).index])
-			return np.array([[id_exp, id_ant, frame] for (id_exp, id_ant, frame) in idx_set])
+			return sorted(idx_set)
 
 	def get_id_exp_ant_frame_dict(self, array):
 		index_array = self.get_id_exp_ant_frame_array(array)
