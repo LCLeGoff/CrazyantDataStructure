@@ -72,10 +72,6 @@ class Plotter2d(BasePlotters):
 		ax.set_xlabel(obj.definition.xlabel)
 		ax.set_xlabel(obj.definition.xlabel)
 
-	@staticmethod
-	def display_title(ax, obj, title_prefix):
-		ax.set_title(title_prefix+': '+obj.definition.label)
-
 	def repartition(self, obj, title_prefix=''):
 		self.check_type(obj)
 
@@ -90,7 +86,7 @@ class Plotter2d(BasePlotters):
 				obj.get_x_values().loc[id_exp, :, :], obj.get_y_values().loc[id_exp, :, :],
 				self.ls, ms=self.ms, alpha=self.alpha, color=cols[id_exp])
 
-		return ax
+		return fig, ax
 
 	def hist2d(self, obj, bins=100, normed=False, title_prefix=''):
 
@@ -101,3 +97,5 @@ class Plotter2d(BasePlotters):
 		plt.hist2d(obj.get_x_values(), obj.get_y_values(), bins=bins, cmap=self.c[1], normed=normed)
 		plt.colorbar()
 		plt.axis('equal')
+
+		return fig, ax

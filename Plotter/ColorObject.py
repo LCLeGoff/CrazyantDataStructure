@@ -3,11 +3,15 @@ from matplotlib import pyplot as plt
 
 
 class ColorObject:
-	def __init__(self, kind, arg, idx_list):
+	def __init__(self, kind, arg, idx_list=None):
 		self.colors = dict()
 		if kind == 'c' or kind == 'color':
-			for idx in idx_list:
-				self.colors[idx] = arg
+			if idx_list is None:
+				self.colors = arg
+			else:
+				for idx in idx_list:
+					self.colors[idx] = arg
+
 		elif kind == 'cmap':
 			norm = colors.Normalize(0, len(idx_list)-1)
 			cmap = plt.get_cmap(arg)

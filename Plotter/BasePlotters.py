@@ -33,12 +33,27 @@ class BasePlotters:
 		ax.yaxis.label.set_color(fg_color)
 		ax.title.set_color('w')
 
-	def create_plot(self, figsize):
+	def create_plot(self, figsize=(5, 4)):
 		fig, ax = plt.subplots(figsize=figsize)
 		self.black_background(fig, ax)
 		return fig, ax
 
 	@staticmethod
+	def axis_scale(ax, xscale=None, yscale=None):
+		if xscale is None:
+			ax.set_xscale('linear')
+		else:
+			ax.set_xscale(xscale)
+		if yscale is None:
+			ax.set_yscale('linear')
+		else:
+			ax.set_yscale(yscale)
+
+	@staticmethod
 	def remove_axis(fig, ax):
 		ax.axis('off')
 		fig.subplots_adjust(left=0, right=1, bottom=0, top=0.95)
+
+	@staticmethod
+	def display_title(ax, obj, title_prefix):
+		ax.set_title(title_prefix+': '+obj.definition.label)
