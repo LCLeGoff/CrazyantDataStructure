@@ -1,6 +1,6 @@
 import pandas as pd
 
-from DataObjects.TimeSeries import TimeSeries
+from DataObjects.TimeSeries1d import TimeSeries1d
 
 
 class TimeSeriesLoader:
@@ -15,4 +15,4 @@ class TimeSeriesLoader:
 
 	def load(self, definition):
 		self.load_category(definition.category)
-		return TimeSeries(pd.DataFrame(self.categories[definition.category][definition.name]), definition)
+		return TimeSeries1d(pd.DataFrame(self.categories[definition.category][definition.name]), definition)

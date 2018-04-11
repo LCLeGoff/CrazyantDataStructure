@@ -1,6 +1,6 @@
 import pandas as pd
 
-from DataObjects.Events import Events
+from DataObjects.Events1d import Events1d
 
 
 class EventsLoader:
@@ -9,4 +9,4 @@ class EventsLoader:
 
 	def load(self, definition):
 		add = self.root + definition.category + '/' + definition.name + '.csv'
-		return Events(pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame']), definition)
+		return Events1d(pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame']), definition)

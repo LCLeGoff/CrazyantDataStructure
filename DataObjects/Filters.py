@@ -1,4 +1,4 @@
-from DataObjects.Events import EventsBuilder
+from DataObjects.Events1d import Events1dBuilder
 
 
 class Filters:
@@ -9,5 +9,5 @@ class Filters:
 	def filter(obj, event, name, label=None, category=None, description=None):
 		index = event.array.index
 		array = obj.array.loc[index, :]
-		return EventsBuilder.build(
+		return Events1dBuilder.build(
 			array=array, name=name, category=category, label=label, description=description)

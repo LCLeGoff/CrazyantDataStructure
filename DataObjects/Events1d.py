@@ -1,20 +1,21 @@
+
 from DataObjects.Definitions import DefinitionBuilder
 from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 
 
-class Events(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
+class Events1d(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 	def __init__(self, array, definition):
 		Builder1dDataObject.__init__(self, array)
 		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
 		DefinitionBuilder.build_from_definition(self, definition)
 
 	def copy(self, name, category=None, label=None, description=None):
-			return EventsBuilder.build(
+			return Events1dBuilder.build(
 				array=self.array.copy(), name=name, category=category, label=label, description=description)
 
 
-class EventsBuilder:
+class Events1dBuilder:
 	def __init__(self):
 		pass
 
@@ -24,4 +25,4 @@ class EventsBuilder:
 			name=name, category=category, object_type='Events',
 			label=label, description=description
 		)
-		return Events(array.copy(), definition)
+		return Events1d(array.copy(), definition)
