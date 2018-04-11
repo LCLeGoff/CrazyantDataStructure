@@ -13,7 +13,13 @@ class ColorObject:
 					self.colors[idx] = arg
 
 		elif kind == 'cmap':
-			norm = colors.Normalize(0, len(idx_list)-1)
-			cmap = plt.get_cmap(arg)
-			for i, idx in enumerate(idx_list):
-				self.colors[idx] = cmap(norm(i))
+			self.colors = self.create_cmap(arg, idx_list)
+
+	@staticmethod
+	def create_cmap(cmap, idx_list):
+		cols = dict()
+		norm = colors.Normalize(0, len(idx_list)-1)
+		cmap = plt.get_cmap(cmap)
+		for i, idx in enumerate(idx_list):
+			cols[idx] = cmap(norm(i))
+		return cols
