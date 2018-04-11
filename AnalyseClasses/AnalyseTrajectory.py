@@ -12,13 +12,13 @@ class AnalyseTrajectory:
 		if id_exp_list is None:
 			id_exp_list = self.exp.id_exp_list
 		self.exp.load(['x0', 'y0', 'entrance1', 'entrance2', 'food_center', 'mm2px', 'traj_translation'])
-		self.exp.copy(
+		self.exp.copy1d(
 			name='x0', new_name='x',
 			category='Trajectory',
 			label='x',
 			description='x coordinate (in the food system)'
 		)
-		self.exp.copy(
+		self.exp.copy1d(
 			name='y0', new_name='y',
 			category='Trajectory',
 			label='y',
@@ -33,9 +33,9 @@ class AnalyseTrajectory:
 		self.exp.operation('y', 'mm2px', lambda x, y: round(x / y, 2))
 
 		for id_exp in id_exp_list:
-			food_center = np.array(self.exp.food_center.get_value(id_exp))
-			entrance_pts1 = np.array(self.exp.entrance1.get_value(id_exp))
-			entrance_pts2 = np.array(self.exp.entrance1.get_value(id_exp))
+			food_center = np.array(self.exp.food_center.get_row(id_exp))
+			entrance_pts1 = np.array(self.exp.entrance1.get_row(id_exp))
+			entrance_pts2 = np.array(self.exp.entrance1.get_row(id_exp))
 			u = pts2vect(entrance_pts1, entrance_pts2)
 			a1 = angle([1, 0], u)
 			entrance_pts1 -= food_center
@@ -65,13 +65,13 @@ class AnalyseTrajectory:
 			category='Trajectory', label='coordinates', xlabel='x', ylabel='y',
 			description='coordinates of ant positions'
 		)
-		self.exp.copy(
+		self.exp.copy1d(
 			name='x', new_name='r',
 			category='Trajectory',
 			label='r',
 			description='radial coordinate (in the food system)'
 		)
-		self.exp.copy(
+		self.exp.copy1d(
 			name='x', new_name='phi',
 			category='Trajectory',
 			label='phi',
