@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from pandas import IndexSlice as IdxSc
 
@@ -42,50 +43,144 @@ class AnalyseMarkings:
 		self.exp.load(['xy_markings'])
 		self.exp.plot_repartition_hist('xy_markings')
 
+	def marking_interval(self):
+		self.exp.load(['markings'])
+		name = 'marking_interval'
+		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
+		event = []
+		for (id_exp, id_ant) in ant_exp_array:
+			marks = np.array(self.exp.markings.get_row(IdxSc[id_exp, id_ant, :]).reset_index())
+			lg = len(marks)-1
+			event += list(zip(np.full(lg, id_exp), np.full(lg, id_ant), marks[:-1, 2], marks[1:, 2]-marks[:-1, 2]))
+		event = pd.DataFrame(event, columns=['id_exp', 'id_ant', 'frame', name])
+		event.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+		self.exp.build1d(
+			array=event, name=name, object_type='Events1d', category='Markings',
+			label='marking intervals', description='Time intervals between two marking events'
+		)
+		self.exp.write(name)
+
 	def compute_first_marking_ant(self):
-		self.exp.load(['r', 'phi', 'x', 'y', 'markings', 'xy_markings', 'food_radius'])
-		self.exp.copy('food_radius', 'radius_min')
+		self.exp.load(['r', 'x', 'y', 'markings', 'xy_markings', 'food_radius', 'mm2px'])
+		self.exp.operation('food_radius', 'mm2px', lambda x, y: round(x / y, 2))
+		self.exp.copy1d('food_radius', 'radius_min')
 		self.exp.radius_min.replace_values(self.exp.food_radius.get_values()+10)
-		self.exp.copy('food_radius', 'radius_max')
+		self.exp.copy1d('food_radius', 'radius_max')
 		self.exp.radius_max.replace_values(120)
-		self.exp.copy('food_radius', 'radius_med')
+		self.exp.copy1d('food_radius', 'radius_med')
 		self.exp.radius_med.replace_values((self.exp.radius_min.get_values()+self.exp.radius_max.get_values())/2.)
 
-		self.exp.copy('r', 'zones')
+		self.exp.copy1d('r', 'zones')
 		self.exp.operation('zones', 'radius_min', lambda x, y: (x - y < 0).astype(int))
 		for radius in ['radius_med', 'radius_max']:
-			self.exp.copy('r', 'zones2')
+			self.exp.copy1d('r', 'zones2')
 			self.exp.operation('zones2', radius, lambda x, y: (x - y < 0).astype(int))
 			self.exp.operation('zones', 'zones2', lambda x, y: x + y)
 
-		traj_indexes = self.exp.markings.get_id_exp_ant_frame_dict()
-		mark_indexes = self.exp.markings.get_id_exp_ant_array()
+		def plot_test_init(self_class, ant, exp, iii):
+			fig2, ax2 = plt.subplots()
+			ax2.axis('equal')
+			theta = np.arange(-np.pi, np.pi + 0.1, 0.1)
+			ax2.plot(
+				self_class.exp.radius_min.get_value(exp) * np.cos(theta),
+				self_class.exp.radius_min.get_value(exp) * np.sin(theta), c='grey')
+			ax2.plot(
+				self_class.exp.radius_max.get_value(exp) * np.cos(theta),
+				self_class.exp.radius_max.get_value(exp) * np.sin(theta), c='grey')
+			ax2.plot(
+				self_class.exp.radius_med.get_value(exp) * np.cos(theta),
+				self_class.exp.radius_med.get_value(exp) * np.sin(theta), c='grey')
+			s = zone_event_ant[mask[iii], 2]
+			ax2.plot(
+				self_class.exp.x.array.loc[exp, ant, :],
+				self_class.exp.y.array.loc[exp, ant, :],
+				c='grey')
+			ax2.plot(
+				self_class.exp.x.array.loc[exp, ant, s],
+				self_class.exp.y.array.loc[exp, ant, s],
+				'x', c='r')
+			ax2.plot(
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, :], 'x'],
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, :], 'y'],
+				'o', c='k')
+			ax2.plot(
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, :s], 'x'],
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, :s], 'y'],
+				'x', c='y')
+			ax2.set_title((exp, ant, mask[iii]))
+			return fig2, ax2
+
+		def plot_suite(ax2, self_class, ant, exp, iii, tt0, tt1, tt, c, ls):
+			ax2.plot(
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, tt0:tt1], 'x'],
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, tt0:tt1], 'y'],
+				ls, c=c)
+			ax2.set_title((exp, ant, mask[iii], tt))
+
+		def plot_suite2(ax2, self_class, ant, exp, tt0, tt, c, ls):
+			ax2.plot(
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, tt0:], 'x'],
+				self_class.exp.xy_markings.array.loc[IdxSc[exp, ant, tt0:], 'y'],
+				ls, c=c)
+			ax2.set_title((exp, ant, mask[-1], tt))
+
+		ant_exp_dict = self.exp.markings.get_id_exp_ant_dict()
+		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
 		self.exp.extract_event(name='zones', new_name='zone_event')
 		exp_ant_label = []
-		for id_exp in self.exp.id_exp_list:
+		# for id_exp in self.exp.id_exp_list:
+		for id_exp in [35, 42, 46, 51, 56]:
 			t_min = np.inf
 			id_fma = None
-			for id_ant in traj_indexes[id_exp]:
-				if (id_exp, id_ant) in mark_indexes:
+			for id_ant in ant_exp_dict[id_exp]:
+				if (id_exp, id_ant) in ant_exp_array:
+					print((id_exp, id_ant))
 					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
-					lg = len(zone_event_ant)
 					mask = np.where(zone_event_ant[:, -1] == 3)[0]
-					for ii in range(len(mask)):
-						if mask[ii] < lg-3:
-							if zone_event_ant[mask[ii]+1, -1] == 2 \
-									and zone_event_ant[mask[ii]+2, -1] == 1\
-									and zone_event_ant[mask[ii]+3, -1] == 0:
-								t0 = zone_event_ant[mask[ii]+1, 2]
-								t1 = zone_event_ant[mask[ii]+2, 2]
-								t2 = zone_event_ant[mask[ii]+3, 2]
-								if len(self.exp.markings.array.loc[IdxSc[:, :, t0:t1], :]) > 1\
-									and len(self.exp.markings.array.loc[IdxSc[:, :, t1:t2], :]) > 1:
-										if t_min > t1:
-											t_min = t1
-										id_fma = id_ant
+					for ii in range(len(mask)-1):
+						fig, ax = plot_test_init(self, id_ant, id_exp, ii)
+
+						list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
+						if 0 in list_zone_temp:
+							mark_temp = [0, 0, 0]
+							t = zone_event_ant[mask[ii]+1, 2]
+							for jj in range(mask[ii]+1, mask[ii+1]):
+								t0 = zone_event_ant[jj, 2]
+								t1 = zone_event_ant[jj+1, 2]
+								mark_temp[zone_event_ant[jj, -1]] += len(self.exp.markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], :])
+							t0 = zone_event_ant[mask[ii], 2]
+							t1 = zone_event_ant[mask[ii+1], 2]
+							if mark_temp[1] > 0 and mark_temp[2] > 0:
+								plot_suite(ax, self, id_ant, id_exp, ii, t0, t1, t, 'g', 'o')
+								if t_min > t:
+									t_min = t
+									id_fma = id_ant
+							else:
+								plot_suite(ax, self, id_ant, id_exp, ii, t0, t1, t, 'r', 'o')
+
+					fig, ax = plot_test_init(self, id_ant, id_exp, -1)
+					list_zone_temp = list(zone_event_ant[mask[-1]:, -1])
+					if 0 in list_zone_temp:
+						mark_temp = [0, 0, 0]
+						t = zone_event_ant[mask[-1]+1, 2]
+						for jj in range(mask[-1]+1, len(zone_event_ant)-1):
+							t0 = zone_event_ant[jj, 2]
+							t1 = zone_event_ant[jj+1, 2]
+							mark_temp[zone_event_ant[jj, -1]] += len(self.exp.markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], :])
+						t0 = zone_event_ant[mask[-1], 2]
+						if mark_temp[1] > 0 and mark_temp[2] > 0:
+							plot_suite2(ax, self, id_ant, id_exp, t0, t, 'g', 'o')
+							if t_min > t:
+								t_min = t
+								id_fma = id_ant
+						else:
+							plot_suite2(ax, self, id_ant, id_exp, t0, t, 'r', 'o')
+			print('chosen ant:', id_fma, 'time:', t_min)
+			plt.show()
+
 			if id_fma is not None:
 				exp_ant_label.append((id_exp, id_fma))
-		self.exp.copy(
+		self.exp.copy1d(
 			name='markings', new_name='first_markings', category='Markings',
 			label='first markings', description='Markings of the first marking ant'
 		)

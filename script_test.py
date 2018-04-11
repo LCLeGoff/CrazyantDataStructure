@@ -3,6 +3,7 @@ from AnalyseClasses.AnalyseTrajectory import AnalyseTrajectory
 from matplotlib import pyplot as plt
 
 from AnalyseStarter import AnalyseStarter
+from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 
 root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 # group = 'FMABW'
@@ -54,12 +55,16 @@ root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 # 	traj.centered_x_y()
 # 	traj.xy_polar()
 
-for group in ['FMAB']:
+for group in ['FMAB', 'FMABU', 'FMABW']:
 	mark = AnalyseMarkings(root, group)
 	# mark.compute_xy_marking()
 	# mark.compute_xy_marking_polar()
+	mark.marking_interval()
+	exp = ExperimentGroupBuilder(root).build(group)
+	exp.load('marking_interval')
+	exp.plot_hist1d('marking_interval', range(0, 1000), xscale='log', yscale='log', group=0)
 	# mark.compute_first_marking_ant()
-	mark.compute_first_marking_ant_setup_orientation()
+	# mark.compute_first_marking_ant_setup_orientation()
 	# mark.compute_first_marking_ant_setup_orientation_circle()
 plt.show()
 #
