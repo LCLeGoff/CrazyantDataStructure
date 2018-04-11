@@ -1,7 +1,9 @@
 from DataManager.DataFileManager import DataFileManager
+from DataObjectBuilders.Builder import Builder
 from DataObjects.Events2d import Events2dBuilder
 from DataObjects.Filters import Filters
 from DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from Plotter.Plotter1d import Plotter1d
 from Plotter.Plotter2d import Plotter2d
 
 
@@ -39,13 +41,13 @@ class ExperimentGroups:
 			if new_name2 is None:
 				new_name2 = name2
 			if object_type1 == 'Events':
-				self.add_object(new_name, Events2dBuilder().build(
+				self.add_object(new_name, Events2dBuilder().build_from_1d(
 					event1=self.__dict__[name1], event2=self.__dict__[name2],
 					name=new_name, xname=new_name1, yname=new_name2,
 					category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description
 				))
 			elif object_type1 == 'TimeSeries':
-				self.add_object(new_name, TimeSeries2dBuilder().build(
+				self.add_object(new_name, TimeSeries2dBuilder().build_from_1d(
 					ts1=self.__dict__[name1], ts2=self.__dict__[name2],
 					name=new_name, xname=new_name1, yname=new_name2,
 					category=category, label=label,
@@ -62,13 +64,17 @@ class ExperimentGroups:
 		plot = Plotter2d()
 		return plot.hist2d(self.__dict__[name], bins=[75, 50], title_prefix=self.group)
 
+	def plot_hist1d(self, name, bins, xscale=None, yscale=None, group=0):
+		plot = Plotter1d()
+		return plot.hist1d(self.__dict__[name], bins=bins, xscale=xscale, yscale=yscale, group=group)
+
 	def write(self, names):
 		if isinstance(names, str):
 			names = [names]
 		for name in names:
 			self.data_manager.write(self.__dict__[name])
 
-	def copy(self, name, new_name, category=None, label=None, description=None):
+	def copy1d(self, name, new_name, category=None, label=None, description=None):
 		obj = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
 		self.add_object(new_name, obj)
 
@@ -79,6 +85,20 @@ class ExperimentGroups:
 			name=new_name, xname=new_xname, yname=new_yname,
 			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(new_name, array)
+
+	def build1d(self, array, name, object_type, category=None, label=None, description=None):
+		obj = Builder.build1d(
+			array=array, name=name, object_type=object_type, category=category, label=label, description=description)
+		self.add_object(name, obj)
+
+	def build2d_from_array(
+			self, array, name, xname, yname, object_type, category=None,
+			label=None, xlabel=None, ylabel=None, description=None):
+		obj = Builder.build2d_from_array(
+			array=array, name=name, xname=xname, yname=yname,
+			object_type=object_type, category=category,
+			label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+		self.add_object(name, obj)
 
 	def filter(self, name1, name2, new_name, label=None, category=None, description=None):
 		object_type1 = self.__dict__[name1].object_type
@@ -103,8 +123,14 @@ class ExperimentGroups:
 				self.__dict__[name1].operation_with_data2d(self.__dict__[name2], name_col, fct)
 			else:
 				raise TypeError('Operation not defined between TimeSeries and '+self.__dict__[name2].object_type)
+		elif self.__dict__[name1].object_type == 'Characteristics1d':
+			if self.__dict__[name2].object_type == 'Characteristics1d':
+				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
+			else:
+				raise TypeError('Operation not defined between Characteristics1d and '+self.__dict__[name2].object_type)
 		else:
-			raise IndexError(name1+' index names does not contains '+name2+' index names')
+			raise TypeError(
+				'Operation not defined between '+self.__dict__[name2].object_type+' and '+self.__dict__[name2].object_type)
 
 	def extract_event(self, name, new_name, label=None, category=None, description=None):
 		if self.__dict__[name].object_type == 'TimeSeries':
