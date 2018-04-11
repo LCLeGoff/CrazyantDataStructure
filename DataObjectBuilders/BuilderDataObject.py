@@ -6,7 +6,7 @@ from PandasIndexManager.PandasIndexManager import PandasIndexManager
 class BuilderDataObject:
 	def __init__(self, array):
 		self.array = array
-		# self.array.sort_index(inplace=True)
+		self.array.sort_index(inplace=True)
 
 	def operation(self, fct):
 		self.array = fct(self.array)
