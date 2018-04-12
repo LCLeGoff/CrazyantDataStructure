@@ -18,8 +18,14 @@ class ColorObject:
 	@staticmethod
 	def create_cmap(cmap, idx_list):
 		cols = dict()
-		norm = colors.Normalize(0, len(idx_list)-1)
-		cmap = plt.get_cmap(cmap)
-		for i, idx in enumerate(idx_list):
-			cols[idx] = cmap(norm(i))
+		if isinstance(idx_list, int) or isinstance(idx_list, float):
+			norm = colors.Normalize(0, int(idx_list)-1)
+			cmap = plt.get_cmap(cmap)
+			for i in range(int(idx_list)):
+				cols[i] = cmap(norm(i))
+		else:
+			norm = colors.Normalize(0, len(idx_list)-1)
+			cmap = plt.get_cmap(cmap)
+			for i, idx in enumerate(idx_list):
+				cols[idx] = cmap(norm(i))
 		return cols
