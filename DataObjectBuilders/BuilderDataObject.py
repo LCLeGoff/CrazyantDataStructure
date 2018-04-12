@@ -26,6 +26,17 @@ class BuilderDataObject:
 	def get_row_id_exp_ant(self, id_exp, id_ant):
 		return self.array.loc[pd.IndexSlice[id_exp, id_ant, :], :]
 
+	def get_row_id_exp_ant_frame(self, id_exp, id_ant, frame):
+		return self.array.loc[pd.IndexSlice[id_exp, id_ant, frame], :]
+
+	def get_row_id_exp_ant_in_frame_interval(self, id_exp, id_ant, frame0=None, frame1=None):
+		if frame0 is None:
+			frame0 = 0
+		if frame1 is None:
+			return self.array.loc[pd.IndexSlice[id_exp, id_ant, frame0:], :]
+		else:
+			return self.array.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
+
 	def get_id_exp_array(self):
 		return PandasIndexManager().get_id_exp_array(self.array)
 
