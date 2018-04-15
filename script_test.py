@@ -63,7 +63,7 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
 	# exp = ExperimentGroupBuilder(root).build(group)
 	# exp.load('marking_interval')
 	# exp.plot_hist1d('marking_interval', range(0, 1000), xscale='log', yscale='log', group=0)
-	# mark.compute_first_marking_ant_radial_criterion(show=True)
+	# mark.compute_first_marking_ant_radial_criterion(show=False)
 	mark.compute_first_marking_ant_batch_criterion(show=True)
 	# mark.compute_first_marking_ant_setup_orientation()
 	# mark.compute_first_marking_ant_setup_orientation_circle()

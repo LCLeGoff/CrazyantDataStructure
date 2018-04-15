@@ -13,6 +13,7 @@ class AnalyseMarkings:
 		self.exp = ExperimentGroupBuilder(root).build(group)
 
 	def compute_xy_marking(self):
+		print('xy_marking')
 		self.exp.load(['x', 'y', 'markings'])
 		self.exp.filter(name1='x', name2='markings', new_name='x_markings')
 		self.exp.filter(name1='y', name2='markings', new_name='y_markings')
@@ -25,6 +26,7 @@ class AnalyseMarkings:
 		self.exp.write('xy_markings')
 
 	def compute_xy_marking_polar(self):
+		print('xy_marking_polar')
 		self.exp.load(['r', 'phi', 'markings'])
 		self.exp.filter(name1='r', name2='markings', new_name='r_markings')
 		self.exp.filter(name1='phi', name2='markings', new_name='phi_markings')
@@ -47,6 +49,7 @@ class AnalyseMarkings:
 	def marking_interval(self):
 		self.exp.load(['markings'])
 		name = 'marking_interval'
+		print(name)
 		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
 		event = []
 		for (id_exp, id_ant) in ant_exp_array:
@@ -104,19 +107,21 @@ class AnalyseMarkings:
 					c='grey')
 		return fig, ax
 
-	def plot_traj(self, ax, exp, ant, c, t0=None, t1=None):
+	def plot_traj(self, ax, exp, ant, c, t0=None, t1=None, ms=None):
+		if ms is None:
+			ms = 5
 		if t0 is None:
 			t0 = 0
 		if t1 is None:
 			ax.plot(
 				self.exp.x.array.loc[exp, ant, t0:],
 				self.exp.y.array.loc[exp, ant, t0:],
-				c=c)
+				c=c, ms=ms)
 		else:
 			ax.plot(
 				self.exp.x.array.loc[exp, ant, t0:t1],
 				self.exp.y.array.loc[exp, ant, t0:t1],
-				c=c)
+				c=c, ms=ms)
 
 	def plot_mark(self, ax, exp, ant, c, t0=None, t1=None):
 		if t0 is None:
@@ -163,7 +168,7 @@ class AnalyseMarkings:
 		if ii == len(mask)-1:
 			list_ii = range(mask[-1]+1, len(zone_event)-1)
 		else:
-			list_ii = range(mask[-1]+1, len(zone_event)-1)
+			list_ii = range(mask[ii]+1, mask[ii+1])
 		zone_visit = [0, 0, 0]
 		for jj in list_ii:
 			t0 = zone_event[jj, 2]
@@ -175,12 +180,12 @@ class AnalyseMarkings:
 		t = zone_event[mask[ii]+1, 2]
 		zone_visit = self.compute_zone_visit(id_exp, id_ant, zone_event, mask, ii)
 		if zone_visit[1] > 0 and zone_visit[2] > 0:
-			self.plot_interesting_loop(id_exp, id_ant, zone_event, mask, ii, t, 'g', 'y')
+			# self.plot_interesting_loop(id_exp, id_ant, zone_event, mask, ii, t, 'g', 'y')
 			if t_min > t:
 				t_min = t
 				id_fma = id_ant
-		else:
-			self.plot_interesting_loop(id_exp, id_ant, zone_event, mask, ii, t, 'r', 'orange')
+		# else:
+			# self.plot_interesting_loop(id_exp, id_ant, zone_event, mask, ii, t, 'r', 'orange')
 		return t_min, id_fma
 
 	def compute_first_marking_ant_radial_criterion(self, id_exp_list=None, show=False):
@@ -202,14 +207,15 @@ class AnalyseMarkings:
 					print((id_exp, id_ant))
 					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
 					mask = np.where(zone_event_ant[:, -1] == 3)[0]
-					for ii in range(len(mask)-1):
-						list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
-						if 0 in list_zone_temp:
-							t_min, id_ant = self.radial_criterion(id_exp, id_ant, zone_event_ant, mask, ii, t_min, id_fma)
+					if len(mask) != 0:
+						for ii in range(len(mask)-1):
+							list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
+							if 0 in list_zone_temp:
+								t_min, id_fma = self.radial_criterion(id_exp, id_ant, zone_event_ant, mask, ii, t_min, id_fma)
 
-					list_zone_temp = list(zone_event_ant[mask[-1]:, -1])
-					if 0 in list_zone_temp:
-						t_min, id_ant = self.radial_criterion(id_exp, id_ant, zone_event_ant, mask, len(mask)-1, t_min, id_fma)
+						list_zone_temp = list(zone_event_ant[mask[-1]:, -1])
+						if 0 in list_zone_temp:
+							t_min, id_ant = self.radial_criterion(id_exp, id_ant, zone_event_ant, mask, len(mask)-1, t_min, id_fma)
 			print('chosen ant:', id_fma, 'time:', t_min)
 			if show:
 				plt.show()
@@ -245,7 +251,7 @@ class AnalyseMarkings:
 	def compute_batch_threshold(self, id_exp, id_ant):
 		self.exp.load('marking_interval')
 		mark_interval_ant = np.array(self.exp.marking_interval.array.loc[id_exp, id_ant, :].reset_index())
-		n_occ, times = np.histogram(mark_interval_ant[:, -1], range(0, 1000, 10), density=True)
+		n_occ, times = np.histogram(mark_interval_ant[:, -1], range(0, 1000, 10))
 
 		thresh0 = times[np.where(n_occ == 0)[0][0]]
 		if thresh0 == 0:
@@ -259,7 +265,7 @@ class AnalyseMarkings:
 			times2 = times[mask[-1]:]
 			n_occ2 = n_occ[mask[-1]:]
 			thresh1 = times2[np.where(n_occ2 == 0)[0][0]]
-		thresh1 = min(thresh1, 100)
+		thresh1 = min(thresh1, 150)
 
 		fig, ax = plt.subplots()
 		ax.loglog((times[1:]+times[:-1])/2., n_occ, '.-', c='k')
@@ -285,6 +291,9 @@ class AnalyseMarkings:
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# for id_exp in [3]:
 		for id_exp in id_exp_list:
+			id_mfa = [None, None, None]
+			batches_mfa = [[], [], []]
+			t_min = [np.inf, np.inf, np.inf]
 			for id_ant in ant_exp_dict[id_exp]:
 				if (id_exp, id_ant) in ant_exp_array:
 					print((id_exp, id_ant))
@@ -296,11 +305,14 @@ class AnalyseMarkings:
 						list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
 						if 0 in list_zone_temp:
 							t0, t1 = zone_event_ant[[mask[ii], mask[ii+1]], 2]
-							self.batch_criterion(id_exp, id_ant, thresh_list, zone_event_ant, mask, ii, t0, t1)
+							id_mfa, batches_mfa, t_min = self.batch_criterion(
+								id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, ii, t0, t1)
 
 					t0 = zone_event_ant[mask[-1], 2]
-					self.batch_criterion(id_exp, id_ant, thresh_list, zone_event_ant, mask, len(mask)-1, t0)
-
+					id_mfa, batches_mfa, t_min = self.batch_criterion(
+						id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask)-1, t0)
+			print('ant chosen:'+str(id_mfa), t_min)
+			self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
 			if show:
 				plt.show()
 
@@ -309,6 +321,7 @@ class AnalyseMarkings:
 		for i in range(3):
 			self.plot_previous_loops_around_food(ax[i], id_exp, id_ant, zone_event_ant, mask, ii)
 			self.plot_next_loops_around_food(ax[i], id_exp, id_ant, zone_event_ant, mask, ii)
+
 			self.plot_traj(ax[i], id_exp, id_ant, 'y', t0, t1)
 			cols = ColorObject.create_cmap('jet', len(batches_list[i]))
 			for i_col, batches in enumerate(batches_list[i]):
@@ -319,22 +332,10 @@ class AnalyseMarkings:
 				line.set_ydata(x_data)
 			ax[i].invert_xaxis()
 
-		fig, ax = self.plot_radial_zones_3panels(id_exp, id_ant, t0)
+	def plot_chosen_batch(self, id_exp, id_ant, t, batches_mfa):
+		fig, ax = self.plot_radial_zones_3panels(id_exp, id_ant, t)
 		for i in range(3):
-			# self.plot_traj(ax[i], id_exp, id_ant, 'y', t0, t1)
-			batches = batches_list[i]
-			batch2plot = []
-			j = 0
-			while j < len(batches)-1 and len(batch2plot) == 0:
-				zone_list = np.array(
-					self.exp.zones.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, batches[j][0][2], batches[j+1][-1][2]))
-				if 1 in zone_list and 2 in zone_list and 0 in zone_list:
-					batch2plot = batches[j]
-				j += 1
-			if len(batch2plot) == 0:
-				zone_list = np.array(self.exp.zones.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, batches[-1][0][2]))
-				if 1 in zone_list and 2 in zone_list and 0 in zone_list:
-					batch2plot = batches[-1]
+			batch2plot = batches_mfa[i]
 			if len(batch2plot) != 0:
 				self.plot_mark(ax[i], id_exp, id_ant, 'g', batch2plot[0][2], batch2plot[-1][2])
 			for line in ax[i].lines:
@@ -343,19 +344,38 @@ class AnalyseMarkings:
 				line.set_ydata(x_data)
 			ax[i].invert_xaxis()
 
-	def batch_criterion(self, id_exp, id_ant, thresh_list, zone_event_ant, mask, ii, t0, t1=None):
+	def batch_criterion(self, id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event, mask, ii, t0, t1=None):
+		min_lg_rad = 70
+
 		xy_mark = np.array(self.exp.xy_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
 		if len(xy_mark) != 0:
 			batches_list = []
-			for thresh in thresh_list:
+			for i, thresh in enumerate(thresh_list):
 				batches = [[list(xy_mark[0, :])]]
 				for jj in range(1, len(xy_mark)):
 					if xy_mark[jj, 2] - xy_mark[jj-1, 2] < thresh:
 						batches[-1].append(list(xy_mark[jj, :]))
 					else:
 						batches += [[list(xy_mark[jj, :])]]
+				jj = -1
+				rad_min = 0
+				rad_max = 0
+				while jj < len(batches)-1 and rad_max-rad_min < min_lg_rad:
+					jj = jj + 1
+					batch = batches[jj]
+					rad_min = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).min()['r']
+					rad_max = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).max()['r']
+
+				if rad_max-rad_min >= min_lg_rad:
+					t = zone_event[mask[ii] + 1, 2]
+					if t < t_min[i]:
+						t_min[i] = t
+						batches_mfa[i] = batches[jj]
+						id_mfa[i] = id_ant
+
 				batches_list.append(batches)
-			self.plot_batches(id_exp, id_ant, batches_list, zone_event_ant, mask, ii, t0, t1)
+			self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
+		return id_mfa, batches_mfa, t_min
 
 	def spatial_repartition_first_markings(self):
 		self.exp.load(['xy_first_markings'])

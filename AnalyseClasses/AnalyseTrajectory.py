@@ -9,6 +9,7 @@ class AnalyseTrajectory:
 		self.exp = ExperimentGroupBuilder(root).build(group)
 
 	def centered_x_y(self, id_exp_list=None):
+		print('centered_x_y')
 		if id_exp_list is None:
 			id_exp_list = self.exp.id_exp_list
 		self.exp.load(['x0', 'y0', 'entrance1', 'entrance2', 'food_center', 'mm2px', 'traj_translation'])
@@ -58,6 +59,7 @@ class AnalyseTrajectory:
 		self.exp.write(['x', 'y'])
 
 	def xy_polar(self):
+		print('x_y_polar')
 		self.exp.load(['x', 'y'])
 		self.exp.to_2d(
 			name1='x', name2='y',
