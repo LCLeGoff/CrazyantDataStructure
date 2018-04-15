@@ -40,4 +40,4 @@ class Events2dBuilder:
 			name=name, category=category, object_type='Events2d',
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description
 		)
-		return Events2d(array, definition)
+		return Events2d(array.sort_index(), definition)

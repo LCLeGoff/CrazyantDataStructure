@@ -25,4 +25,4 @@ class Events1dBuilder:
 			name=name, category=category, object_type='Events',
 			label=label, description=description
 		)
-		return Events1d(array.copy(), definition)
+		return Events1d(array.sort_index(), definition)

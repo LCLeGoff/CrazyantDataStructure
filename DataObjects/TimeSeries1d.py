@@ -37,4 +37,4 @@ class TimeSeries1dBuilder:
 			name=name, category=category, object_type='TimeSeries',
 			label=label, description=description
 		)
-		return TimeSeries1d(array.copy(), definition)
+		return TimeSeries1d(array.sort_index(), definition)

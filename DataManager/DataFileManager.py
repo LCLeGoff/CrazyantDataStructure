@@ -16,6 +16,7 @@ class DataFileManager:
 			self.data_loader.definition_loader.definition_dict[key]['category']
 			for key in self.data_loader.definition_loader.definition_dict.keys()])
 		self.id_exp_list = import_id_exp_list(self.root)
+		self.id_exp_list.sort()
 		self.exp_ant_frame_index = None
 
 	def get_exp_ant_frame_index(self):

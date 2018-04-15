@@ -34,4 +34,4 @@ class TimeSeries2dBuilder:
 			name=name, category=category, object_type='TimeSeries2d',
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description
 		)
-		return TimeSeries2d(array, definition)
+		return TimeSeries2d(array.sort_index(), definition)

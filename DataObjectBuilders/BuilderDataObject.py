@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from PandasIndexManager.PandasIndexManager import PandasIndexManager
 
@@ -6,7 +7,7 @@ from PandasIndexManager.PandasIndexManager import PandasIndexManager
 class BuilderDataObject:
 	def __init__(self, array):
 		self.array = array
-		self.array.sort_index(inplace=True)
+		# self.array.sort_index(inplace=True)
 
 	def operation(self, fct):
 		self.array = fct(self.array)
@@ -25,6 +26,9 @@ class BuilderDataObject:
 
 	def get_row_id_exp_ant(self, id_exp, id_ant):
 		return self.array.loc[pd.IndexSlice[id_exp, id_ant, :], :]
+
+	def get_row_id_exp_ent_frame_from_array(self, idx_arr):
+		return self.array.loc[list(map(tuple, np.array(idx_arr))), :]
 
 	def get_row_id_exp_ant_frame(self, id_exp, id_ant, frame):
 		return self.array.loc[pd.IndexSlice[id_exp, id_ant, frame], :]

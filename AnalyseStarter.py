@@ -1,3 +1,5 @@
+import pandas as pd
+
 from Tools.JsonFiles import write_obj, import_obj
 
 
@@ -98,3 +100,7 @@ class AnalyseStarter:
 		def_dict['setup_orientation']['label'] = 'Setup orientation'
 
 		write_obj(self.root+'definition_dict.json', def_dict)
+
+		add = self.root + 'Raw/markings.csv'
+		array = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+		array.sort_index().to_csv(add)
