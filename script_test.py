@@ -1,3 +1,5 @@
+
+import numpy as np
 from AnalyseClasses.AnalyseMarkings import AnalyseMarkings
 from AnalyseClasses.AnalyseTrajectory import AnalyseTrajectory
 from matplotlib import pyplot as plt
@@ -55,7 +57,7 @@ root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 # 	traj.centered_x_y()
 # 	traj.xy_polar()
 
-for group in ['FMAB', 'FMABU', 'FMABW']:
+for group in ['FMAB']:
 	mark = AnalyseMarkings(root, group)
 	# mark.compute_xy_marking()
 	# mark.compute_xy_marking_polar()

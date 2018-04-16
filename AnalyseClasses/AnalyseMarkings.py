@@ -1,11 +1,15 @@
 import numpy as np
 import pandas as pd
+import scipy.stats as scs
+import scipy.signal as scsig
 
 from pandas import IndexSlice as IdxSc
 
 from matplotlib import pylab as plt
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataObjects.Events1d import Events1dBuilder
 from Plotter.ColorObject import ColorObject
+from Plotter.Plotter1d import Plotter1d
 
 
 class AnalyseMarkings:
@@ -28,14 +32,22 @@ class AnalyseMarkings:
 	def compute_xy_marking_polar(self):
 		print('xy_marking_polar')
 		self.exp.load(['r', 'phi', 'markings'])
-		self.exp.filter(name1='r', name2='markings', new_name='r_markings')
-		self.exp.filter(name1='phi', name2='markings', new_name='phi_markings')
+		self.exp.filter(
+			name1='r', name2='markings', new_name='r_markings',
+			category='Markings', label='marking radial coordinates',
+			description='radial coordinates of ant positions, while marking')
+		self.exp.filter(
+			name1='phi', name2='markings', new_name='phi_markings',
+			category='Markings', label='marking angular coordinates',
+			description='angular coordinates of ant positions, while marking')
 		self.exp.to_2d(
 			name1='r_markings', name2='phi_markings',
 			new_name='polar_markings', new_name1='r', new_name2='phi',
 			category='Markings', label='marking polar coordinates', xlabel='r', ylabel='phi',
 			description='polar coordinates of ant positions, while marking'
 		)
+		self.exp.write('r_markings')
+		self.exp.write('phi_markings')
 		self.exp.write('polar_markings')
 
 	def spatial_repartition_xy_markings(self):
@@ -68,7 +80,7 @@ class AnalyseMarkings:
 		self.exp.load(['r', 'food_radius', 'mm2px'])
 		self.exp.operation('food_radius', 'mm2px', lambda x, y: round(x / y, 2))
 		self.exp.copy1d('food_radius', 'radius_min')
-		self.exp.radius_min.replace_values(self.exp.food_radius.get_values()+10)
+		self.exp.radius_min.replace_values(self.exp.food_radius.get_values()+15)
 		self.exp.copy1d('food_radius', 'radius_max')
 		self.exp.radius_max.replace_values(120)
 		self.exp.copy1d('food_radius', 'radius_med')
@@ -251,37 +263,61 @@ class AnalyseMarkings:
 	def compute_batch_threshold(self, id_exp, id_ant):
 		self.exp.load('marking_interval')
 		mark_interval_ant = np.array(self.exp.marking_interval.array.loc[id_exp, id_ant, :].reset_index())
-		n_occ, times = np.histogram(mark_interval_ant[:, -1], range(0, 1000, 10))
+		# n_occ, times = np.histogram(mark_interval_ant[:, -1], bins=range(0, 1000, 10))
+		# plt.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-')
+		n_occ, times = np.histogram(mark_interval_ant[:, -1], bins='fd')
+		# plt.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-', c='k')
+		# plt.show()
+		times2 = np.arange(1, 1000)
 
-		thresh0 = times[np.where(n_occ == 0)[0][0]]
-		if thresh0 == 0:
-			thresh0 = times[np.where(n_occ == 0)[0][1]]
+		mask0 = np.where(n_occ == 0)[0]
+		if len(mask0) == 0:
+			n_occ = np.array(list(n_occ)+[0])
+			times = np.array(list(times)+[times[-1]+1])
+			mask0 = np.where(n_occ == 0)[0]
+		thresh0 = times[mask0[0]]
+		if thresh0 == 0 and len(mask0) > 1:
+			thresh0 = times[mask0[1]]
+
+		# print(1./np.sum(n_occ))
+		# kde = scs.gaussian_kde(np.array(self.exp.marking_interval.get_row_id_exp_ant(id_exp, id_ant)).T[0], 1./np.sum(n_occ)*2)
+		# y_kde = kde.pdf(times2)
+		# idx = scsig.argrelextrema(y_kde, np.less)[0]
+		# thresh2 = times2[idx[1]]
+
 		mask = np.where(n_occ > 1)[0]
 		if len(mask) == 0:
-			thresh1 = times[np.where(n_occ == 0)[0][0]]
-			if thresh1 == 0:
-				thresh1 = times[np.where(n_occ == 0)[0][1]]
+			thresh1 = times[mask0[0]]
+			if thresh1 == 0 and len(mask0) > 1:
+				thresh1 = times[mask0[1]]
 		else:
-			times2 = times[mask[-1]:]
+			times3 = times[mask[-1]:]
 			n_occ2 = n_occ[mask[-1]:]
-			thresh1 = times2[np.where(n_occ2 == 0)[0][0]]
-		thresh1 = min(thresh1, 150)
+			mask0 = np.where(n_occ2 == 0)[0]
+			if len(mask0) == 0:
+				thresh1 = times3[-1]
+			else:
+				thresh1 = times3[np.where(n_occ2 == 0)[0][0]]
+		thresh1 = min(thresh1, 200)
 
-		fig, ax = plt.subplots()
-		ax.loglog((times[1:]+times[:-1])/2., n_occ, '.-', c='k')
-		ax.axvline(thresh0, ls='--', c='grey')
-		ax.axvline(thresh1, ls='--', c='grey')
-		ax.axvline(200, ls='--', c='grey')
-		ax.set_title('exp:'+str(id_exp)+', ant:'+str(id_ant))
-		# ax.axvline(200, c='grey')
-		# return 200
+		# fig, ax = plt.subplots()
+		# ax.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-', c='k')
+		# # plt.loglog(times2, y_kde)
+		# # plt.loglog(times2[idx], y_kde[idx], 'o')
+		# ax.axvline(thresh0, ls='-', c='grey')
+		# ax.axvline(thresh1, ls=':', c='grey')
+		# ax.axvline(200, ls='--', c='grey')
+		# ax.set_title('exp:'+str(id_exp)+', ant:'+str(id_ant))
+		# # ax.set_ylim((1e-4, 1))
+		# # ax.axvline(200, c='grey')
+		# # return 200
 		return thresh0, thresh1, 200
 
 	def compute_first_marking_ant_batch_criterion(self, id_exp_list=None, show=False):
 		if id_exp_list is None:
 			id_exp_list = self.exp.id_exp_list
 
-		self.exp.load(['x', 'y', 'markings', 'xy_markings'])
+		self.exp.load(['x', 'y', 'markings', 'xy_markings', 'r_markings'])
 		self.compute_radial_zones()
 
 		ant_exp_dict = self.exp.markings.get_id_exp_ant_dict()
@@ -290,6 +326,7 @@ class AnalyseMarkings:
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# for id_exp in [3]:
+		thresh_hist = []
 		for id_exp in id_exp_list:
 			id_mfa = [None, None, None]
 			batches_mfa = [[], [], []]
@@ -298,6 +335,7 @@ class AnalyseMarkings:
 				if (id_exp, id_ant) in ant_exp_array:
 					print((id_exp, id_ant))
 					thresh_list = self.compute_batch_threshold(id_exp, id_ant)
+					thresh_hist.append(thresh_list[1])
 					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
 					mask = np.where(zone_event_ant[:, -1] == 3)[0]
 
@@ -312,9 +350,13 @@ class AnalyseMarkings:
 					id_mfa, batches_mfa, t_min = self.batch_criterion(
 						id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask)-1, t0)
 			print('ant chosen:'+str(id_mfa), t_min)
-			self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
+			# self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
 			if show:
 				plt.show()
+		y, x = np.histogram(thresh_hist, bins=range(0, 201, 2))
+		plt.plot(x[1:], y)
+		plt.show()
+
 
 	def plot_batches(self, id_exp, id_ant, batches_list, zone_event_ant, mask, ii, t0=None, t1=None):
 		fig, ax = self.plot_radial_zones_3panels(id_exp, id_ant, t0)
@@ -363,18 +405,24 @@ class AnalyseMarkings:
 				while jj < len(batches)-1 and rad_max-rad_min < min_lg_rad:
 					jj = jj + 1
 					batch = batches[jj]
-					rad_min = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).min()['r']
-					rad_max = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).max()['r']
+					if len(batch) > 3:
+						rad_min = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).min()['r']
+						rad_max = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).max()['r']
 
 				if rad_max-rad_min >= min_lg_rad:
-					t = zone_event[mask[ii] + 1, 2]
-					if t < t_min[i]:
-						t_min[i] = t
-						batches_mfa[i] = batches[jj]
-						id_mfa[i] = id_ant
+					batch = batches[jj]
+					zone_mark = \
+						self.exp.r_markings.get_row_id_exp_ant_frame(id_exp, id_ant, batch[0][2])\
+						- self.exp.radius_max.get_value(id_exp)
+					if int(zone_mark) < 0:
+						t = batch[0][2]
+						if t < t_min[i]:
+							t_min[i] = t
+							batches_mfa[i] = batch
+							id_mfa[i] = id_ant
 
 				batches_list.append(batches)
-			self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
+			# self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
 		return id_mfa, batches_mfa, t_min
 
 	def spatial_repartition_first_markings(self):
