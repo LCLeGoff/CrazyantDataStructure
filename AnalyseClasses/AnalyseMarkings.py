@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
 import scipy.stats as scs
 import scipy.signal as scsig
 
@@ -268,12 +269,12 @@ class AnalyseMarkings:
 		n_occ, times = np.histogram(mark_interval_ant[:, -1], bins='fd')
 		# plt.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-', c='k')
 		# plt.show()
-		times2 = np.arange(1, 1000)
+		# times2 = np.arange(1, 1000)
 
 		mask0 = np.where(n_occ == 0)[0]
 		if len(mask0) == 0:
 			n_occ = np.array(list(n_occ)+[0])
-			times = np.array(list(times)+[times[-1]+1])
+			times = np.array(list(times)+[times[-1]])
 			mask0 = np.where(n_occ == 0)[0]
 		thresh0 = times[mask0[0]]
 		if thresh0 == 0 and len(mask0) > 1:
@@ -298,19 +299,19 @@ class AnalyseMarkings:
 				thresh1 = times3[-1]
 			else:
 				thresh1 = times3[np.where(n_occ2 == 0)[0][0]]
-		thresh1 = min(thresh1, 200)
+		thresh1 = max(min(thresh1, 200), 60)
 
-		# fig, ax = plt.subplots()
-		# ax.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-', c='k')
-		# # plt.loglog(times2, y_kde)
-		# # plt.loglog(times2[idx], y_kde[idx], 'o')
-		# ax.axvline(thresh0, ls='-', c='grey')
-		# ax.axvline(thresh1, ls=':', c='grey')
-		# ax.axvline(200, ls='--', c='grey')
-		# ax.set_title('exp:'+str(id_exp)+', ant:'+str(id_ant))
-		# # ax.set_ylim((1e-4, 1))
-		# # ax.axvline(200, c='grey')
-		# # return 200
+		fig, ax = plt.subplots()
+		ax.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-', c='k')
+		# plt.loglog(times2, y_kde)
+		# plt.loglog(times2[idx], y_kde[idx], 'o')
+		ax.axvline(thresh0, ls='-', c='grey')
+		ax.axvline(thresh1, ls=':', c='grey')
+		ax.axvline(200, ls='--', c='grey')
+		ax.set_title('exp:'+str(id_exp)+', ant:'+str(id_ant))
+		# ax.set_ylim((1e-4, 1))
+		# ax.axvline(200, c='grey')
+		# return 200
 		return thresh0, thresh1, 200
 
 	def compute_first_marking_ant_batch_criterion(self, id_exp_list=None, show=False):
@@ -325,9 +326,8 @@ class AnalyseMarkings:
 		self.exp.extract_event(name='zones', new_name='zone_event')
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
-		# for id_exp in [3]:
-		thresh_hist = []
-		for id_exp in id_exp_list:
+		# thresh_hist = []
+		for id_exp in id_exp_list[45:]:
 			id_mfa = [None, None, None]
 			batches_mfa = [[], [], []]
 			t_min = [np.inf, np.inf, np.inf]
@@ -335,7 +335,8 @@ class AnalyseMarkings:
 				if (id_exp, id_ant) in ant_exp_array:
 					print((id_exp, id_ant))
 					thresh_list = self.compute_batch_threshold(id_exp, id_ant)
-					thresh_hist.append(thresh_list[1])
+					print(np.around(thresh_list))
+					# thresh_hist.append(thresh_list[1])
 					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
 					mask = np.where(zone_event_ant[:, -1] == 3)[0]
 
@@ -350,13 +351,12 @@ class AnalyseMarkings:
 					id_mfa, batches_mfa, t_min = self.batch_criterion(
 						id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask)-1, t0)
 			print('ant chosen:'+str(id_mfa), t_min)
-			# self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
+			self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
 			if show:
 				plt.show()
-		y, x = np.histogram(thresh_hist, bins=range(0, 201, 2))
-		plt.plot(x[1:], y)
-		plt.show()
-
+		# y, x = np.histogram(thresh_hist, bins=range(0, 201, 2))
+		# plt.plot(x[1:], y)
+		# plt.show()
 
 	def plot_batches(self, id_exp, id_ant, batches_list, zone_event_ant, mask, ii, t0=None, t1=None):
 		fig, ax = self.plot_radial_zones_3panels(id_exp, id_ant, t0)
@@ -379,7 +379,7 @@ class AnalyseMarkings:
 		for i in range(3):
 			batch2plot = batches_mfa[i]
 			if len(batch2plot) != 0:
-				self.plot_mark(ax[i], id_exp, id_ant, 'g', batch2plot[0][2], batch2plot[-1][2])
+				self.plot_mark(ax[i], id_exp, id_ant[i], 'g', batch2plot[0][2], batch2plot[-1][2])
 			for line in ax[i].lines:
 				x_data, y_data = line.get_xdata(), line.get_ydata()
 				line.set_xdata(y_data)
@@ -387,7 +387,8 @@ class AnalyseMarkings:
 			ax[i].invert_xaxis()
 
 	def batch_criterion(self, id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event, mask, ii, t0, t1=None):
-		min_lg_rad = 70
+		min_lg_rad = 60
+		max_lg_rad = 70
 
 		xy_mark = np.array(self.exp.xy_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
 		if len(xy_mark) != 0:
@@ -399,30 +400,52 @@ class AnalyseMarkings:
 						batches[-1].append(list(xy_mark[jj, :]))
 					else:
 						batches += [[list(xy_mark[jj, :])]]
+				batches2 = []
+				for batch in batches:
+					batch = np.array(batch)
+					if len(batch) > 3:
+						nn_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(batch[:, -2:])
+						nn_dist, nn_indices = nn_obj.kneighbors(batch[:, -2:])
+						while len(batch) > 3 and sum(nn_dist[:, 1] > max_lg_rad) != 0:
+							mask2 = np.where(nn_dist[:, 1] <= max_lg_rad)[0]
+							batch = batch[mask2, :]
+							nn_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(batch[:, -2:])
+							nn_dist, nn_indices = nn_obj.kneighbors(batch[:, -2:])
+						if len(batch) > 3:
+							batches2.append(batch.tolist())
+
 				jj = -1
 				rad_min = 0
 				rad_max = 0
-				while jj < len(batches)-1 and rad_max-rad_min < min_lg_rad:
+				while jj < len(batches2)-1 and rad_max-rad_min < min_lg_rad:
 					jj = jj + 1
-					batch = batches[jj]
+					batch = batches2[jj]
 					if len(batch) > 3:
 						rad_min = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).min()['r']
 						rad_max = self.exp.r.get_row_id_exp_ent_frame_from_array(np.array(batch)[:, :3]).max()['r']
 
 				if rad_max-rad_min >= min_lg_rad:
-					batch = batches[jj]
+					batch = batches2[jj]
+					t = batch[0][2]
 					zone_mark = \
-						self.exp.r_markings.get_row_id_exp_ant_frame(id_exp, id_ant, batch[0][2])\
+						self.exp.r_markings.get_row_id_exp_ant_frame(id_exp, id_ant, t)\
 						- self.exp.radius_max.get_value(id_exp)
 					if int(zone_mark) < 0:
-						t = batch[0][2]
-						if t < t_min[i]:
-							t_min[i] = t
-							batches_mfa[i] = batch
-							id_mfa[i] = id_ant
+						r_mark = np.array(
+							self.exp.r_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, batch[-1][2]))
+						r_mark = np.sort(r_mark, axis=0)
+						r_mark = np.array(r_mark[1:]-r_mark[:-1], dtype=int)
+						r_mark = r_mark > max_lg_rad
+						if np.sum(r_mark) == 0:
+							if t < t_min[i]:
+								t_min[i] = t
+								batches_mfa[i] = batch
+								id_mfa[i] = id_ant
+						else:
+							print('hey')
 
 				batches_list.append(batches)
-			# self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
+			self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
 		return id_mfa, batches_mfa, t_min
 
 	def spatial_repartition_first_markings(self):

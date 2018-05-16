@@ -57,7 +57,7 @@ root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 # 	traj.centered_x_y()
 # 	traj.xy_polar()
 
-for group in ['FMAB']:
+for group in ['FMABW']:
 	mark = AnalyseMarkings(root, group)
 	# mark.compute_xy_marking()
 	# mark.compute_xy_marking_polar()
