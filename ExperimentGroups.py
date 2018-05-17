@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from DataManager.DataFileManager import DataFileManager
 from DataObjectBuilders.Builder import Builder
 from DataObjects.Events2d import Events2dBuilder
@@ -85,6 +88,18 @@ class ExperimentGroups:
 			name=new_name, xname=new_xname, yname=new_yname,
 			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(new_name, array)
+
+	def build1d_empty(self, name, object_type, category=None, label=None, description=None):
+		obj = Builder.build1d(
+			array=pd.DataFrame(
+				columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame']),
+			name=name, object_type=object_type, category=category, label=label, description=description)
+		self.add_object(name, obj)
+
+	def build2d_empty(self, name, object_type, category=None, label=None, description=None):
+		obj = Builder.build1d(
+			array=np.zeros((0, 5)), name=name, object_type=object_type, category=category, label=label, description=description)
+		self.add_object(name, obj)
 
 	def build1d(self, array, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
