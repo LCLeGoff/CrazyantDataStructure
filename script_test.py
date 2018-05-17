@@ -57,7 +57,8 @@ root = '/data/Dropbox/POSTDOC/CrazyAnt/Results_python/Data/'
 # 	traj.centered_x_y()
 # 	traj.xy_polar()
 
-for group in ['FMABW']:
+for group in ['FMAB', 'FMABU', 'FMABW']:
+	print(group)
 	mark = AnalyseMarkings(root, group)
 	# mark.compute_xy_marking()
 	# mark.compute_xy_marking_polar()
@@ -66,7 +67,8 @@ for group in ['FMABW']:
 	# exp.load('marking_interval')
 	# exp.plot_hist1d('marking_interval', range(0, 1000), xscale='log', yscale='log', group=0)
 	# mark.compute_first_marking_ant_radial_criterion(show=False)
-	mark.compute_first_marking_ant_batch_criterion(show=True)
+	# mark.compute_first_marking_ant_batch_criterion(show=True)
+	mark.compute_recruitment(show=False)
 	# mark.compute_first_marking_ant_setup_orientation()
 	# mark.compute_first_marking_ant_setup_orientation_circle()
 plt.show()

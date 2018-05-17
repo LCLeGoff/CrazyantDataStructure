@@ -8,9 +8,7 @@ from pandas import IndexSlice as IdxSc
 
 from matplotlib import pylab as plt
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from DataObjects.Events1d import Events1dBuilder
 from Plotter.ColorObject import ColorObject
-from Plotter.Plotter1d import Plotter1d
 
 
 class AnalyseMarkings:
@@ -136,18 +134,18 @@ class AnalyseMarkings:
 				self.exp.y.array.loc[exp, ant, t0:t1],
 				c=c, ms=ms)
 
-	def plot_mark(self, ax, exp, ant, c, t0=None, t1=None):
+	def plot_mark(self, ax, id_exp, id_ant, c, t0=None, t1=None):
 		if t0 is None:
 			t0 = 0
 		if t1 is None:
 			ax.plot(
-				self.exp.xy_markings.array.loc[IdxSc[exp, ant, t0:], 'x'],
-				self.exp.xy_markings.array.loc[IdxSc[exp, ant, t0:], 'y'],
+				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:], 'x'],
+				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:], 'y'],
 				'o', ms=5, c=c)
 		else:
 			ax.plot(
-				self.exp.xy_markings.array.loc[IdxSc[exp, ant, t0:t1], 'x'],
-				self.exp.xy_markings.array.loc[IdxSc[exp, ant, t0:t1], 'y'],
+				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], 'x'],
+				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], 'y'],
 				'o', ms=5, c=c)
 
 	def plot_previous_loops_around_food(self, ax, exp, ant, zone_event_ant, mask, iii):
@@ -261,7 +259,7 @@ class AnalyseMarkings:
 		self.exp.write('first_markings')
 		self.exp.write('xy_first_markings')
 
-	def compute_batch_threshold(self, id_exp, id_ant):
+	def compute_batch_threshold_list(self, id_exp, id_ant):
 		self.exp.load('marking_interval')
 		mark_interval_ant = np.array(self.exp.marking_interval.array.loc[id_exp, id_ant, :].reset_index())
 		# n_occ, times = np.histogram(mark_interval_ant[:, -1], bins=range(0, 1000, 10))
@@ -327,14 +325,14 @@ class AnalyseMarkings:
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# thresh_hist = []
-		for id_exp in id_exp_list[45:]:
+		for id_exp in id_exp_list:
 			id_mfa = [None, None, None]
 			batches_mfa = [[], [], []]
 			t_min = [np.inf, np.inf, np.inf]
 			for id_ant in ant_exp_dict[id_exp]:
 				if (id_exp, id_ant) in ant_exp_array:
 					print((id_exp, id_ant))
-					thresh_list = self.compute_batch_threshold(id_exp, id_ant)
+					thresh_list = self.compute_batch_threshold_list(id_exp, id_ant)
 					print(np.around(thresh_list))
 					# thresh_hist.append(thresh_list[1])
 					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
@@ -344,11 +342,11 @@ class AnalyseMarkings:
 						list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
 						if 0 in list_zone_temp:
 							t0, t1 = zone_event_ant[[mask[ii], mask[ii+1]], 2]
-							id_mfa, batches_mfa, t_min = self.batch_criterion(
+							id_mfa, batches_mfa, t_min = self.test_batch_criterion(
 								id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, ii, t0, t1)
 
 					t0 = zone_event_ant[mask[-1], 2]
-					id_mfa, batches_mfa, t_min = self.batch_criterion(
+					id_mfa, batches_mfa, t_min = self.test_batch_criterion(
 						id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask)-1, t0)
 			print('ant chosen:'+str(id_mfa), t_min)
 			self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
@@ -386,7 +384,8 @@ class AnalyseMarkings:
 				line.set_ydata(x_data)
 			ax[i].invert_xaxis()
 
-	def batch_criterion(self, id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event, mask, ii, t0, t1=None):
+	def test_batch_criterion(
+			self, id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event, mask, ii, t0, t1=None):
 		min_lg_rad = 60
 		max_lg_rad = 70
 
@@ -447,6 +446,147 @@ class AnalyseMarkings:
 				batches_list.append(batches)
 			self.plot_batches(id_exp, id_ant, batches_list, zone_event, mask, ii, t0, t1)
 		return id_mfa, batches_mfa, t_min
+
+	def compute_recruitment(self, id_exp_list=None, show=False):
+		if id_exp_list is None:
+			id_exp_list = self.exp.id_exp_list
+
+		self.exp.load(['x', 'y', 'markings', 'xy_markings', 'r_markings'])
+
+		self.compute_radial_zones()
+
+		ant_exp_dict = self.exp.markings.get_id_exp_ant_dict()
+		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
+		self.exp.extract_event(name='zones', new_name='zone_event')
+
+		self.exp.build1d_empty(
+			name='recruitment_interval', object_type='Events1d', category='Markings',
+			label='Recruitment intervals',
+			description='Time intervals when ants are considering recruiting'
+		)
+		for i, id_exp in enumerate(id_exp_list):
+			if id_exp in ant_exp_dict:
+				print(i, id_exp)
+				batches_recruitment = []
+				for id_ant in ant_exp_dict[id_exp]:
+					if (id_exp, id_ant) in ant_exp_array:
+						id_ant = int(id_ant)
+						thresh = self.compute_batch_threshold(id_exp, id_ant)
+						zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
+						mask = np.where(zone_event_ant[:, -1] == 3)[0]
+
+						for ii in range(len(mask)-1):
+							list_zone_temp = list(zone_event_ant[mask[ii]+1:mask[ii+1], -1])
+							if 0 in list_zone_temp:
+								t0, t1 = zone_event_ant[[mask[ii], mask[ii+1]], 2]
+								batches_recruitment = self.batch_criterion(
+									id_exp, id_ant, batches_recruitment, thresh, t0, t1)
+
+						t0 = zone_event_ant[mask[-1], 2]
+						batches_recruitment = self.batch_criterion(
+							id_exp, id_ant, batches_recruitment, thresh, t0)
+				for ii, batch in enumerate(batches_recruitment):
+					id_ant = int(batch[0, 1])
+					t0 = int(batch[0, 2])-1
+					dt = int(batch[-1, 2])-t0+2
+					self.exp.recruitment_interval.add_row((id_exp, id_ant, t0), dt)
+				self.plot_recruitment_batch(id_exp, batches_recruitment)
+				if show:
+					plt.show()
+		self.exp.write('recruitment_interval')
+
+	def compute_batch_threshold(self, id_exp, id_ant):
+		self.exp.load('marking_interval')
+		mark_interval_ant = np.array(self.exp.marking_interval.array.loc[id_exp, id_ant, :].reset_index())
+		n_occ, times = np.histogram(mark_interval_ant[:, -1], bins='fd')
+
+		mask0 = np.where(n_occ == 0)[0]
+		mask1 = np.where(n_occ > 1)[0]
+		if  len(mask0) == 0:
+			thresh1 = 200
+		elif len(mask1) == 0:
+			thresh1 = np.floor(times[mask0[0]])
+			if thresh1 == 0 and len(mask0) > 1:
+				thresh1 = np.floor(times[mask0[1]])
+		else:
+			times3 = times[mask1[-1]:]
+			n_occ2 = n_occ[mask1[-1]:]
+			mask0 = np.where(n_occ2 == 0)[0]
+			if len(mask0) == 0:
+				thresh1 = np.floor(times3[-1])
+			else:
+				thresh1 = np.floor(times3[np.where(n_occ2 == 0)[0][0]])
+		thresh1 = max(min(thresh1, 200), 60)
+
+		return thresh1
+
+	def plot_recruitment_batch(self, id_exp, batches_recruitment):
+		fig, ax = self.plot_radial_zones(id_exp, '', '')
+		t_min = np.inf
+		batch = []
+		cols = ColorObject.create_cmap('jet', len(batches_recruitment))
+		for i, batch2plot in enumerate(batches_recruitment):
+			id_ant = batch2plot[0][1]
+			if  batch2plot[0][2] < t_min:
+				batch = batch2plot
+				t_min = batch2plot[0][2]
+			self.plot_mark(ax, id_exp, id_ant, cols[i], batch2plot[0][2], batch2plot[-1][2])
+		if len(batch) != 0:
+			self.plot_mark(ax, id_exp, batch[0][1], 'y', batch[0][2], batch[-1][2])
+		for line in ax.lines:
+			x_data, y_data = line.get_xdata(), line.get_ydata()
+			line.set_xdata(y_data)
+			line.set_ydata(x_data)
+		ax.invert_xaxis()
+
+	def batch_criterion(self, id_exp, id_ant, batches_recruitment, thresh, t0, t1=None):
+		min_lg_rad = 60
+		max_lg_rad = 70
+
+		xy_mark = np.array(self.exp.xy_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
+		if len(xy_mark) != 0:
+			batches = [[list(xy_mark[0, :])]]
+			for jj in range(1, len(xy_mark)):
+				if xy_mark[jj, 2] - xy_mark[jj-1, 2] < thresh:
+					batches[-1].append(list(xy_mark[jj, :]))
+				else:
+					batches += [[list(xy_mark[jj, :])]]
+			batches2 = []
+			for batch in batches:
+				batch = np.array(batch)
+				if len(batch) > 3:
+					nn_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(batch[:, -2:])
+					nn_dist, nn_indices = nn_obj.kneighbors(batch[:, -2:])
+					while len(batch) > 3 and sum(nn_dist[:, 1] > max_lg_rad) != 0:
+						mask2 = np.where(nn_dist[:, 1] <= max_lg_rad)[0]
+						batch = batch[mask2, :]
+						nn_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(batch[:, -2:])
+						nn_dist, nn_indices = nn_obj.kneighbors(batch[:, -2:])
+					if len(batch) > 3:
+						batches2.append(batch.tolist())
+
+			rad_min = 0
+			rad_max = 0
+			for jj in range(len(batches2)):
+				batch = np.array(batches2[jj])
+				if len(batch) > 3:
+					rad_min = self.exp.r.get_row_id_exp_ent_frame_from_array(batch[:, :3]).min()['r']
+					rad_max = self.exp.r.get_row_id_exp_ent_frame_from_array(batch[:, :3]).max()['r']
+
+				if rad_max-rad_min >= min_lg_rad:
+					t = batch[0, 2]
+					zone_mark = \
+						self.exp.r_markings.get_row_id_exp_ant_frame(id_exp, id_ant, t)\
+						- self.exp.radius_max.get_value(id_exp)
+					if int(zone_mark) < 0:
+						r_mark = np.array(
+							self.exp.r_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, batch[-1, 2]))
+						r_mark = np.sort(r_mark, axis=0)
+						r_mark = np.array(r_mark[1:]-r_mark[:-1], dtype=int)
+						r_mark = r_mark > max_lg_rad
+						if np.sum(r_mark) == 0:
+							batches_recruitment.append(batch)
+		return batches_recruitment
 
 	def spatial_repartition_first_markings(self):
 		self.exp.load(['xy_first_markings'])
