@@ -56,3 +56,8 @@ class BuilderDataObject:
 	def get_id_exp_ant_frame_dict(self):
 		return PandasIndexManager().get_id_exp_ant_frame_dict(self.array)
 
+	def add_row(self, idx, value, replace=False):
+		if replace is False and idx in self.array.index:
+			raise IndexError('Index '+str(idx)+' already exists')
+		else:
+			self.array.loc[idx] = value
