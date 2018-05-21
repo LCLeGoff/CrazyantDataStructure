@@ -59,25 +59,25 @@ class AnalyseTrajectory:
 
 	def copy_xy0_to_xy(self):
 		self.exp.add_copy1d(
-			name='x0', new_name='x', category='Trajectory',
+			name_to_copy='x0', copy_name='x', category='Trajectory',
 			label='x', description='x coordinate (in the food system)'
 		)
 		self.exp.add_copy1d(
-			name='y0', new_name='y', category='Trajectory',
+			name_to_copy='y0', copy_name='y', category='Trajectory',
 			label='y', description='y coordinate (in the food system)'
 		)
 
 	def convert_xy_to_mm(self):
-		self.exp.operation('x', 'mm2px', lambda x, y: round(x / y, 2))
-		self.exp.operation('y', 'mm2px', lambda x, y: round(x / y, 2))
+		self.exp.operation_between_2names('x', 'mm2px', lambda x, y: round(x / y, 2))
+		self.exp.operation_between_2names('y', 'mm2px', lambda x, y: round(x / y, 2))
 
 	def translate_xy(self):
-		self.exp.operation('x', 'traj_translation', lambda x, y: x + y, 'x')
-		self.exp.operation('y', 'traj_translation', lambda x, y: x + y, 'y')
+		self.exp.operation_between_2names('x', 'traj_translation', lambda x, y: x + y, 'x')
+		self.exp.operation_between_2names('y', 'traj_translation', lambda x, y: x + y, 'y')
 
 	def centered_xy_on_food(self):
-		self.exp.operation('x', 'food_center', lambda x, y: x - y, 'x')
-		self.exp.operation('y', 'food_center', lambda x, y: x - y, 'y')
+		self.exp.operation_between_2names('x', 'food_center', lambda x, y: x - y, 'x')
+		self.exp.operation_between_2names('y', 'food_center', lambda x, y: x - y, 'y')
 
 	def compute_r_phi(self):
 		print('r, phi')
@@ -95,13 +95,13 @@ class AnalyseTrajectory:
 
 	def copy_xy_to_r_phi(self):
 		self.exp.add_copy1d(
-			name='x', new_name='r',
+			name_to_copy='x', copy_name='r',
 			category='Trajectory',
 			label='r',
 			description='radial coordinate (in the food system)'
 		)
 		self.exp.add_copy1d(
-			name='x', new_name='phi',
+			name_to_copy='x', copy_name='phi',
 			category='Trajectory',
 			label='phi',
 			description='angular coordinate (in the food system)'

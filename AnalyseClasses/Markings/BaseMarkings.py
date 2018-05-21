@@ -70,7 +70,7 @@ class AnalyseMarkings:
 			lg = len(marks)-1
 			marking_interval_list = self.add_marking_intervals(marking_interval_list, id_ant, id_exp, lg, marks)
 
-		marking_interval_df = self.pd_idx_manager.convert_to_exp_ant_frame_indexed_df(marking_interval_list, name)
+		marking_interval_df = self.exp.pd_idx_manager.convert_to_exp_ant_frame_indexed_df(marking_interval_list, name)
 		self.exp.add_new1d(
 			array=marking_interval_df, name=name, object_type='Events1d', category='Markings',
 			label='marking intervals', description='Time intervals between two marking events'

@@ -23,7 +23,7 @@ class ExperimentGroups:
 
 	def set_id_exp_list(self, id_exp_list):
 		if id_exp_list is None:
-			id_exp_list = self.exp.id_exp_list
+			id_exp_list = self.id_exp_list
 		return id_exp_list
 
 	def add_object(self, name, obj):
@@ -82,17 +82,17 @@ class ExperimentGroups:
 		for name in names:
 			self.data_manager.write(self.__dict__[name])
 
-	def add_copy1d(self, name, new_name, category=None, label=None, description=None):
-		obj = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
-		self.add_object(new_name, obj)
+	def add_copy1d(self, name_to_copy, copy_name, category=None, label=None, description=None):
+		obj = self.__dict__[name_to_copy].copy(name=copy_name, category=category, label=label, description=description)
+		self.add_object(copy_name, obj)
 
 	def add_copy2d(
-			self, name, new_name, new_xname, new_yname,
+			self, name_to_copy, copy_name, new_xname, new_yname,
 			category=None, label=None, xlabel=None, ylabel=None, description=None):
-		array = self.__dict__[name].copy(
-			name=new_name, xname=new_xname, yname=new_yname,
+		array = self.__dict__[name_to_copy].copy(
+			name=copy_name, xname=new_xname, yname=new_yname,
 			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-		self.add_object(new_name, array)
+		self.add_object(copy_name, array)
 
 	def add_new1d_empty(self, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
@@ -133,7 +133,10 @@ class ExperimentGroups:
 		else:
 			raise TypeError('Filter can not be applied on '+object_type1+' or '+object_type2)
 
-	def operation(self, name1, name2, fct, name_col=None):
+	def operation(self, name, fct):
+		self.__dict__[name].operation(fct)
+
+	def operation_between_2names(self, name1, name2, fct, name_col=None):
 		if self.__dict__[name1].object_type == 'TimeSeries':
 			if self.__dict__[name2].object_type == 'TimeSeries':
 				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
