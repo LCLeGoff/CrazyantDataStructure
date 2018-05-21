@@ -18,6 +18,9 @@ class BuilderDataObject:
 		else:
 			print(self.array)
 
+	def convert_df_to_array(self):
+		return np.array(self.array.reset_index())
+
 	def get_row(self, idx):
 		return self.array.loc[idx, :]
 
@@ -27,7 +30,7 @@ class BuilderDataObject:
 	def get_row_id_exp_ant(self, id_exp, id_ant):
 		return self.array.loc[pd.IndexSlice[id_exp, id_ant, :], :]
 
-	def get_row_id_exp_ent_frame_from_array(self, idx_arr):
+	def get_row_id_exp_ant_frame_from_array(self, idx_arr):
 		return self.array.loc[list(map(tuple, np.array(idx_arr))), :]
 
 	def get_row_id_exp_ant_frame(self, id_exp, id_ant, frame):

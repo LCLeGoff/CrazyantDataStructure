@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 class PandasIndexManager:
@@ -27,7 +28,7 @@ class PandasIndexManager:
 			raise IndexError('array does not have id_exp or id_ant as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp', 'id_ant']).index])
-			return sorted(idx_set)
+			return np.array(sorted(idx_set), dtype=int)
 
 	def get_id_exp_ant_dict(self, array):
 		index_array = self.get_id_exp_ant_array(array)
