@@ -58,11 +58,11 @@ class AnalyseTrajectory:
 			self.inverse_xy_orientation(id_exp)
 
 	def copy_xy0_to_xy(self):
-		self.exp.copy1d(
+		self.exp.add_copy1d(
 			name='x0', new_name='x', category='Trajectory',
 			label='x', description='x coordinate (in the food system)'
 		)
-		self.exp.copy1d(
+		self.exp.add_copy1d(
 			name='y0', new_name='y', category='Trajectory',
 			label='y', description='y coordinate (in the food system)'
 		)
@@ -94,13 +94,13 @@ class AnalyseTrajectory:
 		self.exp.write(['r', 'phi'])
 
 	def copy_xy_to_r_phi(self):
-		self.exp.copy1d(
+		self.exp.add_copy1d(
 			name='x', new_name='r',
 			category='Trajectory',
 			label='r',
 			description='radial coordinate (in the food system)'
 		)
-		self.exp.copy1d(
+		self.exp.add_copy1d(
 			name='x', new_name='phi',
 			category='Trajectory',
 			label='phi',
@@ -108,9 +108,9 @@ class AnalyseTrajectory:
 		)
 
 	def merge_xy_in2d(self):
-		self.exp.to_2d(
+		self.exp.add_2d_from_1ds(
 			name1='x', name2='y',
-			new_name='xy', new_name1='x', new_name2='y',
+			result_name='xy', xname='x', yname='y',
 			category='Trajectory', label='coordinates', xlabel='x', ylabel='y',
 			description='coordinates of ant positions'
 		)
