@@ -1,7 +1,15 @@
+import pandas as pd
+
 
 class PandasIndexManager:
 	def __init__(self):
 		pass
+
+	@staticmethod
+	def convert_to_exp_ant_frame_indexed_df(array, name):
+		df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', name])
+		df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+		return df
 
 	@staticmethod
 	def get_id_exp_array(array):
