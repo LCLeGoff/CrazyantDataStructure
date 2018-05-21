@@ -21,6 +21,11 @@ class ExperimentGroups:
 		self.id_exp_list.sort()
 		self.names = set()
 
+	def set_id_exp_list(self, id_exp_list):
+		if id_exp_list is None:
+			id_exp_list = self.exp.id_exp_list
+		return id_exp_list
+
 	def add_object(self, name, obj):
 		self.__dict__[name] = obj
 		self.names.add(name)
