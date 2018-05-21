@@ -1,3 +1,4 @@
+from AnalyseClasses.Markings.Recruitment import Recruitment
 from AnalyseClasses.Markings.TestRecruitment import TestRecruitment
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
@@ -71,11 +72,17 @@ group = 'FMAB'
 # 	# mark.spatial_repartition_first_markings_2d_hist()
 # plt.show()
 
-for group in ['FMAB', 'FMABU', 'FMABW']:
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+# 	print(group)
+# 	test_recruit = TestRecruitment(root, group)
+# 	test_recruit.compute_first_marking_ant_radial_criterion(show=False)
+# 	test_recruit.compute_first_marking_ant_batch_criterion(show=True)
+# 	test_recruit.compute_first_marking_ant_setup_orientation()
+# 	test_recruit.compute_first_marking_ant_setup_orientation_circle()
+# plt.show()
+
+
+for group in ['FMAB']:
 	print(group)
-	test_recruit = TestRecruitment(root, group)
-	test_recruit.compute_first_marking_ant_radial_criterion(show=False)
-	test_recruit.compute_first_marking_ant_batch_criterion(show=True)
-	test_recruit.compute_first_marking_ant_setup_orientation()
-	test_recruit.compute_first_marking_ant_setup_orientation_circle()
-plt.show()
+	recruit = Recruitment(root, group)
+	recruit.compute_recruitment(range(10))
