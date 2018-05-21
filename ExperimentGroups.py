@@ -37,27 +37,27 @@ class ExperimentGroups:
 			if name not in self.__dict__.keys():
 				self.add_object(name, self.data_manager.load(name))
 
-	def to_2d(
-			self, name1, name2, new_name,
-			new_name1=None, new_name2=None,
+	def add_2d_from_1ds(
+			self, name1, name2, result_name,
+			xname=None, yname=None,
 			category=None, label=None, xlabel=None, ylabel=None, description=None):
 		object_type1 = self.__dict__[name1].object_type
 		object_type2 = self.__dict__[name2].object_type
 		if object_type1 == object_type2 and self.__dict__[name1].array.index.equals(self.__dict__[name2].array.index):
-			if new_name1 is None:
-				new_name1 = name1
-			if new_name2 is None:
-				new_name2 = name2
+			if xname is None:
+				xname = name1
+			if yname is None:
+				yname = name2
 			if object_type1 == 'Events':
-				self.add_object(new_name, Events2dBuilder().build_from_1d(
+				self.add_object(result_name, Events2dBuilder().build_from_1d(
 					event1=self.__dict__[name1], event2=self.__dict__[name2],
-					name=new_name, xname=new_name1, yname=new_name2,
+					name=result_name, xname=xname, yname=yname,
 					category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description
 				))
 			elif object_type1 == 'TimeSeries':
-				self.add_object(new_name, TimeSeries2dBuilder().build_from_1d(
+				self.add_object(result_name, TimeSeries2dBuilder().build_from_1d(
 					ts1=self.__dict__[name1], ts2=self.__dict__[name2],
-					name=new_name, xname=new_name1, yname=new_name2,
+					name=result_name, xname=xname, yname=yname,
 					category=category, label=label,
 					xlabel=xlabel, ylabel=ylabel, description=description
 				))
@@ -82,11 +82,11 @@ class ExperimentGroups:
 		for name in names:
 			self.data_manager.write(self.__dict__[name])
 
-	def copy1d(self, name, new_name, category=None, label=None, description=None):
+	def add_copy1d(self, name, new_name, category=None, label=None, description=None):
 		obj = self.__dict__[name].copy(name=new_name, category=category, label=label, description=description)
 		self.add_object(new_name, obj)
 
-	def copy2d(
+	def add_copy2d(
 			self, name, new_name, new_xname, new_yname,
 			category=None, label=None, xlabel=None, ylabel=None, description=None):
 		array = self.__dict__[name].copy(
@@ -94,24 +94,24 @@ class ExperimentGroups:
 			category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(new_name, array)
 
-	def build1d_empty(self, name, object_type, category=None, label=None, description=None):
+	def add_new1d_empty(self, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
 			array=pd.DataFrame(
 				columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame']),
 			name=name, object_type=object_type, category=category, label=label, description=description)
 		self.add_object(name, obj)
 
-	def build2d_empty(self, name, object_type, category=None, label=None, description=None):
+	def add_new2d_empty(self, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
 			array=np.zeros((0, 5)), name=name, object_type=object_type, category=category, label=label, description=description)
 		self.add_object(name, obj)
 
-	def build1d(self, array, name, object_type, category=None, label=None, description=None):
+	def add_new1d(self, array, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
 			array=array, name=name, object_type=object_type, category=category, label=label, description=description)
 		self.add_object(name, obj)
 
-	def build2d_from_array(
+	def add_new2d_from_array(
 			self, array, name, xname, yname, object_type, category=None,
 			label=None, xlabel=None, ylabel=None, description=None):
 		obj = Builder.build2d_from_array(
@@ -120,16 +120,16 @@ class ExperimentGroups:
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 		self.add_object(name, obj)
 
-	def filter(self, name1, name2, new_name, label=None, category=None, description=None):
-		object_type1 = self.__dict__[name1].object_type
-		object_type2 = self.__dict__[name2].object_type
+	def add_from_filtering(self, name_to_filter, name_filter, result_name, label=None, category=None, description=None):
+		object_type1 = self.__dict__[name_to_filter].object_type
+		object_type2 = self.__dict__[name_filter].object_type
 		if object_type1 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']\
 			and object_type2 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']:
 			self.add_object(
-				new_name,
+				result_name,
 				Filters().filter(
-					obj=self.__dict__[name1], event=self.__dict__[name2],
-					name=new_name, label=label, category=category, description=description))
+					obj=self.__dict__[name_to_filter], event=self.__dict__[name_filter],
+					name=result_name, label=label, category=category, description=description))
 		else:
 			raise TypeError('Filter can not be applied on '+object_type1+' or '+object_type2)
 
@@ -152,7 +152,7 @@ class ExperimentGroups:
 			raise TypeError(
 				'Operation not defined between '+self.__dict__[name2].object_type+' and '+self.__dict__[name2].object_type)
 
-	def extract_event(self, name, new_name, label=None, category=None, description=None):
+	def add_from_event_extraction(self, name, new_name, label=None, category=None, description=None):
 		if self.__dict__[name].object_type == 'TimeSeries':
 			event = self.__dict__[name].extract_event(name=new_name, category=category, label=label, description=description)
 			self.add_object(new_name, event)
