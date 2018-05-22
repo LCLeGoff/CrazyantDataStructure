@@ -239,18 +239,18 @@ class TestRecruitment:
 			else:
 				thresh1 = times3[np.where(n_occ2 == 0)[0][0]]
 		thresh1 = max(min(thresh1, 200), 60)
-
-		fig, ax = plt.subplots()
-		ax.loglog((times[1:] + times[:-1]) / 2., n_occ / np.sum(n_occ), '.-', c='k')
-		# plt.loglog(times2, y_kde)
-		# plt.loglog(times2[idx], y_kde[idx], 'o')
-		ax.axvline(thresh0, ls='-', c='grey')
-		ax.axvline(thresh1, ls=':', c='grey')
-		ax.axvline(200, ls='--', c='grey')
-		ax.set_title('exp:' + str(id_exp) + ', ant:' + str(id_ant))
-		# ax.set_ylim((1e-4, 1))
-		# ax.axvline(200, c='grey')
-		# return 200
+		#
+		# fig, ax = plt.subplots()
+		# ax.loglog((times[1:] + times[:-1]) / 2., n_occ / np.sum(n_occ), '.-', c='k')
+		# # plt.loglog(times2, y_kde)
+		# # plt.loglog(times2[idx], y_kde[idx], 'o')
+		# ax.axvline(thresh0, ls='-', c='grey')
+		# ax.axvline(thresh1, ls=':', c='grey')
+		# ax.axvline(200, ls='--', c='grey')
+		# ax.set_title('exp:' + str(id_exp) + ', ant:' + str(id_ant))
+		# # ax.set_ylim((1e-4, 1))
+		# # ax.axvline(200, c='grey')
+		# # return 200
 		return thresh0, thresh1, 200
 
 	def compute_first_marking_ant_batch_criterion(self, id_exp_list=None, show=False):
@@ -267,34 +267,35 @@ class TestRecruitment:
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# thresh_hist = []
 		for id_exp in id_exp_list:
-			id_mfa = [None, None, None]
-			batches_mfa = [[], [], []]
-			t_min = [np.inf, np.inf, np.inf]
-			for id_ant in ant_exp_dict[id_exp]:
-				if (id_exp, id_ant) in ant_exp_array:
-					print((id_exp, id_ant))
-					thresh_list = self.compute_batch_threshold_list(id_exp, id_ant)
-					print(np.around(thresh_list))
-					# thresh_hist.append(thresh_list[1])
-					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
-					mask = np.where(zone_event_ant[:, -1] == 3)[0]
+			if id_exp in ant_exp_dict:
+				id_mfa = [None, None, None]
+				batches_mfa = [[], [], []]
+				t_min = [np.inf, np.inf, np.inf]
+				for id_ant in ant_exp_dict[id_exp]:
+					if (id_exp, id_ant) in ant_exp_array:
+						print((id_exp, id_ant))
+						thresh_list = self.compute_batch_threshold_list(id_exp, id_ant)
+						print(np.around(thresh_list))
+						# thresh_hist.append(thresh_list[1])
+						zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
+						mask = np.where(zone_event_ant[:, -1] == 3)[0]
 
-					for ii in range(len(mask) - 1):
-						list_zone_temp = list(zone_event_ant[mask[ii] + 1:mask[ii + 1], -1])
-						if 0 in list_zone_temp:
-							t0, t1 = zone_event_ant[[mask[ii], mask[ii + 1]], 2]
-							id_mfa, batches_mfa, t_min = self.test_batch_criterion(
-								id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, ii, t0,
-								t1)
+						for ii in range(len(mask) - 1):
+							list_zone_temp = list(zone_event_ant[mask[ii] + 1:mask[ii + 1], -1])
+							if 0 in list_zone_temp:
+								t0, t1 = zone_event_ant[[mask[ii], mask[ii + 1]], 2]
+								id_mfa, batches_mfa, t_min = self.test_batch_criterion(
+									id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, ii, t0,
+									t1)
 
-					t0 = zone_event_ant[mask[-1], 2]
-					id_mfa, batches_mfa, t_min = self.test_batch_criterion(
-						id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask) - 1,
-						t0)
-			print('ant chosen:' + str(id_mfa), t_min)
-			self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
-			if show:
-				plt.show()
+						t0 = zone_event_ant[mask[-1], 2]
+						id_mfa, batches_mfa, t_min = self.test_batch_criterion(
+							id_exp, id_ant, id_mfa, batches_mfa, t_min, thresh_list, zone_event_ant, mask, len(mask) - 1,
+							t0)
+				print('ant chosen:' + str(id_mfa), t_min)
+				self.plot_chosen_batch(id_exp, id_mfa, t_min, batches_mfa)
+				if show:
+					plt.show()
 
 	# y, x = np.histogram(thresh_hist, bins=range(0, 201, 2))
 	# plt.plot(x[1:], y)

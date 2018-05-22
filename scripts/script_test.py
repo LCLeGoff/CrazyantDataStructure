@@ -5,10 +5,11 @@ from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, C
 from DataManager.Loaders.DefinitionLoader import DefinitionLoader
 from DataManager.Loaders.EventsLoader import EventsLoader
 from DataManager.Loaders.TimeSeriesLoader import TimeSeriesLoader
+from Tools.Geometry import distance
 from scripts.root import root
 from AnalyseClasses.Markings.BaseMarkings import AnalyseMarkings
 from matplotlib import pyplot as plt
-
+import numpy as np
 group = 'FMAB'
 
 # DefinitionLoader = DefinitionLoader(root, group)
@@ -54,12 +55,23 @@ group = 'FMAB'
 # print(FMAB.ref_pts2.description, FMAB.ref_pts2.name)
 # print(FMAB.entrance1.description, FMAB.entrance0.name)
 
-
+#
 # for group in ['FMAB', 'FMABU', 'FMABW']:
 # 	print(group)
 # 	exp = ExperimentGroupBuilder(root).build(group)
 # 	exp.load('marking_interval')
-# 	exp.plot_hist1d('marking_interval', range(0, 1000), xscale='log', yscale='log', group=0)
+# 	exp.plot_hist1d('marking_interval', 'fd', xscale='log', yscale='log', group=0)
+#
+# 	exp.load('xy_markings')
+# 	array_of_idx_exp_ant = exp.xy_markings.get_id_exp_ant_array()
+# 	dist = []
+# 	for (id_exp, id_ant) in array_of_idx_exp_ant:
+# 		xy_marks = exp.xy_markings.get_row_id_exp_ant(id_exp, id_ant)
+# 		xy = np.array(xy_marks)
+# 		dist += list(distance(xy[1:], xy[:-1]))
+# 	y, x = np.histogram(dist, 'fd')
+# 	x = (x[1:] + x[:-1]) / 2.
+# 	plt.loglog(x, y, '.-')
 # plt.show()
 
 
@@ -72,17 +84,19 @@ group = 'FMAB'
 # 	# mark.spatial_repartition_first_markings_2d_hist()
 # plt.show()
 
-# for group in ['FMAB', 'FMABU', 'FMABW']:
+# for group in ['FMABU']:
 # 	print(group)
 # 	test_recruit = TestRecruitment(root, group)
-# 	test_recruit.compute_first_marking_ant_radial_criterion(show=False)
-# 	test_recruit.compute_first_marking_ant_batch_criterion(show=True)
-# 	test_recruit.compute_first_marking_ant_setup_orientation()
-# 	test_recruit.compute_first_marking_ant_setup_orientation_circle()
+# 	# test_recruit.compute_first_marking_ant_radial_criterion(show=False)
+# 	test_recruit.compute_first_marking_ant_batch_criterion(show=True, id_exp_list=range(8, 9))
+# 	# test_recruit.compute_first_marking_ant_setup_orientation()
+# 	# test_recruit.compute_first_marking_ant_setup_orientation_circle()
 # plt.show()
-
-
-for group in ['FMAB']:
+# #
+# #
+for group in ['FMABU']:
 	print(group)
 	recruit = Recruitment(root, group)
-	recruit.compute_recruitment(range(10))
+	# recruit.compute_recruitment(range(10))
+	recruit.compute_marking_batch(range(8, 9))
+plt.show()
