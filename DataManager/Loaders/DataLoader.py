@@ -20,7 +20,7 @@ class DataLoader:
 		definition = self.definition_loader.build(name)
 		if definition.object_type == 'TimeSeries1d':
 			res = self.time_series_loader.load(definition)
-		elif definition.object_type == 'Events':
+		elif definition.object_type == 'Events1d':
 			res = self.events_loader.load(definition)
 		elif definition.object_type == 'Events2d':
 			res = self.events2d_loader.load(definition)
@@ -31,5 +31,5 @@ class DataLoader:
 		elif definition.object_type == 'AntCharacteristics1d':
 			res = self.ant_characteristics1d_loader.load(definition)
 		else:
-			raise ValueError(name+' has no defined object type')
+			raise ValueError(name+' has no defined object type :')
 		return res
