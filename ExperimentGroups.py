@@ -6,6 +6,7 @@ from DataObjectBuilders.Builder import Builder
 from DataObjects.Events2d import Events2dBuilder
 from DataObjects.Filters import Filters
 from DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Plotter.Plotter1d import Plotter1d
 from Plotter.Plotter2d import Plotter2d
 
@@ -16,6 +17,7 @@ class ExperimentGroups:
 		self.root = root
 		self.group = group
 		self.data_manager = DataFileManager(root, group)
+		self.pandas_index_manager = PandasIndexManager()
 		self.plotter2d = Plotter2d()
 		self.id_exp_list = id_exp_list
 		self.id_exp_list.sort()
@@ -95,11 +97,23 @@ class ExperimentGroups:
 		self.add_object(copy_name, df)
 
 	def add_new1d_empty(self, name, object_type, category=None, label=None, description=None):
+		df = self.__create_empty_1d_df(name, object_type)
 		obj = Builder.build1d(
-			df=pd.DataFrame(
-				columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame']),
-			name=name, object_type=object_type, category=category, label=label, description=description)
+			df=df, name=name, object_type=object_type, category=category, label=label, description=description)
 		self.add_object(name, obj)
+
+	def __create_empty_1d_df(self, name, object_type):
+		if object_type in ['Events', 'TimeSeries']:
+			df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_df(name)
+		elif object_type in ['AntCharacteristics1d']:
+			df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
+		elif object_type in ['Characteristics1d']:
+			df = self.pandas_index_manager.create_empty_exp_indexed_df(name)
+		elif object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d']:
+			raise TypeError('Object in 2d')
+		else:
+			raise IndexError('Object type ' + object_type + ' unknown')
+		return df
 
 	def add_new2d_empty(self, name, object_type, category=None, label=None, description=None):
 		obj = Builder.build1d(
@@ -121,6 +135,28 @@ class ExperimentGroups:
 			label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
 		self.add_object(name, obj)
+
+	def add_new1d_from_array(self, array, name, object_type, category=None, label=None, description=None):
+
+		df = self.__convert_array_to_1d_df(array, name, object_type)
+
+		obj = Builder.build1d(
+			df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+
+		self.add_object(name, obj)
+
+	def __convert_array_to_1d_df(self, array, name, object_type):
+		if object_type in ['Events', 'TimeSeries']:
+			df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_df(array, name)
+		elif object_type in ['AntCharacteristics1d']:
+			df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
+		elif object_type in ['Characteristics1d']:
+			df = self.pandas_index_manager.convert_to_exp_indexed_df(array, name)
+		elif object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d']:
+			raise TypeError('Object in 2d')
+		else:
+			raise IndexError('Object type ' + object_type + ' unknown')
+		return df
 
 	def add_from_filtering(self, name_to_filter, name_filter, result_name, label=None, category=None, description=None):
 		object_type1 = self.__dict__[name_to_filter].object_type

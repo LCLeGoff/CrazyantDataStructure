@@ -1,3 +1,4 @@
+from DataObjects.AntCharacteristics1d import AntCharacteristics1dBuilder
 from DataObjects.Characteristics1d import Characteristics1dBuilder
 from DataObjects.Characteristics2d import Characteristics2dBuilder
 from DataObjects.Definitions import DefinitionBuilder
@@ -21,6 +22,9 @@ class Builder:
 				df=df.sort_index(), name=name, category=category, label=label, description=description)
 		elif object_type == 'Characteristics1d':
 			return Characteristics1dBuilder.build(
+				df=df.sort_index(), name=name, category=category, label=label, description=description)
+		elif object_type == 'AntCharacteristics1d':
+			return AntCharacteristics1dBuilder.build(
 				df=df.sort_index(), name=name, category=category, label=label, description=description)
 		else:
 			raise TypeError('Type '+object_type+' is unknown or 2d')
