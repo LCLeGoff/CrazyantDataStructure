@@ -7,6 +7,33 @@ class PandasIndexManager:
 		pass
 
 	@staticmethod
+	def create_empty_exp_indexed_df(name):
+		df = pd.DataFrame(columns=['id_exp', name]).set_index(['id_exp'])
+		return df
+
+	@staticmethod
+	def create_empty_exp_ant_indexed_df(name):
+		df = pd.DataFrame(columns=['id_exp', 'id_ant', name]).set_index(['id_exp', 'id_ant'])
+		return df
+
+	@staticmethod
+	def create_empty_exp_ant_frame_indexed_df(name):
+		df = pd.DataFrame(columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame'])
+		return df
+
+	@staticmethod
+	def convert_to_exp_indexed_df(array, name):
+		df = pd.DataFrame(array, columns=['id_exp', name])
+		df.set_index(['id_exp'], inplace=True)
+		return df
+
+	@staticmethod
+	def convert_to_exp_ant_indexed_df(array, name):
+		df = pd.DataFrame(array, columns=['id_exp', 'id_ant', name])
+		df.set_index(['id_exp', 'id_ant'], inplace=True)
+		return df
+
+	@staticmethod
 	def convert_to_exp_ant_frame_indexed_df(array, name):
 		df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', name])
 		df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
