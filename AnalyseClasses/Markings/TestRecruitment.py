@@ -144,8 +144,8 @@ class TestRecruitment:
 		self.exp.load(['x', 'y', 'markings', 'xy_markings'])
 		self.compute_radial_zones()
 
-		ant_exp_dict = self.exp.markings.get_dict_id_exp_ant()
-		ant_exp_array = self.exp.markings.get_array_id_exp_ant()
+		ant_exp_dict = self.exp.markings.get_index_dict_of_id_exp_ant()
+		ant_exp_array = self.exp.markings.get_index_array_of_id_exp_ant()
 		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 		exp_ant_label = []
 		for id_exp in id_exp_list:
@@ -260,8 +260,8 @@ class TestRecruitment:
 		self.exp.load(['x', 'y', 'markings', 'xy_markings', 'r_markings'])
 		self.compute_radial_zones()
 
-		ant_exp_dict = self.exp.markings.get_dict_id_exp_ant()
-		ant_exp_array = self.exp.markings.get_array_id_exp_ant()
+		ant_exp_dict = self.exp.markings.get_index_dict_of_id_exp_ant()
+		ant_exp_array = self.exp.markings.get_index_array_of_id_exp_ant()
 		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
@@ -366,8 +366,8 @@ class TestRecruitment:
 					jj = jj + 1
 					batch = batches2[jj]
 					if len(batch) > 3:
-						rad_min = self.exp.r.get_row_id_exp_ant_frame_from_array(np.array(batch)[:, :3]).min()['r']
-						rad_max = self.exp.r.get_row_id_exp_ant_frame_from_array(np.array(batch)[:, :3]).max()['r']
+						rad_min = self.exp.r.get_row_of_idx_array(np.array(batch)[:, :3]).min()['r']
+						rad_max = self.exp.r.get_row_of_idx_array(np.array(batch)[:, :3]).max()['r']
 
 				if rad_max - rad_min >= min_lg_rad:
 					batch = batches2[jj]

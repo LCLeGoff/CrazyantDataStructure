@@ -26,31 +26,31 @@ class Plotter1d(BasePlotters):
 		elif group == 1:
 			fig, ax = self.create_plot()
 			self.axis_scale(ax, xscale, yscale)
-			list_exp = obj.get_array_id_exp()
+			list_exp = obj.get_index_array_of_id_exp()
 			cols = ColorObject('cmap', 'jet', list_exp).colors
 			for id_exp in list_exp:
-				tab = obj.get_row_id_exp(id_exp)
+				tab = obj.get_row_of_id_exp(id_exp)
 				y, x = np.histogram(tab, bins)
 				x = (x[1:]+x[:-1])/2.
 				ax.plot(x, y, '.-', ms=self.ms, alpha=self.alpha, color=cols[id_exp])
 		elif group == 2:
-			list_exp = obj.get_array_id_exp()
+			list_exp = obj.get_index_array_of_id_exp()
 			cols = ColorObject('cmap', 'jet', list_exp).colors
 			for id_exp in list_exp:
 				fig, ax = self.create_plot()
 				self.axis_scale(ax, xscale, yscale)
-				tab = obj.get_row_id_exp(id_exp)
+				tab = obj.get_row_of_id_exp(id_exp)
 				y, x = np.histogram(tab, bins)
 				x = (x[1:]+x[:-1])/2.
 				ax.plot(x, y, '.-', ms=self.ms, alpha=self.alpha, color=cols[id_exp])
 		elif group == 3:
-			list_exp_ant_dict = obj.get_dict_id_exp_ant()
+			list_exp_ant_dict = obj.get_index_dict_of_id_exp_ant()
 			for id_exp in list_exp_ant_dict:
 				fig, ax = self.create_plot()
 				self.axis_scale(ax, xscale, yscale)
 				cols = ColorObject('cmap', 'jet', list_exp_ant_dict[id_exp]).colors
 				for id_ant in list_exp_ant_dict[id_exp]:
-					tab = obj.get_row_id_exp_ant(id_exp, id_ant)
+					tab = obj.get_row_of_id_exp_ant(id_exp, id_ant)
 					y, x = np.histogram(tab, bins)
 					x = (x[1:]+x[:-1])/2.
 					ax.plot(x, y, '.-', ms=self.ms, alpha=self.alpha, color=cols[id_ant])

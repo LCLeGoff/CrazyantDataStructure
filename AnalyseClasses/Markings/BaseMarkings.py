@@ -64,7 +64,7 @@ class AnalyseMarkings:
 		name = 'marking_interval'
 		print(name)
 
-		id_exp_ant_array = self.exp.markings.get_array_id_exp_ant()
+		id_exp_ant_array = self.exp.markings.get_index_array_of_id_exp_ant()
 		marking_interval_list = []
 		for (id_exp, id_ant) in id_exp_ant_array:
 			marks = self.get_marking_of_id_ant_id_exp(id_exp, id_ant)
@@ -96,7 +96,7 @@ class AnalyseMarkings:
 		name = 'marking_distance'
 		print(name)
 
-		id_exp_ant_array = self.exp.xy_markings.get_array_id_exp_ant()
+		id_exp_ant_array = self.exp.xy_markings.get_index_array_of_id_exp_ant()
 		marking_distance_list = []
 		for (id_exp, id_ant) in id_exp_ant_array:
 			mark_xy = self.get_marking_xy_of_id_ant_id_exp(id_exp, id_ant)

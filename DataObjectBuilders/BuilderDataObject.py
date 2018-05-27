@@ -24,40 +24,20 @@ class BuilderDataObject:
 	def get_row(self, idx):
 		return self.df.loc[idx, :]
 
-	def get_row_id_exp(self, id_exp):
-		return self.df.loc[pd.IndexSlice[id_exp, :, :], :]
+	def get_row_of_idx_array(self, idx_array):
+		return self.df.loc[list(map(tuple, np.array(idx_array))), :]
 
-	def get_row_id_exp_ant(self, id_exp, id_ant):
-		return self.df.loc[pd.IndexSlice[id_exp, id_ant, :], :]
-
-	def get_row_id_exp_ant_frame_from_array(self, idx_arr):
-		return self.df.loc[list(map(tuple, np.array(idx_arr))), :]
-
-	def get_row_id_exp_ant_frame(self, id_exp, id_ant, frame):
-		return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame], :]
-
-	def get_row_id_exp_ant_in_frame_interval(self, id_exp, id_ant, frame0=None, frame1=None):
-		if frame0 is None:
-			frame0 = 0
-		if frame1 is None:
-			return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:], :]
-		else:
-			return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
-
-	def get_array_id_exp(self):
+	def get_index_array_of_id_exp(self):
 		return PandasIndexManager().get_array_id_exp(self.df)
 
-	def get_array_id_exp_ant(self):
+	def get_index_array_of_id_exp_ant(self):
 		return PandasIndexManager().get_array_id_exp_ant(self.df)
 
-	def get_array_id_exp_ant_frame(self):
+	def get_index_array_of_id_exp_ant_frame(self):
 		return PandasIndexManager().get_array_id_exp_ant_frame(self.df)
 
-	def get_dict_id_exp_ant(self):
+	def get_index_dict_of_id_exp_ant(self):
 		return PandasIndexManager().get_dict_id_exp_ant(self.df)
-
-	def get_dict_id_exp_ant_frame(self):
-		return PandasIndexManager().get_dict_id_exp_ant_frame(self.df)
 
 	def add_row(self, idx, value, replace=False):
 		if replace is False and idx in self.df.index:
