@@ -50,13 +50,13 @@ class ExperimentGroups:
 				xname = name1
 			if yname is None:
 				yname = name2
-			if object_type1 == 'Events':
+			if object_type1 == 'Events1d':
 				self.add_object(result_name, Events2dBuilder().build_from_1d(
 					event1=self.__dict__[name1], event2=self.__dict__[name2],
 					name=result_name, xname=xname, yname=yname,
 					category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description
 				))
-			elif object_type1 == 'TimeSeries':
+			elif object_type1 == 'TimeSeries1d':
 				self.add_object(result_name, TimeSeries2dBuilder().build_from_1d(
 					ts1=self.__dict__[name1], ts2=self.__dict__[name2],
 					name=result_name, xname=xname, yname=yname,
@@ -103,7 +103,7 @@ class ExperimentGroups:
 		self.add_object(name, obj)
 
 	def __create_empty_1d_df(self, name, object_type):
-		if object_type in ['Events', 'TimeSeries']:
+		if object_type in ['Events1d', 'TimeSeries1d']:
 			df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_df(name)
 		elif object_type in ['AntCharacteristics1d']:
 			df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
@@ -146,7 +146,7 @@ class ExperimentGroups:
 		self.add_object(name, obj)
 
 	def __convert_array_to_1d_df(self, array, name, object_type):
-		if object_type in ['Events', 'TimeSeries']:
+		if object_type in ['Events1d', 'TimeSeries1d']:
 			df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_df(array, name)
 		elif object_type in ['AntCharacteristics1d']:
 			df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
@@ -161,8 +161,8 @@ class ExperimentGroups:
 	def add_from_filtering(self, name_to_filter, name_filter, result_name, label=None, category=None, description=None):
 		object_type1 = self.__dict__[name_to_filter].object_type
 		object_type2 = self.__dict__[name_filter].object_type
-		if object_type1 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']\
-			and object_type2 in ['Events', 'TimeSeries', 'Events2d', 'TimeSeries2d']:
+		if object_type1 in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']\
+			and object_type2 in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']:
 			self.add_object(
 				result_name,
 				Filters().filter(
@@ -175,8 +175,8 @@ class ExperimentGroups:
 		self.__dict__[name].operation(fct)
 
 	def operation_between_2names(self, name1, name2, fct, name_col=None):
-		if self.__dict__[name1].object_type == 'TimeSeries':
-			if self.__dict__[name2].object_type == 'TimeSeries':
+		if self.__dict__[name1].object_type == 'TimeSeries1d':
+			if self.__dict__[name2].object_type == 'TimeSeries1d':
 				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
 			elif self.__dict__[name2].object_type == 'Characteristics1d':
 				self.__dict__[name1].operation_with_data1d(self.__dict__[name2], fct)
@@ -194,6 +194,6 @@ class ExperimentGroups:
 				'Operation not defined between '+self.__dict__[name2].object_type+' and '+self.__dict__[name2].object_type)
 
 	def add_event_extracted_from_timeseries(self, name_ts, name_extracted_events, label=None, category=None, description=None):
-		if self.__dict__[name_ts].object_type == 'TimeSeries':
+		if self.__dict__[name_ts].object_type == 'TimeSeries1d':
 			event = self.__dict__[name_ts].extract_event(name=name_extracted_events, category=category, label=label, description=description)
 			self.add_object(name_extracted_events, event)

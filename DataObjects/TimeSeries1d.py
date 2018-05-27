@@ -34,7 +34,7 @@ class TimeSeries1dBuilder:
 	@staticmethod
 	def build(df, name, category=None, label=None, description=None):
 		definition = DefinitionBuilder().build1d(
-			name=name, category=category, object_type='TimeSeries',
+			name=name, category=category, object_type='TimeSeries1d',
 			label=label, description=description
 		)
 		return TimeSeries1d(df.sort_index(), definition)

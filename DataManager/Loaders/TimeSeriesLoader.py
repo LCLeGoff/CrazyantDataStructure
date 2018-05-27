@@ -3,7 +3,7 @@ import pandas as pd
 from DataObjects.TimeSeries1d import TimeSeries1d
 
 
-class TimeSeriesLoader:
+class TimeSeries1dLoader:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
 		self.categories = dict()

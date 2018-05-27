@@ -3,8 +3,8 @@ from AnalyseClasses.Markings.TestRecruitment import TestRecruitment
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
 from DataManager.Loaders.DefinitionLoader import DefinitionLoader
-from DataManager.Loaders.EventsLoader import EventsLoader
-from DataManager.Loaders.TimeSeriesLoader import TimeSeriesLoader
+from DataManager.Loaders.EventsLoader import Events1dLoader
+from DataManager.Loaders.TimeSeriesLoader import TimeSeries1dLoader
 from Tools.Geometry import distance
 from scripts.root import root
 from AnalyseClasses.Markings.BaseMarkings import AnalyseMarkings

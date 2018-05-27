@@ -18,7 +18,7 @@ class DataLoader:
 
 	def load(self, name):
 		definition = self.definition_loader.build(name)
-		if definition.object_type == 'TimeSeries':
+		if definition.object_type == 'TimeSeries1d':
 			res = self.time_series_loader.load(definition)
 		elif definition.object_type == 'Events':
 			res = self.events_loader.load(definition)

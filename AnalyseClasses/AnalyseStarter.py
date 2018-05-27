@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from Tools.JsonFiles import write_obj, import_obj
@@ -30,10 +32,11 @@ class AnalyseStarter:
 		self.__write_definition_dict(definition_dict)
 
 	def __init_definition_dict(self, redo):
-		if redo:
+		address = self.root + 'definition_dict.json'
+		if redo or not(os.path.exists(address)):
 			def_dict = dict()
 		else:
-			def_dict = import_obj(self.root + 'definition_dict.json')
+			def_dict = import_obj(address)
 		return def_dict
 
 	def __write_definition_dict(self, definition_dict):
@@ -116,7 +119,7 @@ class AnalyseStarter:
 		definition_dict[key] = dict()
 		definition_dict[key]['label'] = 'Absolute orientation'
 		definition_dict[key]['category'] = 'Raw'
-		definition_dict[key]['object_type'] = 'TimeSeries'
+		definition_dict[key]['object_type'] = 'TimeSeries1d'
 		definition_dict[key]['description'] = 'absolute orientation'
 
 	@staticmethod
@@ -126,7 +129,7 @@ class AnalyseStarter:
 			definition_dict[key2] = dict()
 			definition_dict[key2]['label'] = key2
 			definition_dict[key2]['category'] = 'Raw'
-			definition_dict[key2]['object_type'] = 'TimeSeries'
+			definition_dict[key2]['object_type'] = 'TimeSeries1d'
 			definition_dict[key2]['description'] = key + ' coordinate (in the cropped image system)'
 
 	def __fill_details_for_blob_features_and_markings(self, definition_dict):
@@ -139,7 +142,7 @@ class AnalyseStarter:
 		definition_dict['major_axis_length']['label'] = 'major axis length'
 		definition_dict['minor_axis_length']['label'] = 'minor axis length'
 		definition_dict['markings']['description'] = 'Marking events'
-		definition_dict['markings']['object_type'] = 'Events'
+		definition_dict['markings']['object_type'] = 'Events1d'
 
 	@staticmethod
 	def __fill_description_for_blob_features(definition_dict):
@@ -158,4 +161,4 @@ class AnalyseStarter:
 			definition_dict[key] = dict()
 			definition_dict[key]['label'] = key.capitalize()
 			definition_dict[key]['category'] = 'Raw'
-			definition_dict[key]['object_type'] = 'TimeSeries'
+			definition_dict[key]['object_type'] = 'TimeSeries1d'

@@ -22,7 +22,7 @@ class Events1dBuilder:
 	@staticmethod
 	def build(df, name, category=None, label=None, description=None):
 		definition = DefinitionBuilder().build1d(
-			name=name, category=category, object_type='Events',
+			name=name, category=category, object_type='Events1d',
 			label=label, description=description
 		)
 		return Events1d(df.sort_index(), definition)

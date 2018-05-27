@@ -14,9 +14,9 @@ class DataWriter:
 		self.ant_characteristics1d_writer = AntCharacteristics1dWriter(root, group)
 
 	def write(self, obj):
-		if obj.object_type == 'TimeSeries':
+		if obj.object_type == 'TimeSeries1d':
 			self.time_series_writer.write(obj)
-		elif obj.object_type == 'Events':
+		elif obj.object_type == 'Events1d':
 			self.events_writer.write(obj)
 		elif obj.object_type == 'Events2d':
 			self.events2d_writer.write(obj)
