@@ -103,8 +103,8 @@ class Recruitment:
 
 		self.__compute_xy_radial_zones()
 
-		dict_of_idx_exp_ant = self.exp.markings.get_dict_id_exp_ant()
-		array_of_idx_exp_ant = self.exp.markings.get_array_id_exp_ant()
+		dict_of_idx_exp_ant = self.exp.markings.get_index_dict_of_id_exp_ant()
+		array_of_idx_exp_ant = self.exp.markings.get_index_array_of_id_exp_ant()
 
 		self.exp.add_event_extracted_from_timeseries(name_ts='xy_radial_zones', name_extracted_events='zone_change_events')
 
@@ -328,53 +328,44 @@ class Recruitment:
 	def compute_recruitment(self, id_exp_list=None):
 		id_exp_list = self.exp.set_id_exp_list(id_exp_list)
 
-		self.exp.load(['markings', 'xy_markings', 'r_markings'])
+		self.exp.load(['r_markings', 'marking_batch_interval'])
+		min_lg_rad = 60
+		max_lg_rad = 70
 
-		self.__compute_xy_radial_zones()
+		batches_recruitment_intervals = []
+		array_batch_interval = self.exp.marking_batch_interval.convert_df_to_array()
+		for id_exp, id_ant, batch_frame, batch_dt in array_batch_interval:
+			if id_exp in id_exp_list:
 
-		dict_of_idx_exp_ant = self.exp.markings.get_dict_id_exp_ant()
-		array_of_idx_exp_ant = self.exp.markings.get_array_id_exp_ant()
+				t0 = batch_frame
+				t1 = t0 + batch_dt
 
-		self.exp.add_event_extracted_from_timeseries(name_ts='xy_radial_zones', name_extracted_events='zone_change_events')
-
-		self.exp.add_new1d_empty(
-			name='recruitment_interval',
-			object_type='Events1d', category='Markings',
-			label='Recruitment intervals', description='Time intervals when ants are considering recruiting'
-		)
-		for i, id_exp in enumerate(id_exp_list):
-			if id_exp in dict_of_idx_exp_ant:
-				print(i, id_exp)
-				batches_recruitment = []
-				for id_ant in dict_of_idx_exp_ant[id_exp]:
-					if (id_exp, id_ant) in array_of_idx_exp_ant:
-
-						thresh = self.__compute_batch_time_threshold(id_exp, id_ant)
-						ant_zone_change_event_array = self.__get_zone_change_events_for_id_ant(id_exp, id_ant)
-						mask_where_ant_enter_food_neighborhood = np.where(ant_zone_change_event_array[:, -1] == 2)[0]
-						nbr_entry_in_food_neighborhood = len(mask_where_ant_enter_food_neighborhood)
-						for ii in range(nbr_entry_in_food_neighborhood-1):
-							idx_exit = mask_where_ant_enter_food_neighborhood[ii] + 1
-							idx_next_entry = mask_where_ant_enter_food_neighborhood[ii + 1]
-							list_visited_zones = list(ant_zone_change_event_array[idx_exit:idx_next_entry, -1])
-							is_ant_exit_circular_arena = (0 in list_visited_zones)
-							if is_ant_exit_circular_arena:
-								t_exit = ant_zone_change_event_array[idx_exit, 2]
-								t_next_entry = ant_zone_change_event_array[idx_next_entry, 2]
-								batches_recruitment = self.batch_criterion(
-									id_exp, id_ant, batches_recruitment, thresh, t_exit, t_next_entry)
-
-						t_last_exit = ant_zone_change_event_array[mask_where_ant_enter_food_neighborhood[-1], 2]
-						batches_recruitment = self.batch_criterion(
-							id_exp, id_ant, batches_recruitment, thresh, t_last_exit)
-				for ii, batch in enumerate(batches_recruitment):
-					id_ant = int(batch[0, 1])
-					t0 = int(batch[0, 2]) - 1
-					dt = int(batch[-1, 2]) - t0 + 2
-					self.exp.recruitment_interval.add_row((id_exp, id_ant, t0), dt)
-					# self.__plot_recruitment_batch(id_exp, batches_recruitment)
-					# plt.show()
-		self.exp.write('recruitment_interval')
+				r_mark = np.array(self.exp.r_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1))
+				rad_min = r_mark.min()
+				rad_max = r_mark.max()
+				if rad_max - rad_min >= min_lg_rad:
+					zone_mark = r_mark[0] - self.arena_radius
+					if int(zone_mark) < 0:
+						r_mark = np.sort(r_mark, axis=0)
+						r_mark = np.array(r_mark[1:] - r_mark[:-1], dtype=int)
+						r_mark = r_mark > max_lg_rad
+						if np.sum(r_mark) == 0:
+							batches_recruitment_intervals.append([id_exp, id_ant, batch_frame, batch_dt])
+		#
+		# 		batches_recruitment_intervals = self.batch_criterion(
+		# 			id_exp, id_ant, batches_recruitment_intervals, thresh, t_exit, t_next_entry)
+		#
+		# 		t_last_exit = ant_zone_change_event_array[mask_where_ant_enter_food_neighborhood[-1], 2]
+		# 		batches_recruitment_intervals = self.batch_criterion(
+		# 			id_exp, id_ant, batches_recruitment_intervals, thresh, t_last_exit)
+		# 		for ii, batch in enumerate(batches_recruitment_intervals):
+		# 			id_ant = int(batch[0, 1])
+		# 			t0 = int(batch[0, 2]) - 1
+		# 			dt = int(batch[-1, 2]) - t0 + 2
+		# 			self.exp.recruitment_interval.add_row((id_exp, id_ant, t0), dt)
+		# 			# self.__plot_recruitment_batch(id_exp, batches_recruitment_intervals)
+		# 			# plt.show()
+		# self.exp.write('recruitment_interval')
 
 	def __plot_recruitment_batch(self, id_exp, batches_recruitment):
 		fig, ax = self.__plot_radial_zones(id_exp, '', '')
@@ -406,7 +397,7 @@ class Recruitment:
 				'o', ms=5, c=c)
 
 	def __get_zone_change_events_for_id_ant(self, id_exp, id_ant):
-		ant_zone_change_event_df = self.exp.zone_change_events.get_row_id_exp_ant(id_exp, id_ant)
+		ant_zone_change_event_df = self.exp.zone_change_events.get_row_of_id_exp_ant(id_exp, id_ant)
 		ant_zone_change_event_array = np.array(ant_zone_change_event_df.reset_index())
 		return ant_zone_change_event_array
 
@@ -493,8 +484,8 @@ class Recruitment:
 			for jj in range(len(batches2)):
 				batch = np.array(batches2[jj])
 				if len(batch) > 3:
-					rad_min = self.exp.r.get_row_id_exp_ant_frame_from_array(batch[:, :3]).min()['r']
-					rad_max = self.exp.r.get_row_id_exp_ant_frame_from_array(batch[:, :3]).max()['r']
+					rad_min = self.exp.r.get_row_of_idx_array(batch[:, :3]).min()['r']
+					rad_max = self.exp.r.get_row_of_idx_array(batch[:, :3]).max()['r']
 
 				if rad_max - rad_min >= min_lg_rad:
 					t = batch[0, 2]

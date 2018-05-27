@@ -94,9 +94,9 @@ group = 'FMAB'
 # plt.show()
 # #
 # #
-for group in ['FMABU']:
+for group in ['FMAB']:
 	print(group)
 	recruit = Recruitment(root, group)
-	# recruit.compute_recruitment(range(10))
-	recruit.compute_marking_batch(range(8, 9))
+	# recruit.compute_marking_batch()
+	recruit.compute_recruitment(range(10))
 plt.show()
