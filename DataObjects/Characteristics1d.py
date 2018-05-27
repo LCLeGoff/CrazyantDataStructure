@@ -4,14 +4,14 @@ from DataObjects.Definitions import DefinitionBuilder
 
 
 class Characteristics1d(Builder1dDataObject, BuilderExpIndexedDataObject):
-	def __init__(self, array, definition):
-		Builder1dDataObject.__init__(self, array)
-		BuilderExpIndexedDataObject.__init__(self, array)
+	def __init__(self, df, definition):
+		Builder1dDataObject.__init__(self, df)
+		BuilderExpIndexedDataObject.__init__(self, df)
 		DefinitionBuilder.build_from_definition(self, definition)
 
 	def copy(self, name, category=None, label=None, description=None):
 			return Characteristics1dBuilder.build(
-				array=self.array.copy(), name=name, category=category, label=label, description=description)
+				df=self.df.copy(), name=name, category=category, label=label, description=description)
 
 
 class Characteristics1dBuilder:
@@ -19,9 +19,9 @@ class Characteristics1dBuilder:
 		pass
 
 	@staticmethod
-	def build(array, name, category=None, label=None, description=None):
+	def build(df, name, category=None, label=None, description=None):
 		definition = DefinitionBuilder().build1d(
 			name=name, category=category, object_type='Characteristics1d',
 			label=label, description=description
 		)
-		return Characteristics1d(array.sort_index(), definition)
+		return Characteristics1d(df.sort_index(), definition)

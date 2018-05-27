@@ -42,8 +42,8 @@ class DataFileManager:
 			for id_exp in self.id_exp_list:
 				chara[str(id_exp)] = dict()
 			write_obj(add+'Characteristics.json', chara)
-			array = pd.DataFrame(index=self.get_exp_ant_frame_index())
-			array.to_csv(add+'TimeSeries.csv')
+			df = pd.DataFrame(index=self.get_exp_ant_frame_index())
+			df.to_csv(add+'TimeSeries.csv')
 
 	def write(self, obj):
 		if obj.category is None or obj.label is None or obj.description is None:

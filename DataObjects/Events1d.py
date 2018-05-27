@@ -5,14 +5,14 @@ from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAnt
 
 
 class Events1d(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
-	def __init__(self, array, definition):
-		Builder1dDataObject.__init__(self, array)
-		BuilderExpAntFrameIndexedDataObject.__init__(self, array)
+	def __init__(self, df, definition):
+		Builder1dDataObject.__init__(self, df)
+		BuilderExpAntFrameIndexedDataObject.__init__(self, df)
 		DefinitionBuilder.build_from_definition(self, definition)
 
 	def copy(self, name, category=None, label=None, description=None):
 			return Events1dBuilder.build(
-				array=self.array.copy(), name=name, category=category, label=label, description=description)
+				df=self.df.copy(), name=name, category=category, label=label, description=description)
 
 
 class Events1dBuilder:
@@ -20,9 +20,9 @@ class Events1dBuilder:
 		pass
 
 	@staticmethod
-	def build(array, name, category=None, label=None, description=None):
+	def build(df, name, category=None, label=None, description=None):
 		definition = DefinitionBuilder().build1d(
 			name=name, category=category, object_type='Events',
 			label=label, description=description
 		)
-		return Events1d(array.sort_index(), definition)
+		return Events1d(df.sort_index(), definition)

@@ -64,15 +64,15 @@ class AnalyseMarkings:
 		name = 'marking_interval'
 		print(name)
 
-		id_exp_ant_array = self.exp.markings.get_id_exp_ant_array()
+		id_exp_ant_array = self.exp.markings.get_array_id_exp_ant()
 		marking_interval_list = []
 		for (id_exp, id_ant) in id_exp_ant_array:
 			marks = self.get_marking_of_id_ant_id_exp(id_exp, id_ant)
 			marking_interval_list = self.add_marking_intervals(marking_interval_list, id_ant, id_exp, marks)
 
 		marking_interval_df = self.pd_idx_manager.convert_to_exp_ant_frame_indexed_df(marking_interval_list, name)
-		self.exp.add_new1d(
-			array=marking_interval_df, name=name, object_type='Events1d', category='Markings',
+		self.exp.add_new1d_from_df(
+			df=marking_interval_df, name=name, object_type='Events1d', category='Markings',
 			label='marking intervals', description='Time intervals between two marking events'
 		)
 		self.exp.write(name)
@@ -96,15 +96,15 @@ class AnalyseMarkings:
 		name = 'marking_distance'
 		print(name)
 
-		id_exp_ant_array = self.exp.xy_markings.get_id_exp_ant_array()
+		id_exp_ant_array = self.exp.xy_markings.get_array_id_exp_ant()
 		marking_distance_list = []
 		for (id_exp, id_ant) in id_exp_ant_array:
 			mark_xy = self.get_marking_xy_of_id_ant_id_exp(id_exp, id_ant)
 			marking_distance_list = self.add_marking_distances(marking_distance_list, id_ant, id_exp, mark_xy)
 
 		marking_distance_df = self.pd_idx_manager.convert_to_exp_ant_frame_indexed_df(marking_distance_list, name)
-		self.exp.add_new1d(
-			array=marking_distance_df, name=name, object_type='Events1d', category='Markings',
+		self.exp.add_new1d_from_df(
+			df=marking_distance_df, name=name, object_type='Events1d', category='Markings',
 			label='marking distances', description='Distance between two marking events'
 		)
 		self.exp.write(name)

@@ -9,4 +9,4 @@ class Events2dWriter:
 			raise OSError('not allowed to modify Events2d of the category Raw')
 		else:
 			add = self.root + event2d.category + '/'+event2d.name+'.csv'
-			event2d.array.to_csv(add)
+			event2d.df.to_csv(add)

@@ -63,13 +63,13 @@ class TestRecruitment:
 			t0 = 0
 		if t1 is None:
 			ax.plot(
-				self.exp.x.array.loc[exp, ant, t0:],
-				self.exp.y.array.loc[exp, ant, t0:],
+				self.exp.x.df.loc[exp, ant, t0:],
+				self.exp.y.df.loc[exp, ant, t0:],
 				c=c, ms=ms)
 		else:
 			ax.plot(
-				self.exp.x.array.loc[exp, ant, t0:t1],
-				self.exp.y.array.loc[exp, ant, t0:t1],
+				self.exp.x.df.loc[exp, ant, t0:t1],
+				self.exp.y.df.loc[exp, ant, t0:t1],
 				c=c, ms=ms)
 
 	def plot_mark(self, ax, id_exp, id_ant, c, t0=None, t1=None):
@@ -77,13 +77,13 @@ class TestRecruitment:
 			t0 = 0
 		if t1 is None:
 			ax.plot(
-				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:], 'x'],
-				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:], 'y'],
+				self.exp.xy_markings.df.loc[IdxSc[id_exp, id_ant, t0:], 'x'],
+				self.exp.xy_markings.df.loc[IdxSc[id_exp, id_ant, t0:], 'y'],
 				'o', ms=5, c=c)
 		else:
 			ax.plot(
-				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], 'x'],
-				self.exp.xy_markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], 'y'],
+				self.exp.xy_markings.df.loc[IdxSc[id_exp, id_ant, t0:t1], 'x'],
+				self.exp.xy_markings.df.loc[IdxSc[id_exp, id_ant, t0:t1], 'y'],
 				'o', ms=5, c=c)
 
 	def plot_previous_loops_around_food(self, ax, exp, ant, zone_event_ant, mask, iii):
@@ -122,7 +122,7 @@ class TestRecruitment:
 		for jj in list_ii:
 			t0 = zone_event[jj, 2]
 			t1 = zone_event[jj + 1, 2]
-			zone_visit[zone_event[jj, -1]] += len(self.exp.markings.array.loc[IdxSc[id_exp, id_ant, t0:t1], :])
+			zone_visit[zone_event[jj, -1]] += len(self.exp.markings.df.loc[IdxSc[id_exp, id_ant, t0:t1], :])
 		return zone_visit
 
 	def radial_criterion(self, id_exp, id_ant, zone_event, mask, ii, t_min, id_fma):
@@ -144,9 +144,9 @@ class TestRecruitment:
 		self.exp.load(['x', 'y', 'markings', 'xy_markings'])
 		self.compute_radial_zones()
 
-		ant_exp_dict = self.exp.markings.get_id_exp_ant_dict()
-		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
-		self.exp.add_from_event_extraction(name='zones', new_name='zone_event')
+		ant_exp_dict = self.exp.markings.get_dict_id_exp_ant()
+		ant_exp_array = self.exp.markings.get_array_id_exp_ant()
+		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 		exp_ant_label = []
 		for id_exp in id_exp_list:
 			t_min = np.inf
@@ -154,7 +154,7 @@ class TestRecruitment:
 			for id_ant in ant_exp_dict[id_exp]:
 				if (id_exp, id_ant) in ant_exp_array:
 					print((id_exp, id_ant))
-					zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
+					zone_event_ant = np.array(self.exp.zone_event.df.loc[id_exp, id_ant, :].reset_index())
 					mask = np.where(zone_event_ant[:, -1] == 3)[0]
 					if len(mask) != 0:
 						for ii in range(len(mask) - 1):
@@ -176,12 +176,12 @@ class TestRecruitment:
 			name_to_copy='markings', copy_name='first_markings', category='Markings',
 			label='first markings', description='Markings of the first marking ant'
 		)
-		self.exp.first_markings.array.reset_index(inplace=True)
-		self.exp.first_markings.array.set_index(['id_exp', 'id_ant'], inplace=True)
-		self.exp.first_markings.array = self.exp.first_markings.array.loc[exp_ant_label, :]
-		self.exp.first_markings.array.reset_index(inplace=True)
-		self.exp.first_markings.array.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
-		self.exp.first_markings.array.sort_index(inplace=True)
+		self.exp.first_markings.df.reset_index(inplace=True)
+		self.exp.first_markings.df.set_index(['id_exp', 'id_ant'], inplace=True)
+		self.exp.first_markings.df = self.exp.first_markings.df.loc[exp_ant_label, :]
+		self.exp.first_markings.df.reset_index(inplace=True)
+		self.exp.first_markings.df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+		self.exp.first_markings.df.sort_index(inplace=True)
 
 		self.exp.add_from_filtering(
 			name_to_filter='x', name_filter='first_markings', result_name='x_first_markings',
@@ -201,7 +201,7 @@ class TestRecruitment:
 
 	def compute_batch_threshold_list(self, id_exp, id_ant):
 		self.exp.load('marking_interval')
-		mark_interval_ant = np.array(self.exp.marking_interval.array.loc[id_exp, id_ant, :].reset_index())
+		mark_interval_ant = np.array(self.exp.marking_interval.df.loc[id_exp, id_ant, :].reset_index())
 		# n_occ, times = np.histogram(mark_interval_ant[:, -1], bins=range(0, 1000, 10))
 		# plt.loglog((times[1:]+times[:-1])/2., n_occ/np.sum(n_occ), '.-')
 		n_occ, times = np.histogram(mark_interval_ant[:, -1], bins='fd')
@@ -260,9 +260,9 @@ class TestRecruitment:
 		self.exp.load(['x', 'y', 'markings', 'xy_markings', 'r_markings'])
 		self.compute_radial_zones()
 
-		ant_exp_dict = self.exp.markings.get_id_exp_ant_dict()
-		ant_exp_array = self.exp.markings.get_id_exp_ant_array()
-		self.exp.add_from_event_extraction(name='zones', new_name='zone_event')
+		ant_exp_dict = self.exp.markings.get_dict_id_exp_ant()
+		ant_exp_array = self.exp.markings.get_array_id_exp_ant()
+		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# thresh_hist = []
@@ -277,7 +277,7 @@ class TestRecruitment:
 						thresh_list = self.compute_batch_threshold_list(id_exp, id_ant)
 						print(np.around(thresh_list))
 						# thresh_hist.append(thresh_list[1])
-						zone_event_ant = np.array(self.exp.zone_event.array.loc[id_exp, id_ant, :].reset_index())
+						zone_event_ant = np.array(self.exp.zone_event.df.loc[id_exp, id_ant, :].reset_index())
 						mask = np.where(zone_event_ant[:, -1] == 3)[0]
 
 						for ii in range(len(mask) - 1):
@@ -412,7 +412,7 @@ class TestRecruitment:
 		for orientation in orientations:
 			new_name = 'xy_first_markings_' + orientation
 			indexes = np.array(
-				self.exp.setup_orientation.array.loc[lambda df: df.setup_orientation == orientation].index)
+				self.exp.setup_orientation.df.loc[lambda df: df.setup_orientation == orientation].index)
 			self.exp.add_copy2d(
 				name_to_copy='xy_first_markings', copy_name=new_name,
 				new_xname='x', new_yname='y',
@@ -420,8 +420,8 @@ class TestRecruitment:
 				label='first markings (setup oriented ' + orientation + ')', xlabel='x', ylabel='y',
 				description='Markings of the first marking ant with the setup oriented ' + orientation
 			)
-			self.exp.__dict__[new_name].array.reset_index().set_index('id_exp', inplace=True)
-			self.exp.__dict__[new_name].array = self.exp.__dict__[new_name].array.loc[indexes]
+			self.exp.__dict__[new_name].df.reset_index().set_index('id_exp', inplace=True)
+			self.exp.__dict__[new_name].df = self.exp.__dict__[new_name].df.loc[indexes]
 			self.exp.plot_repartition(new_name, **kwargs)
 			# self.exp.plot_repartition_hist(new_name)
 			plt.plot(orient_coord[orientation][0], orient_coord[orientation][1], 'o', c='r', ms=10)
@@ -444,12 +444,12 @@ class TestRecruitment:
 				description='Markings of the first marking ant with the setup oriented ' + orientation
 			)
 			indexes = np.array(
-				self.exp.setup_orientation.array.loc[lambda df: df.setup_orientation == orientation].index)
-			self.exp.__dict__[new_name].array.reset_index().set_index('id_exp', inplace=True)
-			self.exp.__dict__[new_name].array = self.exp.__dict__[new_name].array.loc[indexes]
+				self.exp.setup_orientation.df.loc[lambda df: df.setup_orientation == orientation].index)
+			self.exp.__dict__[new_name].df.reset_index().set_index('id_exp', inplace=True)
+			self.exp.__dict__[new_name].df = self.exp.__dict__[new_name].df.loc[indexes]
 
-			indexes = np.array(self.exp.xy_first_markings.array.loc[lambda df: df.x ** 2 + df.y ** 2 < 110 ** 2].index)
-			self.exp.__dict__[new_name].array = self.exp.__dict__[new_name].array.loc[indexes]
+			indexes = np.array(self.exp.xy_first_markings.df.loc[lambda df: df.x ** 2 + df.y ** 2 < 110 ** 2].index)
+			self.exp.__dict__[new_name].df = self.exp.__dict__[new_name].df.loc[indexes]
 
 			self.exp.plot_repartition(new_name)
 			# self.exp.plot_repartition_hist(new_name)

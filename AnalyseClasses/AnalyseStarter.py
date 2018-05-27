@@ -14,8 +14,8 @@ class AnalyseStarter:
 
 	def __sort_and_rewrite_markings(self):
 		add = self.root + 'Raw/markings.csv'
-		array = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
-		array.sort_index().to_csv(add)
+		df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+		df.sort_index().to_csv(add)
 		
 	def __fill_and_write_definition_dict(self, redo):
 		definition_dict = self.__init_definition_dict(redo)

@@ -13,25 +13,25 @@ class PandasIndexManager:
 		return df
 
 	@staticmethod
-	def get_id_exp_array(array):
-		arr = array.reset_index()
+	def get_array_id_exp(df):
+		arr = df.reset_index()
 		if 'id_exp' not in arr.columns:
 			raise IndexError('array does not have id_exp as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp']).index])
-			return sorted(idx_set)
+			return np.array(sorted(idx_set), dtype=int)
 
 	@staticmethod
-	def get_id_exp_ant_array(array):
-		arr = array.reset_index()
+	def get_array_id_exp_ant(df):
+		arr = df.reset_index()
 		if 'id_exp' not in arr.columns or 'id_ant' not in arr.columns:
 			raise IndexError('array does not have id_exp or id_ant as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp', 'id_ant']).index])
 			return np.array(sorted(idx_set), dtype=int)
 
-	def get_id_exp_ant_dict(self, array):
-		index_array = self.get_id_exp_ant_array(array)
+	def get_dict_id_exp_ant(self, df):
+		index_array = self.get_array_id_exp_ant(df)
 		res = dict()
 		for (id_exp, id_ant) in index_array:
 			if id_exp in res:
@@ -43,16 +43,16 @@ class PandasIndexManager:
 		return res
 
 	@staticmethod
-	def get_id_exp_ant_frame_array(array):
-		arr = array.reset_index()
+	def get_array_id_exp_ant_frame(df):
+		arr = df.reset_index()
 		if 'id_exp' not in arr.columns or 'id_ant' not in arr.columns or 'frame' not in arr.columns:
 			raise IndexError('array does not have id_exp or id_ant or frame as index')
 		else:
 			idx_set = set([idx for idx in arr.set_index(['id_exp', 'id_ant', 'frame']).index])
-			return sorted(idx_set)
+			return np.array(sorted(idx_set), dtype=int)
 
-	def get_id_exp_ant_frame_dict(self, array):
-		index_array = self.get_id_exp_ant_frame_array(array)
+	def get_dict_id_exp_ant_frame(self, df):
+		index_array = self.get_array_id_exp_ant_frame(df)
 		res = dict()
 		for (id_exp, id_ant, frame) in index_array:
 			if id_exp in res:

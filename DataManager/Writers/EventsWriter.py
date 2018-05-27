@@ -9,4 +9,4 @@ class EventsWriter:
 			raise OSError('not allowed to modify Events of the category Raw')
 		else:
 			add = self.root + event.category + '/'+event.name+'.csv'
-			event.array.to_csv(add)
+			event.df.to_csv(add)

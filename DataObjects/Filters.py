@@ -7,7 +7,7 @@ class Filters:
 
 	@staticmethod
 	def filter(obj, event, name, label=None, category=None, description=None):
-		index = event.array.index
-		array = obj.array.loc[index, :]
+		index = event.df.index
+		df = obj.df.loc[index, :]
 		return Events1dBuilder.build(
-			array=array, name=name, category=category, label=label, description=description)
+			df=df, name=name, category=category, label=label, description=description)

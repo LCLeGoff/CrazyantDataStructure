@@ -11,6 +11,6 @@ class TimeSeriesWriter:
 			raise OSError('not allowed to modify TimeSeries of the category Raw')
 		else:
 			add = self.root + ts.category + '/TimeSeries.csv'
-			array = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
-			array[ts.name] = ts.array
-			array.to_csv(add)
+			df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+			df[ts.name] = ts.df
+			df.to_csv(add)

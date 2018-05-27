@@ -34,22 +34,22 @@ group = 'FMAB'
 # for name in ['x0', 'major_axis_length']:
 # 	print(name)
 # 	TS = TSLoad.load(DefinitionLoader.build(name))
-# 	print(TS.array.head())
+# 	print(TS.df.head())
 # 	TS.operation(lambda x: x/10.)
-# 	print(TS.array.head())
+# 	print(TS.df.head())
 #
 # EventsLoad = EventsLoader(root, group)
 # for name in ['markings']:
 # 	print(name)
 # 	Ev = EventsLoad.load(DefinitionLoader.build(name))
-# 	print(Ev.array.head())
+# 	print(Ev.df.head())
 # 	Ev.operation(lambda x: x/10.)
-# 	print(Ev.array.head())
+# 	print(Ev.df.head())
 
 # FMAB = ExperimentGroupBuilder(root).build(group)
 # FMAB.load(['x0', 'y0', 'mm2px', 'crop_limit_x', 'food_center', 'ref_pts2', 'entrance1'])
-# print(FMAB.x0.description, FMAB.x0.name, FMAB.x0.array.index[0][0])
-# print(FMAB.food_center.description, FMAB.food_center.name, type(FMAB.x0.array.index[0][0]))
+# print(FMAB.x0.description, FMAB.x0.name, FMAB.x0.df.index[0][0])
+# print(FMAB.food_center.description, FMAB.food_center.name, type(FMAB.x0.df.index[0][0]))
 # print(FMAB.crop_limit_x.description, FMAB.crop_limit_x.name)
 # print(FMAB.mm2px.description, FMAB.mm2px.name)
 # print(FMAB.ref_pts2.description, FMAB.ref_pts2.name)
@@ -63,7 +63,7 @@ group = 'FMAB'
 # 	exp.plot_hist1d('marking_interval', 'fd', xscale='log', yscale='log', group=0)
 #
 # 	exp.load('xy_markings')
-# 	array_of_idx_exp_ant = exp.xy_markings.get_id_exp_ant_array()
+# 	array_of_idx_exp_ant = exp.xy_markings.get_array_id_exp_ant()
 # 	dist = []
 # 	for (id_exp, id_ant) in array_of_idx_exp_ant:
 # 		xy_marks = exp.xy_markings.get_row_id_exp_ant(id_exp, id_ant)
