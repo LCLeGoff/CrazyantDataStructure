@@ -1,21 +1,14 @@
 from matplotlib import pyplot as plt
 
+from Plotter.LineFeatureArguments import LineFeatureArguments
+
 
 class BasePlotters:
 	def __init__(self, **kwargs):
-		default_args = {
-			"ls": '-',
-			"lw": 3,
-			"c": ('c', 'w'),
-			"alpha": 1,
-			"ms": 5
-		}
-		self.__dict__.update(default_args)
-		for (arg_name, default_value) in default_args.items():
-			if arg_name in default_args:
-				setattr(self, arg_name, kwargs.get(arg_name, default_value))
-			else:
-				raise TypeError('Plotters does not have '+arg_name+' as argument')
+		self.line = LineFeatureArguments()
+		for arg_name in self.line.__dict__:
+			if arg_name in kwargs:
+				self.line.__dict__[arg_name] = kwargs[arg_name]
 
 	@staticmethod
 	def black_background(fig, ax):
