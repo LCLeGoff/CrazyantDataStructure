@@ -44,3 +44,10 @@ class BuilderDataObject:
 			raise IndexError('Index '+str(idx)+' already exists')
 		else:
 			self.df.loc[idx] = value
+
+	def add_rows(self, idx_list, value_list, replace=False):
+		if len(idx_list) == len(value_list):
+			for ii in range(len(idx_list)):
+				self.add_row(idx_list[ii], value_list[ii], replace=replace)
+		else:
+			raise IndexError('Index and value list not same lengths')

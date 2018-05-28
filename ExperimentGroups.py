@@ -169,7 +169,7 @@ class ExperimentGroups:
 
 	def __create_empty_1d_df(self, name, object_type):
 		if object_type in ['Events1d', 'TimeSeries1d']:
-			df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_df(name)
+			df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_1d_df(name)
 		elif object_type in ['AntCharacteristics1d']:
 			df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
 		elif object_type in ['Characteristics1d']:
@@ -180,9 +180,15 @@ class ExperimentGroups:
 			raise IndexError('Object type ' + object_type + ' unknown')
 		return df
 
-	def add_new2d_empty(self, name, object_type, category=None, label=None, description=None):
-		obj = Builder.build1d(
-			df=np.zeros((0, 5)), name=name, object_type=object_type, category=category, label=label, description=description)
+	def add_new2d_empty(
+			self, name, xname, yname, object_type, category=None,
+			label=None, xlabel=None, ylabel=None, description=None):
+
+		obj = Builder.build2d_from_array(
+			array=np.zeros((0, 5)), name=name, xname=xname, yname=yname,
+			object_type=object_type, category=category,
+			label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
 		self.add_object(name, obj)
 
 	def add_new1d_from_df(self, df, name, object_type, category=None, label=None, description=None):
@@ -212,7 +218,7 @@ class ExperimentGroups:
 
 	def __convert_array_to_1d_df(self, array, name, object_type):
 		if object_type in ['Events1d', 'TimeSeries1d']:
-			df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_df(array, name)
+			df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_1d_df(array, name)
 		elif object_type in ['AntCharacteristics1d']:
 			df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
 		elif object_type in ['Characteristics1d']:

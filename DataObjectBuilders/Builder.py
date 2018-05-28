@@ -5,11 +5,12 @@ from DataObjects.Events1d import Events1dBuilder
 from DataObjects.Events2d import Events2dBuilder
 from DataObjects.TimeSeries1d import TimeSeries1dBuilder
 from DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class Builder:
 	def __init__(self):
-		pass
+		self.panda_index_manager = PandasIndexManager()
 
 	@staticmethod
 	def build1d(df, name, object_type, category=None, label=None, description=None):
@@ -48,3 +49,16 @@ class Builder:
 				description=description)
 		else:
 			raise TypeError('Type '+object_type+' is unknown or 1d')
+
+	@staticmethod
+	def build2d_from_array(
+			array, name, xname, yname, object_type, category=None, label=None, xlabel=None, ylabel=None, description=None):
+		if len(array) == 0:
+			df = Builder().panda_index_manager.create_empty_exp_ant_frame_indexed_2d_df(xname, yname)
+		else:
+			df = Builder().panda_index_manager.convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname)
+		Builder.build2d_from_df(
+			df=df, object_type=object_type,
+			name=name, xname=xname, yname=yname,
+			category=category, label=label, xlabel=xlabel, ylabel=ylabel,
+			description=description)

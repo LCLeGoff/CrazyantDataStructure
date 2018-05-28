@@ -17,8 +17,13 @@ class PandasIndexManager:
 		return df.sort_index()
 
 	@staticmethod
-	def create_empty_exp_ant_frame_indexed_df(name):
+	def create_empty_exp_ant_frame_indexed_1d_df(name):
 		df = pd.DataFrame(columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame'])
+		return df.sort_index()
+
+	@staticmethod
+	def create_empty_exp_ant_frame_indexed_2d_df(xname, yname):
+		df = pd.DataFrame(columns=['id_exp', 'id_ant', 'frame', xname, yname]).set_index(['id_exp', 'id_ant', 'frame'])
 		return df.sort_index()
 
 	@staticmethod
@@ -34,8 +39,14 @@ class PandasIndexManager:
 		return df.sort_index()
 
 	@staticmethod
-	def convert_to_exp_ant_frame_indexed_df(array, name):
+	def convert_to_exp_ant_frame_indexed_1d_df(array, name):
 		df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', name])
+		df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+		return df.sort_index()
+
+	@staticmethod
+	def convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname):
+		df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', xname, yname])
 		df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
 		return df.sort_index()
 
