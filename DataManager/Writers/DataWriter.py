@@ -6,7 +6,6 @@ from DataManager.Writers.TimeSeriesWriter import TimeSeriesWriter
 
 class DataWriter:
 	def __init__(self, root, group):
-		self.root = root+group+'/'
 		self.definition_writer = DefinitionWriter(root, group)
 		self.time_series_writer = TimeSeriesWriter(root, group)
 		self.events_writer = Events1dWriter(root, group)

@@ -4,7 +4,6 @@ import pandas as pd
 class TimeSeriesWriter:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
-		self.categories = dict()
 
 	def write(self, ts):
 		if ts.category == 'Raw':

@@ -2,7 +2,6 @@
 class AntCharacteristics1dWriter:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
-		self.categories = dict()
 
 	def write(self, ant_chara):
 		if ant_chara.category == 'Raw':

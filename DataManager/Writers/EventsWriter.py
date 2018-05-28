@@ -2,7 +2,6 @@
 class Events1dWriter:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
-		self.categories = dict()
 
 	def write(self, event):
 		if event.category == 'Raw':
@@ -15,7 +14,6 @@ class Events1dWriter:
 class Events2dWriter:
 	def __init__(self, root, group):
 		self.root = root+group+'/'
-		self.categories = dict()
 
 	def write(self, event2d):
 		if event2d.category == 'Raw':

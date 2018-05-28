@@ -1,7 +1,6 @@
 from DataObjects.AntCharacteristics1d import AntCharacteristics1dBuilder
 from DataObjects.Characteristics1d import Characteristics1dBuilder
 from DataObjects.Characteristics2d import Characteristics2dBuilder
-from DataObjects.Definitions import DefinitionBuilder
 from DataObjects.Events1d import Events1dBuilder
 from DataObjects.Events2d import Events2dBuilder
 from DataObjects.TimeSeries1d import TimeSeries1dBuilder
