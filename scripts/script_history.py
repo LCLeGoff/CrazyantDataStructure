@@ -18,4 +18,5 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
 	# mark.compute_marking_distance()
 
 	recruit = Recruitment(root, group)
-	recruit.compute_marking_batch()
+	# recruit.compute_marking_batch()
+	recruit.compute_recruitment()

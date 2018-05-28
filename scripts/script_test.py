@@ -84,11 +84,11 @@ group = 'FMAB'
 # 	# mark.spatial_repartition_first_markings_2d_hist()
 # plt.show()
 
-# for group in ['FMABU']:
+# for group in ['FMABW']:
 # 	print(group)
 # 	test_recruit = TestRecruitment(root, group)
 # 	# test_recruit.compute_first_marking_ant_radial_criterion(show=False)
-# 	test_recruit.compute_first_marking_ant_batch_criterion(show=True, id_exp_list=range(8, 9))
+# 	test_recruit.compute_first_marking_ant_batch_criterion(show=True)
 # 	# test_recruit.compute_first_marking_ant_setup_orientation()
 # 	# test_recruit.compute_first_marking_ant_setup_orientation_circle()
 # plt.show()
@@ -98,5 +98,5 @@ for group in ['FMAB']:
 	print(group)
 	recruit = Recruitment(root, group)
 	# recruit.compute_marking_batch()
-	recruit.compute_recruitment(range(10))
+	recruit.compute_recruitment()
 plt.show()
