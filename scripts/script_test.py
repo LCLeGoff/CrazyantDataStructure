@@ -94,9 +94,18 @@ group = 'FMAB'
 # plt.show()
 # #
 # #
-for group in ['FMAB']:
-	print(group)
-	recruit = Recruitment(root, group)
-	# recruit.compute_marking_batch()
-	recruit.compute_recruitment()
-plt.show()
+# for group in ['FMAB']:
+# 	print(group)
+# 	recruit = Recruitment(root, group)
+# 	# recruit.compute_marking_batch()
+# 	recruit.compute_recruitment()
+# plt.show()
+
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+# 	exp = ExperimentGroupBuilder(root).build(group)
+# 	exp.rename_data('marking_batch_interval', 'marking_batch_intervals')
+# 	exp.rename_data('marking_interval', 'marking_intervals')
+# 	exp.rename_data('marking_batch_time_threshold', 'marking_batch_time_thresholds')
+# 	exp.rename_data('marking_batch_distance_threshold', 'marking_batch_distance_thresholds')
+# 	exp.rename_data('polar_markings', 'rphi_markings')
+# 	exp.rename_data('marking_distance', 'marking_distances')

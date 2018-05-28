@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 
+from DataManager.Deleters.DataDeleter import DataDeleter
 from DataManager.Loaders.DataLoader import DataLoader
 from DataManager.Writers.DataWriter import DataWriter
 from Tools.JsonFiles import import_id_exp_list, write_obj
@@ -10,11 +11,15 @@ class DataFileManager:
 
 	def __init__(self, root, group):
 		self.root = root+group+'/'
+
 		self.data_loader = DataLoader(root, group)
 		self.data_writer = DataWriter(root, group)
+		self.data_deleter = DataDeleter(root, group)
+
 		self.existing_categories = set([
 			self.data_loader.definition_loader.definition_dict[key]['category']
 			for key in self.data_loader.definition_loader.definition_dict.keys()])
+
 		self.id_exp_list = import_id_exp_list(self.root)
 		self.id_exp_list.sort()
 		self.exp_ant_frame_index = None
@@ -51,3 +56,6 @@ class DataFileManager:
 		else:
 			self.create_new_category(obj.category)
 			self.data_writer.write(obj)
+
+	def delete(self, obj):
+		self.data_deleter.delete(obj)
