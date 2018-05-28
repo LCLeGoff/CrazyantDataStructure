@@ -1,4 +1,5 @@
 from AnalyseClasses.Markings.Recruitment import Recruitment
+from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.Markings.TestRecruitment import TestRecruitment
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
@@ -109,3 +110,9 @@ group = 'FMAB'
 # 	exp.rename_data('marking_batch_distance_threshold', 'marking_batch_distance_thresholds')
 # 	exp.rename_data('polar_markings', 'rphi_markings')
 # 	exp.rename_data('marking_distance', 'marking_distances')
+
+
+for group in ['FMAB']:
+	print(group)
+	recruit_direction = RecruitmentDirection(root, group)
+	recruit_direction.compute_recruitment_direction()
