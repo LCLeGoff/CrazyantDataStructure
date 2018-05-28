@@ -152,24 +152,24 @@ class Recruitment:
 	def __write_batch_threshold(self, batch_time_thresh_list, batch_distance_thresh_list):
 		self.exp.add_new1d_from_array(
 			array=np.array(batch_time_thresh_list, dtype=int),
-			name='marking_batch_time_threshold',
+			name='marking_batch_time_thresholds',
 			object_type='AntCharacteristics1d', category='Markings',
 			label='Marking batch time threshold',
 			description='Individual time threshold to define the batches of the marking events'
 		)
 		self.exp.add_new1d_from_array(
 			array=np.array(batch_distance_thresh_list, dtype=int),
-			name='marking_batch_distance_threshold',
+			name='marking_batch_distance_thresholds',
 			object_type='AntCharacteristics1d', category='Markings',
 			label='Marking batch distance threshold',
 			description='Individual distance threshold to define the batches of the marking events'
 		)
-		self.exp.write(['marking_batch_time_threshold', 'marking_batch_distance_threshold'])
+		self.exp.write(['marking_batch_time_thresholds', 'marking_batch_distance_thresholds'])
 
 	def __write_batch_intervals(self, batch_interval_list):
 		self.exp.add_new1d_from_array(
 			array=np.array(batch_interval_list, dtype=int),
-			name='marking_batch_interval',
+			name='marking_batch_intervals',
 			object_type='Events1d', category='Markings',
 			label='Marking batch interval',
 			description='Time intervals between the beginning and the end of the batches of the marking events'
