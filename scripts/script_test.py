@@ -6,6 +6,7 @@ from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, C
 from DataManager.Loaders.DefinitionLoader import DefinitionLoader
 from DataManager.Loaders.EventsLoader import Events1dLoader
 from DataManager.Loaders.TimeSeriesLoader import TimeSeries1dLoader
+from Plotter.Plotter2d import Plotter2d
 from Tools.Geometry import distance
 from scripts.root import root
 from AnalyseClasses.Markings.BaseMarkings import AnalyseMarkings
@@ -112,7 +113,38 @@ group = 'FMAB'
 # 	exp.rename_data('marking_distance', 'marking_distances')
 
 
-for group in ['FMAB']:
-	print(group)
-	recruit_direction = RecruitmentDirection(root, group)
-	recruit_direction.compute_recruitment_direction()
+# for group in ['FMAB']:
+# 	print(group)
+# 	recruit_direction = RecruitmentDirection(root, group)
+# 	recruit_direction.compute_recruitment_direction()
+
+# plot2d = Plotter2d()
+# fig, ax = plot2d.create_plot()
+# plot2d.draw_setup(fig, ax)
+# plt.show()
+
+for group in ['FMAB', 'FMABU', 'FMABW']:
+	exp = ExperimentGroupBuilder(root).build(group)
+	# preplot = Plotter2d().create_plot(figsize=(6.5, 5))
+	# exp.load_as_2d('x', 'y', 'xy')
+	# preplot = exp.xy.plotter.repartition_in_arena(ls='-', lw=1, marker='')
+	# exp.load('marking_intervals')
+	# exp.filter_with_time_intervals('xy', 'marking_intervals', 'marking_traj')
+	# exp.marking_traj.plot_repartition_in_arena(preplot=preplot, ls='-', lw=1, marker='')
+	# exp.load(['xy_markings', 'recruitment_intervals'])
+	# preplot = exp.xy_markings.plotter.repartition_in_arena(alpha=1)
+	# exp.filter_with_time_intervals(
+	# 	'xy_markings', 'recruitment_intervals', 'xy_recruitments', label='', xlabel='', ylabel='', replace=True)
+	# exp.load('xy_recruitments')
+	# exp.xy_recruitments.plotter.repartition_in_arena(color_variety='frame', preplot=preplot, title_prefix=group, alpha=1)
+	exp.load(['phi_markings', 'recruitment_intervals'])
+	dtheta = 0.2
+	bins = np.arange(0, np.pi+dtheta/2., dtheta)
+	exp.operation('phi_markings', lambda x: np.abs(x))
+	preplot = exp.phi_markings.plotter.hist1d(c='r', bins=bins, normed=True, xscale='log', yscale='log')
+	exp.filter_with_time_intervals(
+		'phi_markings', 'recruitment_intervals', 'phi_recruitments', label='', xlabel='', ylabel='', replace=True)
+	exp.phi_recruitments.plotter.hist1d(
+		bins=bins, normed=True, title_prefix=group, preplot=preplot, xscale='log', yscale='log')
+
+plt.show()
