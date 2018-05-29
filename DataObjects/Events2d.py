@@ -3,6 +3,7 @@ import pandas as pd
 from DataObjects.Definitions import DefinitionBuilder
 from DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
+from Plotter.Plotter2d import Plotter2d
 
 
 class Events2d(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
@@ -10,6 +11,7 @@ class Events2d(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
 		Builder2dDataObject.__init__(self, df)
 		BuilderExpAntFrameIndexedDataObject.__init__(self, df)
 		DefinitionBuilder.build_from_definition(self, definition)
+		self.plotter = Plotter2d(self)
 
 	def copy(self, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
 			return Events2dBuilder.build_from_df(

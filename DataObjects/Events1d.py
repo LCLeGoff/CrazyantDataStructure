@@ -2,6 +2,7 @@
 from DataObjects.Definitions import DefinitionBuilder
 from DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
 from DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
+from Plotter.Plotter1d import Plotter1d
 
 
 class Events1d(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
@@ -9,6 +10,7 @@ class Events1d(Builder1dDataObject, BuilderExpAntFrameIndexedDataObject):
 		Builder1dDataObject.__init__(self, df)
 		BuilderExpAntFrameIndexedDataObject.__init__(self, df)
 		DefinitionBuilder.build_from_definition(self, definition)
+		self.plotter = Plotter1d(self)
 
 	def copy(self, name, category=None, label=None, description=None):
 			return Events1dBuilder.build(

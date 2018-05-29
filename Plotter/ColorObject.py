@@ -1,3 +1,5 @@
+import numpy as np
+
 from matplotlib import colors
 from matplotlib import pyplot as plt
 
@@ -27,5 +29,7 @@ class ColorObject:
 			norm = colors.Normalize(0, len(idx_list)-1)
 			cmap = plt.get_cmap(cmap)
 			for i, idx in enumerate(idx_list):
+				if isinstance(idx, np.ndarray):
+					idx = tuple(idx)
 				cols[idx] = cmap(norm(i))
 		return cols
