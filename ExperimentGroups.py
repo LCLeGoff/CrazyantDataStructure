@@ -7,7 +7,6 @@ from DataObjects.Filters import Filters
 from DataObjects.TimeSeries2d import TimeSeries2dBuilder
 from PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Plotter.Plotter1d import Plotter1d
-from Plotter.Plotter2d import Plotter2d
 
 
 class ExperimentGroups:
@@ -17,7 +16,6 @@ class ExperimentGroups:
 		self.group = group
 		self.data_manager = DataFileManager(root, group)
 		self.pandas_index_manager = PandasIndexManager()
-		self.plotter2d = Plotter2d()
 		self.id_exp_list = id_exp_list
 		self.id_exp_list.sort()
 		self.names = set()
@@ -74,7 +72,24 @@ class ExperimentGroups:
 		for name in names:
 			self.data_manager.delete(self.__dict__[name])
 
-	def is_1d(self, name):
+	def load_as_2d(
+			self, name1, name2, result_name,
+			xname=None, yname=None,
+			category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+		self.load([name1, name2])
+
+		is_name1_time_series_1d = self.get_object_type(name1) == 'TimeSeries1d'
+		is_name2_time_series_1d = self.get_object_type(name2) == 'TimeSeries1d'
+
+		if is_name1_time_series_1d and is_name2_time_series_1d:
+
+			self.add_2d_from_1ds(
+				name1=name1, name2=name2, result_name=result_name,
+				xname=xname, yname=yname, category=category,
+				label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+	def _is_1d(self, name):
 		object_type = self.get_object_type(name)
 		if object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d']:
 			return False
@@ -83,9 +98,13 @@ class ExperimentGroups:
 		else:
 			raise TypeError('Object type '+object_type+' unknown')
 
+	def _is_indexed_by_exp_ant_frame(self, name):
+		object_type = self.get_object_type(name)
+		return object_type in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']
+
 	def rename_data(self, old_name, new_name):
 		self.load(old_name)
-		if self.is_1d(old_name):
+		if self._is_1d(old_name):
 			self.add_copy1d(name_to_copy=old_name, copy_name=new_name, copy_definition=True)
 		else:
 			self.add_copy2d(name_to_copy=old_name, copy_name=new_name, copy_definition=True)
@@ -229,18 +248,53 @@ class ExperimentGroups:
 			raise IndexError('Object type ' + object_type + ' unknown')
 		return df
 
-	def add_from_filtering(self, name_to_filter, name_filter, result_name, label=None, category=None, description=None):
-		object_type1 = self.get_object_type(name_to_filter)
-		object_type2 = self.get_object_type(name_filter)
-		if object_type1 in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']\
-			and object_type2 in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']:
-			self.add_object(
-				result_name,
-				Filters().filter(
-					obj=self.__dict__[name_to_filter], event=self.__dict__[name_filter],
-					name=result_name, label=label, category=category, description=description))
+	def filter_with_time_occurrences(
+			self, name_to_filter, filter_name, result_name, label=None, category=None, description=None):
+
+		name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
+		name_filter_can_be_a_filter = self._is_indexed_by_exp_ant_frame(filter_name)
+
+		if name_to_filter_can_be_filtered and name_filter_can_be_a_filter:
+			obj_filtered = Filters().filter(
+				obj=self.__dict__[name_to_filter], event=self.__dict__[filter_name],
+				name=result_name, label=label, category=category,
+				description=description)
+			self.add_object(result_name, obj_filtered)
 		else:
-			raise TypeError('Filter can not be applied on '+object_type1+' or '+object_type2)
+			raise TypeError('Filter can not be applied on '+name_to_filter+' or '+filter_name+' is not a filter')
+
+	def filter_with_time_intervals(
+			self, name_to_filter, name_intervals, result_name,
+			category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
+
+		name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
+		name_interval_can_be_a_filter = self.get_object_type(name_intervals) == 'Events1d'
+
+		if name_to_filter_can_be_filtered and name_interval_can_be_a_filter:
+			self.add_new_empty_basing_on_model(
+				name_to_filter, result_name, category, label, xlabel, ylabel, description)
+
+			intervals_array = self.__dict__[name_intervals].convert_df_to_array()
+			for id_exp, id_ant, t, dt in intervals_array:
+				temp_df = self.__dict__[name_to_filter].get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, t + dt)
+				self.__dict__[result_name].add_df_as_rows(temp_df, replace=replace)
+
+	def add_new_empty_basing_on_model(
+			self, model_name, result_name, category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+		name_to_filter_is_1d = self._is_1d(model_name)
+		if name_to_filter_is_1d:
+			self.add_new1d_empty(
+				name=result_name, object_type='Events1d',
+				category=category, label=label, description=description
+			)
+		else:
+			xname = self.get_xname(model_name)
+			yname = self.get_yname(model_name)
+			self.add_new2d_empty(
+				name=result_name, xname=xname, yname=yname, object_type='Events2d',
+				category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description
+			)
 
 	def operation(self, name, fct):
 		self.__dict__[name].operation(fct)
@@ -264,7 +318,12 @@ class ExperimentGroups:
 			raise TypeError(
 				'Operation not defined between ' + self.get_object_type(name2) + ' and ' + self.get_object_type(name2))
 
-	def add_event_extracted_from_timeseries(self, name_ts, name_extracted_events, label=None, category=None, description=None):
+	def add_event_extracted_from_timeseries(
+			self, name_ts, name_extracted_events, label=None, category=None, description=None):
+
 		if self.get_object_type(name_ts) == 'TimeSeries1d':
-			event = self.__dict__[name_ts].extract_event(name=name_extracted_events, category=category, label=label, description=description)
+
+			event = self.__dict__[name_ts].extract_event(
+				name=name_extracted_events, category=category, label=label, description=description)
+
 			self.add_object(name_extracted_events, event)
