@@ -77,7 +77,7 @@ class AnalyseMarkings:
 		lg = len(mark_times)
 		id_exp_array = np.full(lg, id_exp)
 		id_ant_array = np.full(lg, id_ant)
-		marking_interval = marks[1:, 2] - marks[:-1, 2]
+		marking_interval = marks[1:, 2]-marks[:-1, 2]-1
 		marking_interval_list += list(zip(id_exp_array, id_ant_array, mark_times, marking_interval))
 		return marking_interval_list
 
