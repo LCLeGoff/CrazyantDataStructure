@@ -7,7 +7,6 @@ from PandasIndexManager.PandasIndexManager import PandasIndexManager
 class BuilderDataObject:
 	def __init__(self, df):
 		self.df = df
-		# self.df.sort_index(inplace=True)
 
 	def operation(self, fct):
 		self.df = fct(self.df)
@@ -39,6 +38,23 @@ class BuilderDataObject:
 	def get_index_dict_of_id_exp_ant(self):
 		return PandasIndexManager().get_dict_id_exp_ant(self.df)
 
+	def get_index_dict_of_id_exp_ant_frame(self):
+		return PandasIndexManager().get_dict_id_exp_ant_frame(self.df)
+
+	def get_array_of_all_ants_of_exp(self, id_exp):
+		id_exp_ant_frame_array = self.get_index_array_of_id_exp_ant_frame()
+		idx_where_id_exp = np.where(id_exp_ant_frame_array[:, 0] == id_exp)
+		res = set(id_exp_ant_frame_array[idx_where_id_exp, 1])
+		res = sorted(res)
+		return np.array(res)
+
+	def get_array_of_all_frames_of_exp(self, id_exp):
+		id_exp_ant_frame_array = self.get_index_array_of_id_exp_ant_frame()
+		idx_where_id_exp = np.where(id_exp_ant_frame_array[:, 0] == id_exp)[0]
+		res = set(id_exp_ant_frame_array[idx_where_id_exp, 2])
+		res = sorted(res)
+		return np.array(res)
+
 	def add_row(self, idx, value, replace=False):
 		if replace is False and idx in self.df.index:
 			raise IndexError('Index '+str(idx)+' already exists')
@@ -51,3 +67,11 @@ class BuilderDataObject:
 				self.add_row(idx_list[ii], value_list[ii], replace=replace)
 		else:
 			raise IndexError('Index and value list not same lengths')
+
+	def add_df_as_rows(self, df, replace=False):
+		df.columns = self.df.columns
+		dfs_to_concat = [self.df, df]
+		self.df = pd.concat(dfs_to_concat, verify_integrity=not replace)
+		if replace:
+			idx_to_keep = ~self.df.index.duplicated(keep='last')
+			self.df = self.df[idx_to_keep]
