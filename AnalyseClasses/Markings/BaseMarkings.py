@@ -16,8 +16,8 @@ class AnalyseMarkings:
 		print(name)
 		self.exp.load(['x', 'y', 'markings'])
 
-		self.exp.add_from_filtering(name_to_filter='x', name_filter='markings', result_name='x_markings')
-		self.exp.add_from_filtering(name_to_filter='y', name_filter='markings', result_name='y_markings')
+		self.exp.filter_with_time_occurrences(name_to_filter='x', filter_name='markings', result_name='x_markings')
+		self.exp.filter_with_time_occurrences(name_to_filter='y', filter_name='markings', result_name='y_markings')
 
 		self.exp.add_2d_from_1ds(
 			name1='x_markings', name2='y_markings',
@@ -33,14 +33,14 @@ class AnalyseMarkings:
 		print('xy_marking_polar')
 		self.exp.load(['r', 'phi', 'markings'])
 
-		self.exp.add_from_filtering(
-			name_to_filter='r', name_filter='markings', result_name='r_markings',
+		self.exp.filter_with_time_occurrences(
+			name_to_filter='r', filter_name='markings', result_name='r_markings',
 			category='Markings', label='marking radial coordinates',
 			description='radial coordinates of ant positions, while marking')
 		self.exp.write('r_markings')
 
-		self.exp.add_from_filtering(
-			name_to_filter='phi', name_filter='markings', result_name='phi_markings',
+		self.exp.filter_with_time_occurrences(
+			name_to_filter='phi', filter_name='markings', result_name='phi_markings',
 			category='Markings', label='marking angular coordinates',
 			description='angular coordinates of ant positions, while marking')
 		self.exp.write('phi_markings')
@@ -73,12 +73,12 @@ class AnalyseMarkings:
 
 	@staticmethod
 	def __add_marking_intervals(marking_interval_list, id_ant, id_exp, marks):
-		mark_frames = marks[:-1, 2]
-		lg = len(mark_frames)
+		mark_times = marks[:-1, 2]
+		lg = len(mark_times)
 		id_exp_array = np.full(lg, id_exp)
 		id_ant_array = np.full(lg, id_ant)
 		marking_interval = marks[1:, 2] - marks[:-1, 2]
-		marking_interval_list += list(zip(id_exp_array, id_ant_array, mark_frames, marking_interval))
+		marking_interval_list += list(zip(id_exp_array, id_ant_array, mark_times, marking_interval))
 		return marking_interval_list
 
 	def __get_marking_of_id_ant_id_exp(self, id_exp, id_ant):

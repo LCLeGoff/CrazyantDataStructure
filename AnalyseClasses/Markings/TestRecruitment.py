@@ -183,11 +183,11 @@ class TestRecruitment:
 		self.exp.first_markings.df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
 		self.exp.first_markings.df.sort_index(inplace=True)
 
-		self.exp.add_from_filtering(
-			name_to_filter='x', name_filter='first_markings', result_name='x_first_markings',
+		self.exp.filter_with_time_occurrences(
+			name_to_filter='x', filter_name='first_markings', result_name='x_first_markings',
 			label='x', category='Markings', description='x coordinates of ant positions, while marking')
-		self.exp.add_from_filtering(
-			name_to_filter='y', name_filter='first_markings', result_name='y_first_markings',
+		self.exp.filter_with_time_occurrences(
+			name_to_filter='y', filter_name='first_markings', result_name='y_first_markings',
 			label='y', category='Markings', description='y coordinates of ant positions, while marking')
 		self.exp.add_2d_from_1ds(
 			name1='x_first_markings', name2='y_first_markings',
