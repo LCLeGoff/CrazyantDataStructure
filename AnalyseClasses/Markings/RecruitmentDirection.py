@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from PandasIndexManager.PandasIndexManager import PandasIndexManager
 
@@ -9,18 +12,49 @@ class RecruitmentDirection:
 
 	def compute_recruitment_direction(self):
 		name_interval = 'recruitment_intervals'
+
 		name_to_filter = 'xy_markings'
 		result_name = 'xy_recruitments'
 		self.exp.load([name_interval, name_to_filter])
-		intervals_array = self.exp.__dict__[name_interval].convert_df_to_array()
-		self.exp.add_new2d_empty(
-			name=result_name, xname='x', yname='y',
-			object_type='Events2d'
-		)
-		for id_exp, id_ant, t, dt in intervals_array:
-			temp_xy_mark = self.exp.__dict__[name_to_filter].get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, t+dt)
-			self.exp.__dict__[result_name].add_rows(temp_xy_mark.index, temp_xy_mark[name_to_filter])
-			# intervals.set_index(['id_exp', 'id_ant'], inplace=True)
+		self.exp.filter_with_time_intervals(name_to_filter, name_interval, result_name)
+		# self.exp.write(result_name)
 
-		# interval
-		# xy_mark =
+		name_to_filter = 'phi_markings'
+		result_name = 'phi_recruitments'
+		self.exp.load([name_interval, name_to_filter])
+		self.exp.filter_with_time_intervals(name_to_filter, name_interval, result_name)
+		# self.exp.write(result_name)
+
+		result_name = self.exp.compute_mean_in_time_interval(name_to_filter, name_interval)
+
+		id_exp_list = self.exp.__dict__[result_name].get_index_array_of_id_exp()
+
+		id_exp_ant_frame_array = self.exp.__dict__[result_name].get_index_array_of_id_exp_ant_frame()
+
+		index_list = []
+		for id_exp in id_exp_list:
+			temp_index_array = id_exp_ant_frame_array[id_exp_ant_frame_array[:, 0] == id_exp, :]
+			frame_array = temp_index_array[:, 2]
+			idx_frame_min = frame_array.argmin()
+			idx_min = tuple(temp_index_array[idx_frame_min, :])
+			index_list.append(idx_min)
+
+		self.exp.add_copy1d(
+			name_to_copy=result_name, copy_name='first_recruitment'
+		)
+		self.exp.first_recruitment.df = self.exp.__dict__[result_name].get_row_of_idx_array(index_list)
+
+
+
+		# self.exp.phi_markings_over_recruitment_intervals.plotter.hist1d(
+		# 	title_prefix=self.exp.group, bins=np.arange(-1.125, 1.25, 0.25)*np.pi, marker='o', lw=1, normed=True)
+
+
+
+	# 	name_to_filter = 'phi_markings'
+	# 	result_name = 'phi_recruitments'
+	#
+	# exp.filter_with_time_intervals(
+	# 	'phi_markings', 'recruitment_intervals', 'phi_recruitments', label='', xlabel='', ylabel='', replace=True)
+	#
+	# 	self.co

@@ -6,6 +6,7 @@ from DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, C
 from DataManager.Loaders.DefinitionLoader import DefinitionLoader
 from DataManager.Loaders.EventsLoader import Events1dLoader
 from DataManager.Loaders.TimeSeriesLoader import TimeSeries1dLoader
+from Plotter.BasePlotters import BasePlotters
 from Plotter.Plotter2d import Plotter2d
 from Tools.Geometry import distance
 from scripts.root import root
@@ -99,8 +100,8 @@ group = 'FMAB'
 # for group in ['FMAB']:
 # 	print(group)
 # 	recruit = Recruitment(root, group)
-# 	# recruit.compute_marking_batch()
-# 	recruit.compute_recruitment()
+# 	recruit.compute_marking_batch()
+# 	# recruit.compute_recruitment()
 # plt.show()
 
 # for group in ['FMAB', 'FMABU', 'FMABW']:
@@ -113,38 +114,75 @@ group = 'FMAB'
 # 	exp.rename_data('marking_distance', 'marking_distances')
 
 
-# for group in ['FMAB']:
-# 	print(group)
-# 	recruit_direction = RecruitmentDirection(root, group)
-# 	recruit_direction.compute_recruitment_direction()
-
 # plot2d = Plotter2d()
 # fig, ax = plot2d.create_plot()
 # plot2d.draw_setup(fig, ax)
 # plt.show()
 
-for group in ['FMAB', 'FMABU', 'FMABW']:
-	exp = ExperimentGroupBuilder(root).build(group)
-	# preplot = Plotter2d().create_plot(figsize=(6.5, 5))
-	# exp.load_as_2d('x', 'y', 'xy')
-	# preplot = exp.xy.plotter.repartition_in_arena(ls='-', lw=1, marker='')
-	# exp.load('marking_intervals')
-	# exp.filter_with_time_intervals('xy', 'marking_intervals', 'marking_traj')
-	# exp.marking_traj.plot_repartition_in_arena(preplot=preplot, ls='-', lw=1, marker='')
-	# exp.load(['xy_markings', 'recruitment_intervals'])
-	# preplot = exp.xy_markings.plotter.repartition_in_arena(alpha=1)
+# for group in ['FMAB', 'FMABU', 'FMABW']:
+	# exp = ExperimentGroupBuilder(root).build(group)
+	# # preplot = Plotter2d().create_plot(figsize=(6.5, 5))
+	# # exp.load_as_2d('x', 'y', 'xy')
+	# # preplot = exp.xy.plotter.repartition_in_arena(ls='-', lw=1, marker='')
+	# # exp.load('marking_intervals')
+	# # exp.filter_with_time_intervals('xy', 'marking_intervals', 'marking_traj')
+	# # exp.marking_traj.plot_repartition_in_arena(preplot=preplot, ls='-', lw=1, marker='')
+	# # exp.load(['xy_markings', 'recruitment_intervals'])
+	# # preplot = exp.xy_markings.plotter.repartition_in_arena(alpha=1)
+	# # exp.filter_with_time_intervals(
+	# # 	'xy_markings', 'recruitment_intervals', 'xy_recruitments', label='', xlabel='', ylabel='', replace=True)
+	# # exp.load('xy_recruitments')
+	# # exp.xy_recruitments.plotter.repartition_in_arena(color_variety='frame', preplot=preplot, title_prefix=group, alpha=1)
+	# exp.load(['phi_markings', 'recruitment_intervals'])
+	# dtheta = 0.2
+	# bins = np.arange(0, np.pi+dtheta/2., dtheta)
+	# exp.operation('phi_markings', lambda x: np.abs(x))
+	# preplot = exp.phi_markings.plotter.hist1d(c='r', bins=bins, normed=True, xscale='log', yscale='log')
 	# exp.filter_with_time_intervals(
-	# 	'xy_markings', 'recruitment_intervals', 'xy_recruitments', label='', xlabel='', ylabel='', replace=True)
-	# exp.load('xy_recruitments')
-	# exp.xy_recruitments.plotter.repartition_in_arena(color_variety='frame', preplot=preplot, title_prefix=group, alpha=1)
-	exp.load(['phi_markings', 'recruitment_intervals'])
-	dtheta = 0.2
-	bins = np.arange(0, np.pi+dtheta/2., dtheta)
-	exp.operation('phi_markings', lambda x: np.abs(x))
-	preplot = exp.phi_markings.plotter.hist1d(c='r', bins=bins, normed=True, xscale='log', yscale='log')
-	exp.filter_with_time_intervals(
-		'phi_markings', 'recruitment_intervals', 'phi_recruitments', label='', xlabel='', ylabel='', replace=True)
-	exp.phi_recruitments.plotter.hist1d(
-		bins=bins, normed=True, title_prefix=group, preplot=preplot, xscale='log', yscale='log')
+	# 	'phi_markings', 'recruitment_intervals', 'phi_recruitments', label='', xlabel='', ylabel='', replace=True)
+	# exp.phi_recruitments.plotter.hist1d(
+	# 	bins=bins, normed=True, title_prefix=group, preplot=preplot, xscale='log', yscale='log')
 
+# plt.show()
+
+# for i, group in enumerate(['FMAB']):
+# 	print(group)
+# 	recruit_direction = RecruitmentDirection(root, group)
+# 	recruit_direction.compute_recruitment_direction()
+# 	for id_exp in recruit_direction.exp.id_exp_list:
+# 		preplot = recruit_direction.exp.xy_recruitments.plotter.repartition_in_arena(
+# 			list_id_exp=[id_exp], color_variety='ant2')
+# 		recruit_direction.exp.phi_markings_over_recruitment_intervals.plotter.radial_direction_in_arena(
+# 			preplot=preplot, list_id_exp=[id_exp], color_variety='ant2')
+# plt.show()
+
+col = ['w', 'g', 'b']
+labels = ['nothing', 'smell only', 'smell and sight']
+labels2 = ['all recruitment', 'first recruitment']
+dt = 1/5.
+preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
+preplot2 = BasePlotters().create_plot(figsize=(6.5, 5))
+for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
+	preplot = BasePlotters().create_plot(figsize=(6.5, 5))
+	print(group)
+	recruit_direction = RecruitmentDirection(root, group)
+	recruit_direction.compute_recruitment_direction()
+
+	recruit_direction.exp.phi_markings_over_recruitment_intervals.plotter.hist1d(
+		title_prefix=labels[i]+' (all)', bins=np.arange(-1+dt/2., 1+dt/2., dt)*np.pi,
+		marker='o', lw=1, normed=True, preplot=preplot, c='b', label='all recruitments')
+	recruit_direction.exp.first_recruitment.plotter.hist1d(
+		title_prefix=labels[i]+' (first)', bins=np.arange(-1+dt/2., 1+dt/2., dt)*np.pi,
+		marker='o', lw=1, normed=True, preplot=preplot, c='r', label='first recruitment')
+
+	recruit_direction.exp.phi_markings_over_recruitment_intervals.plotter.hist1d(
+		title_prefix=labels[i]+' (all)', bins=np.arange(-1+dt/2., 1+dt/2., dt)*np.pi,
+		marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+	recruit_direction.exp.first_recruitment.plotter.hist1d(
+		title_prefix=labels[i]+' (first)', bins=np.arange(-1+dt/2., 1+dt/2., dt)*np.pi,
+		marker='o', lw=1, normed=True, preplot=preplot2, c=col[i], label=labels[i])
+	preplot[0].legend()
+
+preplot1[0].legend()
+preplot2[0].legend()
 plt.show()
