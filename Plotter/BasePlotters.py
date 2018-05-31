@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 
 
 class BasePlotters:
-	def __init__(self, obj, cmap='jet', **kwargs):
+	def __init__(self, obj=None, cmap='jet_r', **kwargs):
 		self.cmap = cmap
 		self.obj = obj
 
@@ -50,5 +50,7 @@ class BasePlotters:
 		if title_prefix is None:
 			ax.set_title(self.obj.definition.label)
 		else:
-			print(title_prefix+': '+self.obj.definition.label)
-			ax.set_title(title_prefix+': '+self.obj.definition.label)
+			if self.obj.definition.label is None:
+				ax.set_title(title_prefix)
+			else:
+				ax.set_title(title_prefix+': '+self.obj.definition.label)
