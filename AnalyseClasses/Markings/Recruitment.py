@@ -128,7 +128,7 @@ class Recruitment:
 		dict_of_idx_exp_ant = self.exp.markings.get_index_dict_of_id_exp_ant()
 		array_of_idx_exp_ant = self.exp.markings.get_index_array_of_id_exp_ant()
 
-		self.exp.add_event_extracted_from_timeseries(name_ts='xy_radial_zones', name_extracted_events='zone_change_events')
+		self.exp.event_extraction_from_timeseries(name_ts='xy_radial_zones', name_extracted_events='zone_change_events')
 
 		batch_interval_list = []
 		batch_time_thresh_list = []
@@ -145,7 +145,7 @@ class Recruitment:
 
 						batch_interval_list = self.__add_ant_batches(id_exp, id_ant, time_thresh, distance_thresh, batch_interval_list)
 
-			# plt.show()
+			plt.show()
 		self.__write_batch_intervals(batch_interval_list)
 		self.__write_batch_threshold(batch_time_thresh_list, batch_distance_thresh_list)
 
@@ -174,7 +174,7 @@ class Recruitment:
 			label='Marking batch interval',
 			description='Time intervals between the beginning and the end of the batches of the marking events'
 		)
-		self.exp.write(['marking_batch_interval'])
+		self.exp.write(['marking_batch_intervals'])
 
 	def __compute_and_add_batch_thresholds(self, id_exp, id_ant, batch_time_thresh_list, batch_distance_thresh_list):
 
@@ -344,17 +344,17 @@ class Recruitment:
 
 	def __get_xy_array_of_marking_between_t0_t1(self, id_exp, id_ant, t0, t1):
 		return np.array(
-			self.exp.xy_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
+			self.exp.xy_markings.get_row_of_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
 
 	def compute_recruitment(self, id_exp_list=None):
 		name = 'recruitment_intervals'
 		id_exp_list = self.exp.set_id_exp_list(id_exp_list)
 
-		self.exp.load(['r_markings', 'xy_markings', 'marking_batch_interval'])
+		self.exp.load(['r_markings', 'xy_markings', 'marking_batch_intervals'])
 		min_batch_r_length = 60
 
 		batches_recruitment_intervals = []
-		array_batch_interval = self.exp.marking_batch_interval.convert_df_to_array()
+		array_batch_interval = self.exp.marking_batch_intervals.convert_df_to_array()
 		for id_exp, id_ant, batch_frame, batch_dt in array_batch_interval:
 			if id_exp in id_exp_list:
 
@@ -375,7 +375,7 @@ class Recruitment:
 					if is_at_least_3_first_marking_inside_circular_arena or is_first_third_batch_inside_circular_arena:
 						batches_recruitment_intervals.append([id_exp, id_ant, batch_frame, batch_dt])
 
-		# self.__plot_recruitment_batch(batches_recruitment_intervals)
+		self.__plot_recruitment_batch(batches_recruitment_intervals)
 
 		batches_recruitment_intervals = np.array(batches_recruitment_intervals, dtype=int)
 		self.exp.add_new1d_from_array(
@@ -389,7 +389,7 @@ class Recruitment:
 	def __get_r_from_marking_batch_interval(self, id_exp, id_ant, batch_frame, batch_dt):
 		t0 = batch_frame
 		t1 = t0 + batch_dt
-		r_mark = self.exp.r_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1)
+		r_mark = self.exp.r_markings.get_row_of_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1)
 		return np.array(r_mark)
 
 	def __plot_recruitment_batch(self, recruitment_batches, id_exp=None, show=True):
@@ -446,24 +446,24 @@ class Recruitment:
 		return ant_zone_change_event_array
 
 	def __compute_batch_time_threshold(self, id_exp, id_ant):
-		self.exp.load('marking_interval')
-		mark_interval_ant = np.array(self.exp.marking_interval.df.loc[id_exp, id_ant, :].reset_index())
+		self.exp.load('marking_intervals')
+		mark_interval_ant = np.array(self.exp.marking_intervals.df.loc[id_exp, id_ant, :].reset_index())
 		n_occ, times = np.histogram(mark_interval_ant[:, -1], bins='fd')
 		min_thresh = 60
 		max_thresh = 200
 		thresh1 = self.__compute_batch_threshold(n_occ, times, min_thresh, max_thresh)
 
-		# self.__plot_batch_thresh(id_exp, id_ant, max_thresh, min_thresh, n_occ, thresh1, times, title='time')
+		self.__plot_batch_thresh(id_exp, id_ant, max_thresh, min_thresh, n_occ, thresh1, times, title='time')
 		return thresh1
 
 	def __compute_batch_distance_threshold(self, id_exp, id_ant):
-		self.exp.load('marking_distance')
-		mark_distance_ant = np.array(self.exp.marking_distance.df.loc[id_exp, id_ant, :].reset_index())
+		self.exp.load('marking_distances')
+		mark_distance_ant = np.array(self.exp.marking_distances.df.loc[id_exp, id_ant, :].reset_index())
 		n_occ, times = np.histogram(mark_distance_ant[:, -1], bins='fd')
 		min_thresh = 40
 		max_thresh = 70
 		thresh = self.__compute_batch_threshold(n_occ, times, min_thresh, max_thresh)
-		# self.__plot_batch_thresh(id_exp, id_ant, max_thresh, min_thresh, n_occ, thresh, times, title='distance')
+		self.__plot_batch_thresh(id_exp, id_ant, max_thresh, min_thresh, n_occ, thresh, times, title='distance')
 
 		return thresh
 

@@ -146,7 +146,7 @@ class TestRecruitment:
 
 		ant_exp_dict = self.exp.markings.get_index_dict_of_id_exp_ant()
 		ant_exp_array = self.exp.markings.get_index_array_of_id_exp_ant()
-		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
+		self.exp.event_extraction_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 		exp_ant_label = []
 		for id_exp in id_exp_list:
 			t_min = np.inf
@@ -262,7 +262,7 @@ class TestRecruitment:
 
 		ant_exp_dict = self.exp.markings.get_index_dict_of_id_exp_ant()
 		ant_exp_array = self.exp.markings.get_index_array_of_id_exp_ant()
-		self.exp.add_event_extracted_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
+		self.exp.event_extraction_from_timeseries(name_ts='zones', name_extracted_events='zone_event')
 
 		# for id_exp in [3, 4, 6, 9, 10, 11, 26, 27, 42, 30, 33, 35, 36, 42, 46, 48, 49, 51, 52, 53, 56, 58]:
 		# thresh_hist = []
@@ -335,7 +335,7 @@ class TestRecruitment:
 		max_lg_rad = 70
 
 		xy_mark = np.array(
-			self.exp.xy_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
+			self.exp.xy_markings.get_row_of_id_exp_ant_in_frame_interval(id_exp, id_ant, t0, t1).reset_index())
 		if len(xy_mark) != 0:
 			batches_list = []
 			for i, thresh in enumerate(thresh_list):
@@ -373,11 +373,11 @@ class TestRecruitment:
 					batch = batches2[jj]
 					t = batch[0][2]
 					zone_mark = \
-						self.exp.r_markings.get_row_id_exp_ant_frame(id_exp, id_ant, t) \
+						self.exp.r_markings.get_row_of_id_exp_ant_frame(id_exp, id_ant, t) \
 						- self.exp.radius_max.get_value(id_exp)
 					if int(zone_mark) < 0:
 						r_mark = np.array(
-							self.exp.r_markings.get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, batch[-1][2]))
+							self.exp.r_markings.get_row_of_id_exp_ant_in_frame_interval(id_exp, id_ant, t, batch[-1][2]))
 						r_mark = np.sort(r_mark, axis=0)
 						r_mark = np.array(r_mark[1:] - r_mark[:-1], dtype=int)
 						r_mark = r_mark > max_lg_rad
