@@ -6,7 +6,6 @@ from DataObjects.Events2d import Events2dBuilder
 from DataObjects.Filters import Filters
 from DataObjects.TimeSeries2d import TimeSeries2dBuilder
 from PandasIndexManager.PandasIndexManager import PandasIndexManager
-from Plotter.Plotter1d import Plotter1d
 
 
 class ExperimentGroups:
@@ -143,10 +142,6 @@ class ExperimentGroups:
 	def get_object_type(self, name):
 		return self.__dict__[name].object_type
 
-	def plot_hist1d(self, name, bins, xscale=None, yscale=None, group=0):
-		plot = Plotter1d()
-		return plot.hist1d(self.__dict__[name], bins=bins, xscale=xscale, yscale=yscale, group=group)
-
 	def add_copy1d(self, name_to_copy, copy_name, category=None, label=None, description=None, copy_definition=False):
 		if copy_definition:
 			obj = self.__dict__[name_to_copy].copy(
@@ -265,7 +260,8 @@ class ExperimentGroups:
 
 	def filter_with_time_intervals(
 			self, name_to_filter, name_intervals, result_name,
-			category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
+			category=None, label=None, xlabel=None, ylabel=None, description=None,
+			add_interval_index=False):
 
 		name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
 		name_interval_can_be_a_filter = self.get_object_type(name_intervals) == 'Events1d'
@@ -276,8 +272,14 @@ class ExperimentGroups:
 
 			intervals_array = self.__dict__[name_intervals].convert_df_to_array()
 			for id_exp, id_ant, t, dt in intervals_array:
-				temp_df = self.__dict__[name_to_filter].get_row_id_exp_ant_in_frame_interval(id_exp, id_ant, t, t + dt)
-				self.__dict__[result_name].add_df_as_rows(temp_df, replace=replace)
+				temp_df = self.__dict__[name_to_filter].get_row_of_id_exp_ant_in_frame_interval(id_exp, id_ant, t, t + dt)
+
+				if add_interval_index:
+					temp_df.reset_index(inplace=True)
+					temp_df['frame'] = np.full(len(temp_df), t)
+					temp_df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+
+				self.__dict__[result_name].add_df_as_rows(temp_df, replace=False)
 
 	def add_new_empty_basing_on_model(
 			self, model_name, result_name, category=None, label=None, xlabel=None, ylabel=None, description=None):
@@ -318,7 +320,7 @@ class ExperimentGroups:
 			raise TypeError(
 				'Operation not defined between ' + self.get_object_type(name2) + ' and ' + self.get_object_type(name2))
 
-	def add_event_extracted_from_timeseries(
+	def event_extraction_from_timeseries(
 			self, name_ts, name_extracted_events, label=None, category=None, description=None):
 
 		if self.get_object_type(name_ts) == 'TimeSeries1d':
@@ -327,3 +329,55 @@ class ExperimentGroups:
 				name=name_extracted_events, category=category, label=label, description=description)
 
 			self.add_object(name_extracted_events, event)
+
+	def compute_individual_mean(
+			self, name_to_average, name_result=None, xname=None, yname=None,
+			category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+		if name_result is None:
+			name_result = 'indiv_mean_'+name_to_average
+
+		mean_df = self.__dict__[name_to_average].mean_over_ants()
+
+		if self._is_1d(name_to_average):
+			self.add_new1d_from_df(
+				mean_df, name_result, 'AntCharacteristics1d', category=category, label=label, description=description)
+		else:
+			if xname is None:
+				xname = self.get_xname(name_to_average)
+			if yname is None:
+				yname = self.get_yname(name_to_average)
+
+			self.add_new2d_from_df(
+				mean_df, name_result, object_type='AntCharacteristics2d',
+				xname=xname, yname=yname, category=category,
+				label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+	def compute_mean_in_time_interval(
+			self, name_to_average, intervals_name, name_result=None, xname=None, yname=None,
+			category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+		if name_result is None:
+			name_result = name_to_average+'_over_'+intervals_name
+
+		self.filter_with_time_intervals(
+			name_to_average, intervals_name, name_result, add_interval_index=True)
+		mean_df = self.__dict__[name_result].mean_over_frames()
+
+		# self.pandas_index_manager.remove_index(mean_df, 'frame')
+
+		if self._is_1d(name_to_average):
+			self.add_new1d_from_df(
+				mean_df, name_result, 'Events1d', category=category, label=label, description=description)
+		else:
+			if xname is None:
+				xname = self.get_xname(name_to_average)
+			if yname is None:
+				yname = self.get_yname(name_to_average)
+
+			self.add_new2d_from_df(
+				mean_df, name_result, object_type='Events2d',
+				xname=xname, yname=yname, category=category,
+				label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+		return name_result

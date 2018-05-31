@@ -105,3 +105,11 @@ class PandasIndexManager:
 			for id_ant in res[id_exp]:
 				res[id_exp][id_ant].sort()
 		return res
+
+	@staticmethod
+	def remove_index(df, index_name):
+		index_name_list = list(df.index.names)
+		index_name_list.remove(index_name)
+		df.reset_index(inplace=True)
+		df.drop(index_name, axis=1, inplace=True)
+		df.set_index(index_name_list, inplace=True)

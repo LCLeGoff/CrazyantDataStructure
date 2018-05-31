@@ -75,3 +75,15 @@ class BuilderDataObject:
 		if replace:
 			idx_to_keep = ~self.df.index.duplicated(keep='last')
 			self.df = self.df[idx_to_keep]
+
+	def mean_over_ants(self):
+		return self.df.mean(level=['id_exp', 'id_ant'])
+
+	def mean_over_experiments(self):
+		return self.df.mean(level='id_exp')
+
+	def mean_over_frames(self):
+		return self.df.mean(level=['id_exp', 'id_ant', 'frame'])
+
+	def mean_over(self, level_name):
+		return self.df.mean(level=['id_exp', 'id_ant', 'frame', level_name])
