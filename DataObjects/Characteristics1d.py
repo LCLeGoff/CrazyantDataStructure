@@ -24,4 +24,5 @@ class Characteristics1dBuilder:
 			name=name, category=category, object_type='Characteristics1d',
 			label=label, description=description
 		)
+		df.columns = [name]
 		return Characteristics1d(df.sort_index(), definition)

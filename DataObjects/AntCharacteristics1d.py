@@ -24,4 +24,5 @@ class AntCharacteristics1dBuilder:
 			name=name, category=category, object_type='AntCharacteristics1d',
 			label=label, description=description
 		)
+		df.columns = [name]
 		return AntCharacteristics1d(df.sort_index(), definition)
