@@ -68,10 +68,10 @@ class BuilderDataObject:
 		else:
 			raise IndexError('Index and value list not same lengths')
 
-	def add_df_as_rows(self, df, replace=False):
+	def add_df_as_rows(self, df, replace=True):
 		df.columns = self.df.columns
 		dfs_to_concat = [self.df, df]
-		self.df = pd.concat(dfs_to_concat, verify_integrity=not replace)
+		self.df = pd.concat(dfs_to_concat)
 		if replace:
 			idx_to_keep = ~self.df.index.duplicated(keep='last')
 			self.df = self.df[idx_to_keep]

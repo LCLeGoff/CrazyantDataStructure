@@ -16,10 +16,10 @@ class BuilderExpAntFrameIndexedDataObject:
 	def get_row_of_id_exp_ant(self, id_exp, id_ant):
 		return self.df.loc[pd.IndexSlice[id_exp, id_ant, :], :]
 
-	def get_row_id_exp_ant_frame(self, id_exp, id_ant, frame):
+	def get_row_of_id_exp_ant_frame(self, id_exp, id_ant, frame):
 		return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame], :]
 
-	def get_row_id_exp_ant_in_frame_interval(self, id_exp, id_ant, frame0=None, frame1=None):
+	def get_row_of_id_exp_ant_in_frame_interval(self, id_exp, id_ant, frame0=None, frame1=None):
 		if frame0 is None:
 			frame0 = 0
 		if frame1 is None:
