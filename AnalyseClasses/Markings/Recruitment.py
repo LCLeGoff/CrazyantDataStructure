@@ -2,10 +2,11 @@ import numpy as np
 
 from matplotlib import pylab as plt
 from pandas import IndexSlice as IdxSc
-from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from PandasIndexManager.PandasIndexManager import PandasIndexManager
-from Plotter.ColorObject import ColorObject
-from Tools.Geometry import distance
+
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from Tools.MiscellaneousTools.Geometry import distance
+from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
+from Tools.Plotter.ColorObject import ColorObject
 
 
 class Recruitment:
@@ -27,17 +28,26 @@ class Recruitment:
 
     def __compute_sum_of_is_xy_in_food_neighborhood_and_in_circular_arena(self):
         self.exp.add_copy1d('is_xy_in_food_neighborhood', 'xy_radial_zones')
-        fct_sum = lambda x, y: x + y
+
+        def fct_sum(x, y):
+            return x + y
+
         self.exp.operation_between_2names('xy_radial_zones', 'is_in_circular_arena', fct_sum)
 
     def __compute_is_xy_in_circular_arena(self):
         self.exp.add_copy1d('r', 'is_in_circular_arena')
-        fct_is_lesser_than_arena_radius = lambda x: (x - self.arena_radius < 0).astype(int)
+
+        def fct_is_lesser_than_arena_radius(x):
+            return (x - self.arena_radius < 0).astype(int)
+
         self.exp.operation('is_in_circular_arena', fct_is_lesser_than_arena_radius)
 
     def __compute_is_xy_in_food_neighborhood(self):
         self.exp.add_copy1d(name_to_copy='r', copy_name='is_xy_in_food_neighborhood')
-        fct_is_lesser_than_circular_arena_radius = lambda x, y: (x - y < 0).astype(int)
+
+        def fct_is_lesser_than_circular_arena_radius(x, y):
+            return (x - y < 0).astype(int)
+
         self.exp.operation_between_2names(
             'is_xy_in_food_neighborhood', 'food_neighborhood_radius', fct_is_lesser_than_circular_arena_radius)
 
@@ -47,7 +57,9 @@ class Recruitment:
         self.exp.food_neighborhood_radius.replace_values(food_neighborhood_radius_df)
 
     def __convert_food_radius2mm(self):
-        fct_convert_in_mm = lambda x, y: round(x / y, 2)
+        def fct_convert_in_mm(x, y):
+            return round(x / y, 2)
+
         self.exp.operation_between_2names('food_radius', 'mm2px', fct_convert_in_mm)
 
     def __plot_batches_from_batches(self, id_exp, id_ant, batch_list, t0=None, t1=None):

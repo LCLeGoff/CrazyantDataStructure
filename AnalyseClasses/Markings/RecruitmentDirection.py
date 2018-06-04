@@ -1,8 +1,6 @@
-import numpy as np
-import pandas as pd
 
-from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from PandasIndexManager.PandasIndexManager import PandasIndexManager
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class RecruitmentDirection:

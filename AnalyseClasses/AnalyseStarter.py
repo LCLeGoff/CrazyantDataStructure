@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from Tools.JsonFiles import write_obj, import_obj
+from Tools.MiscellaneousTools.JsonFiles import import_obj, write_obj
 
 
 class AnalyseStarter:

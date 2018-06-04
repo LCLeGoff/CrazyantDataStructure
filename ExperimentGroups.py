@@ -1,11 +1,11 @@
 import numpy as np
 
-from DataManager.DataFileManager import DataFileManager
-from DataObjectBuilders.Builder import Builder
-from DataObjects.Events2d import Events2dBuilder
-from DataObjects.Filters import Filters
-from DataObjects.TimeSeries2d import TimeSeries2dBuilder
-from PandasIndexManager.PandasIndexManager import PandasIndexManager
+from DataStructure.DataManager.DataFileManager import DataFileManager
+from DataStructure.DataObjectBuilders.Builder import Builder
+from DataStructure.DataObjects.Events2d import Events2dBuilder
+from DataStructure.DataObjects.Filters import Filters
+from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class ExperimentGroups:

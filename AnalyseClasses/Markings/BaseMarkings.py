@@ -1,9 +1,10 @@
 import numpy as np
 
 from pandas import IndexSlice as IdxSc
-from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from PandasIndexManager.PandasIndexManager import PandasIndexManager
-from Tools.Geometry import distance
+
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from Tools.MiscellaneousTools.Geometry import distance
+from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class AnalyseMarkings:

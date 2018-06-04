@@ -5,8 +5,8 @@ from pandas import IndexSlice as IdxSc
 
 from matplotlib import pylab as plt
 
-from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from Plotter.ColorObject import ColorObject
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from Tools.Plotter.ColorObject import ColorObject
 
 
 class TestRecruitment:
