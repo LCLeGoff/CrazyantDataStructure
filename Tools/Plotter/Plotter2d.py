@@ -126,10 +126,10 @@ class Plotter2d(BasePlotters):
 
     def _plot_2d_obj_per_ant2(self, ax, list_id_exp):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
-        col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, set(id_exp_ant_list[:, 1])).colors
+        col_list_for_each_ant = ColorObject('cmap', self.cmap, range(10)).colors
         for id_exp, id_ant in id_exp_ant_list:
             if id_exp in list_id_exp:
-                self.line['c'] = col_list_for_each_exp_ant[id_ant]
+                self.line['c'] = col_list_for_each_ant[id_ant % 10]
                 self._plot_2d_obj_for_exp_ant(ax, id_exp, id_ant)
 
     def _plot_2d_obj_per_frame(self, ax, list_id_exp):
@@ -169,7 +169,9 @@ class Plotter2d(BasePlotters):
 
         return fig, ax
 
-    def radial_direction_in_arena(self, color_variety=None, preplot=None, list_id_exp=None, **kwarg):
+    def radial_direction_in_arena(self, center_obj=None,
+                                  color_variety=None, preplot=None, list_id_exp=None,
+                                  **kwarg):
 
         list_id_exp = self._get_list_id_exp(list_id_exp)
 
@@ -180,13 +182,13 @@ class Plotter2d(BasePlotters):
         fig, ax = self.create_plot(preplot, (9, 5))
 
         if color_variety == 'exp':
-            self._plot_phi_direction_per_exp(ax, list_id_exp)
+            self._plot_phi_direction_per_exp(ax, list_id_exp, center_obj)
         elif color_variety == 'ant':
-            self._plot_phi_direction_per_ant(ax, list_id_exp)
+            self._plot_phi_direction_per_ant(ax, list_id_exp, center_obj)
         elif color_variety == 'ant2':
-            self._plot_phi_direction_per_ant2(ax, list_id_exp)
+            self._plot_phi_direction_per_ant2(ax, list_id_exp, center_obj)
         else:
-            self._plot_all_phi_direction(ax, list_id_exp)
+            self._plot_all_phi_direction(ax, list_id_exp, center_obj)
 
         self.draw_setup(fig, ax)
 
@@ -195,39 +197,73 @@ class Plotter2d(BasePlotters):
             list_id_exp = self.obj.get_index_array_of_id_exp()
         return list_id_exp
 
-    def _plot_phi_direction_per_exp(self, ax, list_id_exp):
-        col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, list_id_exp).colors
+    @staticmethod
+    def _get_center(center_obj, id_exp, id_ant, frame):
+        if center_obj is None:
+            center = [0, 0]
+        else:
+            center = center_obj.get_row_of_id_exp_ant_frame(int(id_exp), int(id_ant), int(frame))
+        return center
+
+    def _plot_phi_direction_per_exp(self, ax, list_id_exp, center_obj):
+        col_list_for_each_exp = ColorObject('cmap', self.cmap, list_id_exp).colors
         df_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in df_array:
             if id_exp in list_id_exp:
-                self.line['c'] = col_list_for_each_exp_ant[id_exp]
-                self._plot_phi_direction(ax, phi)
+                self.line['c'] = col_list_for_each_exp[id_exp]
+                center = self._get_center(center_obj, id_exp, id_ant, frame)
+                self._plot_phi_direction(ax, phi, center)
 
-    def _plot_phi_direction_per_ant(self, ax, list_id_exp):
+    def _plot_phi_direction_per_ant(self, ax, list_id_exp, center_obj):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, id_exp_ant_list).colors
         phi_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in phi_array:
             if id_exp in list_id_exp:
                 self.line['c'] = col_list_for_each_exp_ant[(id_exp, id_ant)]
-                self._plot_phi_direction(ax, phi)
+                center = self._get_center(center_obj, id_exp, id_ant, frame)
+                self._plot_phi_direction(ax, phi, center)
 
-    def _plot_phi_direction_per_ant2(self, ax, list_id_exp):
+    def _plot_phi_direction_per_ant2(self, ax, list_id_exp, center_obj):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
-        col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, set(id_exp_ant_list[:, 1])).colors
+        col_list_for_each_ant = ColorObject('cmap', self.cmap, set(id_exp_ant_list[:, 1])).colors
         phi_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in phi_array:
             if id_exp in list_id_exp:
-                self.line['c'] = col_list_for_each_exp_ant[id_ant]
-                self._plot_phi_direction(ax, phi)
+                self.line['c'] = col_list_for_each_ant[id_ant]
+                center = self._get_center(center_obj, id_exp, id_ant, frame)
+                self._plot_phi_direction(ax, phi, center)
 
-    def _plot_all_phi_direction(self, ax, list_id_exp):
+    def _plot_all_phi_direction(self, ax, list_id_exp, center_obj):
         phi_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in phi_array:
             if id_exp in list_id_exp:
-                self._plot_phi_direction(ax, phi)
+                center = self._get_center(center_obj, id_exp, id_ant, frame)
+                self._plot_phi_direction(ax, phi, center)
 
-    def _plot_phi_direction(self, ax, phi):
+    def _plot_phi_direction(self, ax, phi, center):
         x = self.circular_arena_radius * np.cos(phi)
         y = self.circular_arena_radius * np.sin(phi)
-        ax.plot([0, x], [0, y], **self.line)
+        ax.plot([center[0], x], [center[1], y], **self.line)
+
+    def plot_ab_line(self, preplot=None, list_id_exp=None, xlim=None, **kwarg):
+
+        fig, ax = self.create_plot(preplot, (9, 5))
+        self._change_arg_values('line', kwarg)
+
+        if xlim is None:
+            xlim = ax.get_xlim()
+
+        if list_id_exp is None:
+            list_id_exp = self.obj.get_index_array_of_id_exp
+
+        col_list_for_each_ant = ColorObject('cmap', self.cmap, range(10)).colors
+        ab_array = self.obj.convert_df_to_array()
+        for id_exp, id_ant, frame, a, b in ab_array:
+            if id_exp in list_id_exp:
+                x0 = xlim[0]
+                y0 = a * x0 + b
+                x1 = xlim[1]
+                y1 = a * x1 + b
+                self.line['c'] = col_list_for_each_ant[id_ant % 10]
+                ax.plot([x0, x1], [y0, y1], **self.line)

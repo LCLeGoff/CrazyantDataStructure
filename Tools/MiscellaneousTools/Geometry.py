@@ -29,15 +29,31 @@ def dot2d(u, v):
     return u2[:, 0] * v2[:, 0] + u2[:, 1] * v2[:, 1]
 
 
-def angle(u, v):
+def angle(u, v=None):
     return np.arctan2(cross2d(u, v), dot2d(u, v))
 
 
-def squared_distance(p, q):
-    p2 = convert2vect(p)
-    q2 = convert2vect(q)
-    return (p2[:, 0] - q2[:, 0]) ** 2 + (p2[:, 1] - q2[:, 1]) ** 2
+def squared_distance(p, q=None):
+    if q is None:
+        return p[:, 0] ** 2 + p[:, 1] ** 2
+    else:
+        p2 = convert2vect(p)
+        q2 = convert2vect(q)
+        return (p2[:, 0] - q2[:, 0]) ** 2 + (p2[:, 1] - q2[:, 1]) ** 2
 
 
-def distance(p, q):
+def distance(p, q=None):
     return np.sqrt(squared_distance(p, q))
+
+
+def convert_polar2cartesian(r, phi):
+    x = r*np.cos(phi)
+    y = r*np.sin(phi)
+    return x, y
+
+
+def convert_cartesian2polar(x, y):
+    xy_array = np.c_[x, y]
+    r = distance(xy_array)
+    phi = angle(np.array([1, 0]), xy_array)
+    return r, phi

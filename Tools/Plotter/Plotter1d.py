@@ -64,5 +64,5 @@ class Plotter1d(BasePlotters):
         x = (x[1:] + x[:-1]) / 2.
         return x
 
-    def radial_direction_in_arena(self, preplot=None, **kwarg):
-        self.plotter2d.radial_direction_in_arena(preplot=preplot, **kwarg)
+    def radial_direction_in_arena(self, center_obj=None, preplot=None, **kwarg):
+        self.plotter2d.radial_direction_in_arena(center_obj=center_obj, preplot=preplot, **kwarg)
