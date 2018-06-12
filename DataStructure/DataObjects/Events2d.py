@@ -1,15 +1,13 @@
 import pandas as pd
 
-from DataStructure.DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
-from DataStructure.DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
+from DataStructure.DataObjectBuilders.BuilderExpAntFrameIndexed2dDataObject import BuilderExpAntFrameIndexed2dDataObject
 from DataStructure.DataObjects.Definitions import DefinitionBuilder
 from Tools.Plotter.Plotter2d import Plotter2d
 
 
-class Events2d(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
+class Events2d(BuilderExpAntFrameIndexed2dDataObject):
     def __init__(self, df, definition):
-        Builder2dDataObject.__init__(self, df)
-        BuilderExpAntFrameIndexedDataObject.__init__(self, df)
+        BuilderExpAntFrameIndexed2dDataObject.__init__(self, df)
         DefinitionBuilder.build_from_definition(self, definition)
         self.plotter = Plotter2d(self)
 
