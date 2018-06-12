@@ -1,5 +1,6 @@
 import numpy as np
-from Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+    
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance
 from math import pi
 

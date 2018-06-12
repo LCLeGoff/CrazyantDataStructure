@@ -2,7 +2,7 @@ from AnalyseClasses.Markings.BaseMarkings import AnalyseMarkings
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Markings.Recruitment import Recruitment
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
-from AnalyseClasses.scripts import root# #
+from AnalyseClasses.scripts.root import root
 
 for group in ['FMAB', 'FMABU', 'FMABW']:
     print(group)
@@ -20,5 +20,5 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
     # mark.compute_marking_distance()
 
     recruit = Recruitment(root, group)
-# recruit.compute_marking_batch()
-# recruit.compute_recruitment()
+    # recruit.compute_marking_batch()
+    # recruit.compute_recruitment()
