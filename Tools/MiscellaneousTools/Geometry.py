@@ -47,8 +47,8 @@ def distance(p, q=None):
 
 
 def convert_polar2cartesian(r, phi):
-    x = r*np.cos(phi)
-    y = r*np.sin(phi)
+    x = r * np.cos(phi)
+    y = r * np.sin(phi)
     return x, y
 
 
@@ -57,3 +57,12 @@ def convert_cartesian2polar(x, y):
     r = distance(xy_array)
     phi = angle(np.array([1, 0]), xy_array)
     return r, phi
+
+
+def norm_angle(theta):
+    if theta > np.pi:
+        return theta - 2 * np.pi
+    elif theta < -np.pi:
+        return theta + 2 * np.pi
+    else:
+        return theta
