@@ -9,6 +9,7 @@ class BuilderExpAntFrameIndexedDataObject:
             raise IndexError('Index names are not (id_exp, id_ant, frame)')
         else:
             self.df = df
+        self.pandas_index_manager = PandasIndexManager()
 
     def get_row_of_id_exp(self, id_exp):
         return self.df.loc[pd.IndexSlice[id_exp, :, :], :]
@@ -28,7 +29,7 @@ class BuilderExpAntFrameIndexedDataObject:
             return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return PandasIndexManager().get_dict_id_exp_ant_frame(self.df)
+        return self.pandas_index_manager.get_dict_id_exp_ant_frame(self.df)
 
     def operation_on_id_exp(self, id_exp, fct):
         self.df.loc[id_exp, :, :] = fct(self.df.loc[id_exp, :, :])

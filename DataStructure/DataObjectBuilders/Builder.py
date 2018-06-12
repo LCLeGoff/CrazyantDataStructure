@@ -10,7 +10,7 @@ from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 class Builder:
     def __init__(self):
-        self.panda_index_manager = PandasIndexManager()
+        self.pandas_index_manager = PandasIndexManager()
 
     @staticmethod
     def build1d(df, name, object_type, category=None, label=None, description=None):
@@ -55,9 +55,9 @@ class Builder:
             array, name, xname, yname, object_type, category=None, label=None, xlabel=None, ylabel=None,
             description=None):
         if len(array) == 0:
-            df = Builder().panda_index_manager.create_empty_exp_ant_frame_indexed_2d_df(xname, yname)
+            df = Builder().pandas_index_manager.create_empty_exp_ant_frame_indexed_2d_df(xname, yname)
         else:
-            df = Builder().panda_index_manager.convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname)
+            df = Builder().pandas_index_manager.convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname)
         return Builder.build2d_from_df(
             df=df, object_type=object_type,
             name=name, xname=xname, yname=yname,
