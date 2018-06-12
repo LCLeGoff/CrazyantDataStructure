@@ -52,9 +52,14 @@ class Recruitment:
             'is_xy_in_food_neighborhood', 'food_neighborhood_radius', fct_is_lesser_than_circular_arena_radius)
 
     def __compute_food_neighborhood_radius(self):
-        self.exp.add_copy1d('food_radius', 'food_neighborhood_radius')
+        self.exp.add_copy1d(
+            name_to_copy='food_radius', copy_name='food_neighborhood_radius',
+            category='Arena', label='food neighborhood radius',
+            description='Radius of the food neighborhood'
+        )
         food_neighborhood_radius_df = self.exp.food_radius.get_values() + 15
         self.exp.food_neighborhood_radius.replace_values(food_neighborhood_radius_df)
+        self.exp.write('food_neighborhood_radius')
 
     def __convert_food_radius2mm(self):
         def fct_convert_in_mm(x, y):
