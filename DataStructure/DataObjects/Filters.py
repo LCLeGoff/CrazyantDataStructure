@@ -15,9 +15,10 @@ class Filters:
 
     @staticmethod
     def filter_with_value(
-            obj, filter_obj, filter_values, name,
+            obj, filter_obj, filter_values, result_name,
             xname=None, yname=None,
             label=None, xlabel=None, ylabel=None, category=None, description=None):
+
         df_filter = filter_obj.df == filter_values[0]
         for filter_val in filter_values[1:]:
             df_filter *= filter_obj.df == filter_val
@@ -29,7 +30,7 @@ class Filters:
         n_dim = len(obj.df.columns)
         if n_dim == 1:
             return Events1dBuilder.build(
-                df=df, name=name, category=category, label=label, description=description)
+                df=df, name=result_name, category=category, label=label, description=description)
         elif n_dim == 2:
             if xname is None:
                 xname = obj.df.columns[0]
@@ -37,7 +38,7 @@ class Filters:
                 yname = obj.df.columns[1]
 
             return Events2dBuilder.build_from_df(
-                df=df, name=name, xname=xname, yname=yname,
+                df=df, name=result_name, xname=xname, yname=yname,
                 category=category, label=label, xlabel=xlabel, ylabel=ylabel,
                 description=description)
         else:
