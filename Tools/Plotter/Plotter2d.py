@@ -242,8 +242,9 @@ class Plotter2d(BasePlotters):
                 self._plot_phi_direction(ax, phi, center)
 
     def _plot_phi_direction(self, ax, phi, center):
-        x = self.circular_arena_radius * np.cos(phi)
-        y = self.circular_arena_radius * np.sin(phi)
+
+        x = self.circular_arena_radius * np.cos(phi)+center[0]
+        y = self.circular_arena_radius * np.sin(phi)+center[1]
         ax.plot([center[0], x], [center[1], y], **self.line)
 
     def plot_ab_line(self, preplot=None, list_id_exp=None, xlim=None, **kwarg):
