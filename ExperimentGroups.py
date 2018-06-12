@@ -140,6 +140,7 @@ class ExperimentGroups:
         self.load(old_name)
         self.rename_object(old_name, new_name)
         self.delete_data(old_name)
+        self.remove_object(old_name)
         self.write(new_name)
 
     def rename_object(self, old_name, new_name, replace=False):
@@ -147,7 +148,6 @@ class ExperimentGroups:
             self.add_copy1d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
         else:
             self.add_copy2d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
-        self.remove_object(old_name)
 
     def add_2d_from_1ds(
             self, name1, name2, result_name,
@@ -293,7 +293,8 @@ class ExperimentGroups:
 
     def filter_with_values(
             self, name_to_filter, filter_name, filter_values=1, result_name=None,
-            label=None, category=None, description=None, redo=False):
+            xname=None, yname=None, label=None, xlabel=None, ylabel=None,
+            category=None, description=None, redo=False):
 
         if not isinstance(filter_values, list):
             filter_values = [filter_values]
@@ -306,8 +307,8 @@ class ExperimentGroups:
         if is_filter_and_to_filter_same_index_names:
             obj_filtered = Filters().filter_with_value(
                 obj=self.get_data_object(name_to_filter), filter_obj=self.get_data_object(filter_name),
-                filter_values=filter_values, name=result_name,
-                label=label, category=category, description=description)
+                filter_values=filter_values, result_name=result_name, xname=xname, yname=yname,
+                label=label, xlabel=xlabel, ylabel=ylabel, category=category, description=description)
             self.add_object(result_name, obj_filtered, redo)
         else:
             raise TypeError(
@@ -359,6 +360,58 @@ class ExperimentGroups:
         # self.rename_object('temp', result_name, replace)
         return result_name, interval_index_name
 
+    def filter_with_experiment_characteristics(
+            self, name_to_filter, chara_name, chara_values, result_name=None,
+            xname=None, yname=None,
+            category=None, label=None, xlabel=None, ylabel=None, description=None,
+            replace=True
+    ):
+
+        if result_name is None:
+            result_name = name_to_filter + '_over_' + chara_name
+
+        if not isinstance(chara_values, list):
+            chara_values = [chara_values]
+
+        name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
+        chara_name_can_be_a_filter = self.get_object_type(chara_name) == 'Characteristics1d'
+
+        if name_to_filter_can_be_filtered and chara_name_can_be_a_filter:
+
+            self.add_copy1d(
+                name_to_copy=chara_name, copy_name='filter',
+                category=category, label=label, description=description, replace=replace
+            )
+            self.operation('filter', lambda x: x == chara_values[0])
+            for val in chara_values[1:]:
+                self.operation('filter', lambda x: x == val)
+            self.filter.df[self.filter.df == 0] = np.nan
+
+            if self._is_1d(name_to_filter):
+                self.add_copy1d(
+                    name_to_copy=name_to_filter, copy_name=result_name,
+                    category=category, label=label, description=description, replace=replace
+                )
+            else:
+                if xname is None:
+                    xname = self.get_xname(name_to_filter)
+                if yname is None:
+                    yname = self.get_yname(name_to_filter)
+                self.add_copy2d(
+                    name_to_copy=name_to_filter, copy_name=result_name,
+                    new_xname=xname, new_yname=yname,
+                    category=category, label=label, xlabel=xlabel, ylabel=ylabel,
+                    description=description, replace=replace
+                )
+
+            self.operation_between_2names(
+                name1=result_name, name2='filter', fct=lambda x, y: x*y
+            )
+
+            self.__dict__[result_name].df = self.__dict__[result_name].df.dropna()
+
+            self.remove_object('filter')
+
     def _compute_time_interval_filter(
             self, name_to_filter, name_intervals, result_name, interval_index_name,
             category, label, xlabel, ylabel, description, replace):
@@ -406,27 +459,23 @@ class ExperimentGroups:
     def operation(self, name, fct):
         self.get_data_object(name).operation(fct)
 
-    def operation_between_2names(self, name1, name2, fct, name_col=None):
-        if self.get_object_type(name1) == 'TimeSeries1d' or self.get_object_type(name1) == 'Events1d':
-            if self.get_object_type(name2) == 'TimeSeries1d' or self.get_object_type(name2) == 'Events1d':
-                self.get_data_object(name1).operation_with_data1d(self.get_data_object(name2), fct)
-            elif self.get_object_type(name2) == 'Characteristics1d':
-                self.get_data_object(name1).operation_with_data1d(self.get_data_object(name2), fct)
-            elif self.get_object_type(name2) == 'Characteristics2d':
-                self.get_data_object(name1).operation_with_data2d(self.get_data_object(name2), name_col, fct)
-            else:
-                raise TypeError('Operation not defined between TimeSeries and ' + self.get_object_type(name2))
-        elif self.get_object_type(name1) == 'Characteristics1d':
-            if self.get_object_type(name2) == 'Characteristics1d':
-                self.get_data_object(name1).operation_with_data1d(self.get_data_object(name2), fct)
-            else:
-                raise TypeError('Operation not defined between Characteristics1d and ' + self.get_object_type(name2))
+    def operation_between_2names(self, name1, name2, fct, col_name1=None, col_name2=None):
+
+        if self._is_1d(name1) and self._is_1d(name2):
+            self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), fct=fct)
+        elif self._is_1d(name1) and not self._is_1d(name2):
+            self.get_data_object(name1).operation_with_data_obj(
+                obj=self.get_data_object(name2), fct=fct, obj_name_col=col_name2)
+        elif not self._is_1d(name1) and self._is_1d(name2):
+            self.get_data_object(name1).operation_with_data_obj(
+                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name1)
         else:
-            raise TypeError(
-                'Operation not defined between ' + self.get_object_type(name2) + ' and ' + self.get_object_type(name2))
+            self.get_data_object(name1).operation_with_data_obj(
+                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name1, obj_name_col=col_name2)
 
     def event_extraction_from_timeseries(
-            self, name_ts, name_extracted_events, label=None, category=None, description=None, replace=False):
+            self, name_ts, name_extracted_events,
+            label=None, category=None, description=None, replace=False):
 
         if self.get_object_type(name_ts) == 'TimeSeries1d':
             event = self.get_data_object(name_ts).extract_event(
@@ -491,7 +540,7 @@ class ExperimentGroups:
                 xname=xname, yname=yname, category=category,
                 label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
 
-    def compute_mean_in_time_interval(
+    def compute_mean_in_time_intervals(
             self, name_to_average, name_intervals, mean_level=None, result_name=None,
             xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None, replace=False):
