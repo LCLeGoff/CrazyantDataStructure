@@ -7,8 +7,13 @@ class PandasIndexManager:
         pass
 
     @staticmethod
-    def create_empty_exp_indexed_df(name):
+    def create_empty_exp_indexed_1d_df(name):
         df = pd.DataFrame(columns=['id_exp', name]).set_index(['id_exp'])
+        return df.sort_index()
+
+    @staticmethod
+    def create_empty_exp_indexed_2d_df(xname, yname):
+        df = pd.DataFrame(columns=['id_exp', xname, yname]).set_index(['id_exp'])
         return df.sort_index()
 
     @staticmethod
@@ -51,6 +56,14 @@ class PandasIndexManager:
         return df.sort_index()
 
     @staticmethod
+    def convert_df_to_array(df):
+        return np.array(df.reset_index())
+
+    @staticmethod
+    def get_row_of_idx_array(idx_array, df):
+        return df.loc[list(map(tuple, np.array(idx_array))), :]
+
+    @staticmethod
     def get_array_id_exp(df_arg):
         df = df_arg.reset_index()
         if 'id_exp' not in df.columns:
@@ -89,6 +102,11 @@ class PandasIndexManager:
             idx_set = set([idx for idx in df.set_index(['id_exp', 'id_ant', 'frame']).index])
             return np.array(sorted(idx_set), dtype=int)
 
+    @staticmethod
+    def get_array_all_indexes(df_arg):
+        idx_set = set(df_arg.index)
+        return np.array(sorted(idx_set), dtype=int)
+
     def get_dict_id_exp_ant_frame(self, df):
         index_array = self.get_array_id_exp_ant_frame(df)
         res = dict()
@@ -107,9 +125,39 @@ class PandasIndexManager:
         return res
 
     @staticmethod
-    def remove_index(df, index_name):
-        index_name_list = list(df.index.names)
-        index_name_list.remove(index_name)
+    def concat_dfs(df1, df2):
+        dfs_to_concat = [df1, df2]
+
+        df_concat = pd.concat(dfs_to_concat)
+
+        PandasIndexManager.index_as_type_int(df_concat)
+
+        return df_concat
+
+    @staticmethod
+    def index_as_type_int(df):
+        index_names = df.index.names
         df.reset_index(inplace=True)
-        df.drop(index_name, axis=1, inplace=True)
+        df[index_names] = df[index_names].astype(int)
+        df.set_index(index_names, inplace=True)
+
+    @staticmethod
+    def add_index_level(df, index_level_name, index_values):
+        index_names = df.index.names
+        df.reset_index(inplace=True)
+        df[index_level_name] = index_values
+        df.set_index(index_names + [index_level_name], inplace=True)
+
+    @staticmethod
+    def remove_index_level(df, index_level_name):
+        index_name_list = list(df.index.names)
+        index_name_list.remove(index_level_name)
+        df.reset_index(inplace=True)
+        df.drop(index_level_name, axis=1, inplace=True)
         df.set_index(index_name_list, inplace=True)
+
+    @staticmethod
+    def rename_index_level(df, old_name, new_name):
+        index_name_list = list(df.index.names)
+        index_name_list[index_name_list.index(old_name)] = new_name
+        df.index.names = index_name_list
