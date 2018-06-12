@@ -12,6 +12,13 @@ class BuilderDataObject:
     def operation(self, fct):
         self.df = fct(self.df)
 
+    def operation_with_data_obj(self, obj, fct, self_name_col=None, obj_name_col=None):
+        if self_name_col is None:
+            self_name_col = self.df.columns[0]
+        if obj_name_col is None:
+            obj_name_col = obj.name_col
+        self.df[self_name_col] = fct(self.df[self_name_col], obj.df[obj_name_col])
+
     def print(self, short=True):
         if short:
             print(self.df.head())
