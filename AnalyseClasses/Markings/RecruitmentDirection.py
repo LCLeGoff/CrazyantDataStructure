@@ -1,10 +1,10 @@
 import pandas as pd
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.MiscellaneousTools.Fits import linear_fit
-from Tools.MiscellaneousTools.Geometry import convert_polar2cartesian, convert_cartesian2polar
+from Tools.MiscellaneousTools.Geometry import convert_polar2cartesian, convert_cartesian2polar, norm_angle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -20,58 +20,149 @@ class RecruitmentDirection:
         xy_markings_name = 'xy_markings'
         r_markings_name = 'r_markings'
         phi_markings_name = 'phi_markings'
+        setup_orientation_name = 'setup_orientation'
 
-        recruitment_interval_filter_name = 'recruitment_interval_filter'
+        recruitment_intervals_filter_name = 'recruitment_interval_filter'
         is_in_circular_arena_name = 'is_in_circular_arena'
 
         xy_recruitments_name = 'xy_recruitments'
         r_recruitments_name = 'r_recruitments'
         phi_recruitments_name = 'phi_recruitments'
+        ab_recruitment_name = 'ab_recruitments'
+        recruitment_direction_name = 'recruitment_directions'
 
-        self.exp.load([recruitment_intervals_name, r_markings_name, phi_markings_name, xy_markings_name])
+        self.exp.load([
+            recruitment_intervals_name, r_markings_name, phi_markings_name, xy_markings_name,
+            setup_orientation_name])
 
         self._compute_recruitment_interval_filter(
-            r_markings_name, recruitment_intervals_name, recruitment_interval_filter_name)
+            r_markings_name, recruitment_intervals_name, recruitment_intervals_filter_name)
 
         self._compute_is_in_circular_arena_filter(
-            is_in_circular_arena_name, r_markings_name, recruitment_interval_filter_name)
+            is_in_circular_arena_name, r_markings_name, recruitment_intervals_filter_name)
 
-        self._extract_recruitment_period_in_circular_arena_for(xy_markings_name, xy_recruitments_name)
-        self._extract_recruitment_period_in_circular_arena_for(r_markings_name, r_recruitments_name)
-        self._extract_recruitment_period_in_circular_arena_for(phi_markings_name, phi_recruitments_name)
+        self._compute_and_write_xy_r_phi_recruitment(
+            setup_orientation_name,
+            xy_markings_name, xy_recruitments_name,
+            r_markings_name, r_recruitments_name,
+            phi_markings_name, phi_recruitments_name)
 
-        self._compute_ab_recruitment(recruitment_interval_filter_name, list_id_exp)
+        self._compute_and_write_ab_recruitment_and_recruitment_direction(
+            recruitment_intervals_name, recruitment_intervals_filter_name,
+            list_id_exp, ab_recruitment_name, recruitment_direction_name)
 
-    def _compute_ab_recruitment(self, recruitment_interval_filter_name, list_id_exp):
+        self._compute_and_write_ab_recruitment_and_recruitment_direction_with_south_orientation(
+            ab_recruitment_name, recruitment_direction_name, setup_orientation_name)
+
+    def _compute_and_write_xy_r_phi_recruitment(
+            self, setup_orientation_name, xy_markings_name, xy_recruitments_name,
+            r_markings_name, r_recruitments_name,
+            phi_markings_name, phi_recruitments_name):
+
+        self._extract_recruitment_period_in_circular_arena_for(
+            xy_markings_name, xy_recruitments_name, setup_orientation_name,
+            label='xy recruitment', xlabel='x', ylabel='y', category='Recruitment',
+            description='xy coordinates of recruitment markings'
+        )
+        self._extract_recruitment_period_in_circular_arena_for(
+            r_markings_name, r_recruitments_name, setup_orientation_name,
+            label='r recruitment', category='Recruitment',
+            description='radial coordinates of recruitment markings'
+
+        )
+        self._extract_recruitment_period_in_circular_arena_for(
+            phi_markings_name, phi_recruitments_name, setup_orientation_name,
+            label='r recruitment', category='Recruitment',
+            description='angular coordinates of recruitment markings'
+        )
+
+    def _compute_and_write_ab_recruitment_and_recruitment_direction_with_south_orientation(
+            self, ab_recruitment_name, recruitment_direction_name, setup_orientation_name):
+
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=ab_recruitment_name, chara_name=setup_orientation_name,
+            chara_values='S', result_name=ab_recruitment_name+'_orientS',
+            category='Recruitment', label='fit coefficient of recruitment with setup oriented South',
+            xlabel='a', ylabel='b',
+            description='Coefficients of the linear regression of the recruitment markings'
+                        'in the circular arena with setup toward South'
+        )
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=recruitment_direction_name, chara_name=setup_orientation_name,
+            chara_values='S', result_name=recruitment_direction_name+'_orientS',
+            category='Recruitment', label='recruitment direction with setup oriented South',
+            xlabel='a', ylabel='b',
+            description='recruitment marking directions'
+                        'in the circular arena with setup toward South'
+        )
+
+        self.exp.write([ab_recruitment_name+'_orientS', recruitment_direction_name+'_orientS'])
+
+    def _compute_and_write_ab_recruitment_and_recruitment_direction(
+            self, recruitment_intervals_name, recruitment_intervals_filter_name, list_id_exp,
+            ab_recruitment_name, recruitment_direction_name):
         if list_id_exp is None:
             list_id_exp = self.exp.r_recruitments.get_index_array_of_id_exp()
         list_id_exp_ant = self.exp.r_recruitments.get_index_array_of_id_exp_ant()
 
-        res = []
+        mean_phi_name = self.exp.compute_mean_in_time_intervals(
+            name_to_average='phi_recruitments_in_circular_arena',
+            name_intervals=recruitment_intervals_name, mean_level='ant'
+        )
+
+        ab_list = []
+        recruitment_direction_list = []
         for id_exp, id_ant in list_id_exp_ant:
             if id_exp in list_id_exp:
+                print(id_exp)
 
                 r_array, phi_array, recruitment_interval_index_array =\
                     self._get_r_phi_and_recruitment_interval_index_arrays(
-                        id_exp, id_ant, recruitment_interval_filter_name)
+                        id_exp, id_ant, recruitment_intervals_filter_name)
 
                 filter_value_set = set(recruitment_interval_index_array[:, -1])
                 for filter_val in filter_value_set:
                     a, b = self._compute_fit_coefficient_of_recruitment_markings(
                         filter_val, r_array, phi_array, recruitment_interval_index_array)
+                    phi_a = np.arctan(a)
+                    temp_phi_mean = self.exp.get_data_object(mean_phi_name).get_value((id_exp, id_ant, filter_val))
 
-                    res.append((id_exp, id_ant, filter_val, a, b))
+                    # plt.plot([0, 100*np.cos(phi_a)], [0, 100*np.sin(phi_a)])
+                    is_angle_acute = np.abs(norm_angle(phi_a - temp_phi_mean)) > np.pi / 2.
+                    if is_angle_acute:
+                        phi_a = norm_angle(phi_a-np.pi)
+                    ab_list.append((id_exp, id_ant, filter_val, a, b))
+                    recruitment_direction_list.append((id_exp, id_ant, filter_val, phi_a))
+                    # plt.plot([0, 100*np.cos(phi_a)], [0, 100*np.sin(phi_a)])
+                    # plt.plot([-500, 500], [-500*a+b, 500*a+b])
+                    # plt.plot(-500, -500*a+b, 'o')
+                    # plt.plot(0, 0, 'o')
+                    # plt.axis('equal')
+                    # plt.show()
 
-        self._add_to_exp_ab_recruitment(res)
+        self._add_to_exp_ab_recruitment_and_recruitment_direction(
+            ab_list, ab_recruitment_name, recruitment_direction_list, recruitment_direction_name)
 
-    def _add_to_exp_ab_recruitment(self, res):
+        self.exp.write([ab_recruitment_name, recruitment_direction_name])
+
+    def _add_to_exp_ab_recruitment_and_recruitment_direction(self, ab_list, ab_recruitment_name,
+                                                             direction_list, recruitment_direction_name):
         idx_names = ['id_exp', 'id_ant', 'frame']
-        df = pd.DataFrame(res, columns=idx_names + ['a', 'b'])
+        df = pd.DataFrame(ab_list, columns=idx_names + ['a', 'b'])
         df.set_index(idx_names, inplace=True)
         self.exp.add_new2d_from_df(
-            df=df, name='ab_recruitment', xname='a', yname='b', object_type='Events2d',
-            category='Recruitment', label='coefficient fit of recruitment',
-            xlabel='a', ylabel='b', description='Coefficient of the linear regression of the recruitment markings')
+            df=df, name=ab_recruitment_name, xname='a', yname='b', object_type='Events2d',
+            category='Recruitment', label='fit coefficient of recruitment',
+            xlabel='a', ylabel='b',
+            description='Coefficients of the linear regression of the recruitment markings in the circular arena')
+
+        idx_names = ['id_exp', 'id_ant', 'frame']
+        df = pd.DataFrame(direction_list, columns=idx_names + [recruitment_direction_name])
+        df.set_index(idx_names, inplace=True)
+        self.exp.add_new1d_from_df(
+            df=df, name=recruitment_direction_name, object_type='Events1d',
+            category='Recruitment', label='recruitment direction',
+            description='Direction of the recruitment markings in the circular arena')
 
     def _compute_fit_coefficient_of_recruitment_markings(self, filter_val, r_array, phi_array,
                                                          recruitment_interval_index_array):
@@ -131,15 +222,35 @@ class RecruitmentDirection:
         )
         self.exp.rename_object(interval_index_name, recruitment_interval_index_name)
 
-    def _extract_recruitment_period_in_circular_arena_for(self, markings_name, recruitments_name):
-        self.exp.filter_with_values(
-            name_to_filter=markings_name, filter_name='is_in_circular_arena',
-            result_name=markings_name + '_in_circular_arena'
-        )
+    def _extract_recruitment_period_in_circular_arena_for(
+            self, markings_name, recruitments_name, setup_orientation_name,
+            label=None, xlabel=None, ylabel=None, category=None, description=None
+    ):
+
         result_name, interval_index_name = self.exp.filter_with_time_intervals(
-            name_to_filter=markings_name + '_in_circular_arena',
-            name_intervals='recruitment_intervals',
-            result_name=recruitments_name)
+            name_to_filter=markings_name, name_intervals='recruitment_intervals', result_name=recruitments_name,
+            label=label, xlabel=xlabel, ylabel=ylabel, category=category, description=description
+        )
+
+        self.exp.filter_with_values(
+            name_to_filter=recruitments_name, filter_name='is_in_circular_arena',
+            result_name=recruitments_name + '_in_circular_arena',
+            label=label+' in circular arena', xlabel=xlabel, ylabel=ylabel, category=category,
+            description=description+' inside the circular arena'
+        )
+
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=recruitments_name + '_in_circular_arena',
+            chara_name=setup_orientation_name,
+            chara_values='S', result_name=recruitments_name+'_in_circular_arena_orientS',
+            category='Recruitment', label=label+' in circular arena with setup oriented South',
+            xlabel='a', ylabel='b',
+            description=description+' inside the circular arena with setup oriented South'
+        )
+        self.exp.write([recruitments_name,
+                        recruitments_name+'_in_circular_arena',
+                        recruitments_name+'_in_circular_arena_orientS'
+                        ])
 
         return result_name, interval_index_name
 
@@ -180,17 +291,6 @@ class RecruitmentDirection:
             name_to_filter=recruitment_interval_filter_name, filter_name=is_in_circular_arena,
             result_name=recruitment_interval_filter_name, redo=True
         )
-
-        # if is_in_circular_arena_df.loc[(id_exp, id_ant, frame)] == 1:
-        #     if already_exit == 1:
-        #         is_same_interval_than_prev = prev_interval == df_recruitment_interval.loc[(id_exp, id_ant, frame)]
-        #         if is_same_interval_than_prev:
-        #             is_in_circular_arena_df.loc[(id_exp, id_ant, frame)] = 0
-        #         else:
-        #             already_exit = 0
-        # else:
-        #     already_exit = 1
-        # prev_interval = df_recruitment_interval.loc[(id_exp, id_ant, frame)]
 
     def _compute_when_markings_inside_circular_arena(self, r_markings, is_in_circular_arena):
         self.exp.add_copy1d(name_to_copy=r_markings, copy_name=is_in_circular_arena)

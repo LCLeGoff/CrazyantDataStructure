@@ -1,6 +1,8 @@
 from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.scripts.root import root
 from matplotlib import pyplot as plt
+
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.Plotter.BasePlotters import BasePlotters
 import numpy as np
 
@@ -96,13 +98,17 @@ group = 'FMAB'
 # plt.show()
 
 # for group in ['FMAB', 'FMABU', 'FMABW']:
-# 	exp = ExperimentGroupBuilder(root).build(group)
-# 	exp.rename_data('marking_batch_interval', 'marking_batch_intervals')
-# 	exp.rename_data('marking_interval', 'marking_intervals')
-# 	exp.rename_data('marking_batch_time_threshold', 'marking_batch_time_thresholds')
-# 	exp.rename_data('marking_batch_distance_threshold', 'marking_batch_distance_thresholds')
-# 	exp.rename_data('polar_markings', 'rphi_markings')
-# 	exp.rename_data('marking_distance', 'marking_distances')
+#     exp = ExperimentGroupBuilder(root).build(group)
+#     # exp.rename_data('marking_batch_interval', 'marking_batch_intervals')
+#     # exp.rename_data('marking_interval', 'marking_intervals')
+#     # exp.rename_data('marking_batch_time_threshold', 'marking_batch_time_thresholds')
+#     # exp.rename_data('marking_batch_distance_threshold', 'marking_batch_distance_thresholds')
+#     # exp.rename_data('polar_markings', 'rphi_markings')
+#     # exp.rename_data('marking_distance', 'marking_distances')
+#     # exp.rename_data('ab_recruitment', 'ab_recruitments')
+#     # exp.rename_data('ab_recruitment_orientS', 'ab_recruitments_orientS')
+#     # exp.rename_data('recruitment_direction', 'recruitment_directions')
+#     # exp.rename_data('recruitment_direction_orientS', 'recruitment_directions_orientS')
 
 
 # plot2d = Plotter2d()
@@ -141,19 +147,29 @@ for i, group in enumerate(['FMAB']):
     print(group)
     recruit_direction = RecruitmentDirection(root, group)
     recruit_direction.compute_recruitment_direction()
+    recruit_direction.exp.load([
+        'xy_recruitments',
+        'xy_recruitments_in_circular_arena_orientS',
+        'ab_recruitments_orientS',
+        'recruitment_directions_orientS'])
     recruit_direction.exp.load_as_2d('x', 'y', 'xy')
     for id_exp in recruit_direction.exp.id_exp_list:
         # for id_exp in [15]:
         preplot = BasePlotters().create_plot(figsize=(13, 10))
-        recruit_direction.exp.xy_recruitments.plotter.repartition_in_arena(
-            preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', title_prefix=id_exp)
+        recruit_direction.exp.xy_recruitments_in_circular_arena_orientS.plotter.repartition_in_arena(
+            preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', title_prefix=str(id_exp))
         # recruit_direction.exp.phi_markings_mean_over_recruitment_intervals.plotter.radial_direction_in_arena(
         #     center_obj=recruit_direction.exp.xy,
         #     preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', ls='--')
         # recruit_direction.exp.mean_delta_phi_recruitments.plotter.radial_direction_in_arena(
         #     preplot=preplot, list_id_exp=[id_exp], color_variety='ant2')
-        recruit_direction.exp.ab_recruitment.plotter.plot_ab_line(
+        recruit_direction.exp.recruitment_directions_orientS.plotter.radial_direction_in_arena(
+            center_obj=recruit_direction.exp.xy,
             preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', ls='-')
+        recruit_direction.exp.ab_recruitments_orientS.plotter.plot_ab_line(
+            preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', ls='--')
+        # preplot[0].set_xlim(0, 1920)
+        # preplot[0].set_ylim(0, 1080)
         plt.show()
 
 
