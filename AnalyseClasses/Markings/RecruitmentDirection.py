@@ -1,5 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
@@ -28,8 +28,12 @@ class RecruitmentDirection:
         xy_recruitments_name = 'xy_recruitments'
         r_recruitments_name = 'r_recruitments'
         phi_recruitments_name = 'phi_recruitments'
+
         ab_recruitment_name = 'ab_recruitments'
+        recruitment_certainty_name = 'recruitment_certainty'
+
         recruitment_direction_name = 'recruitment_directions'
+        first_recruitment_direction_name = 'first_recruitment_directions'
 
         self.exp.load([
             recruitment_intervals_name, r_markings_name, phi_markings_name, xy_markings_name,
@@ -47,12 +51,40 @@ class RecruitmentDirection:
             r_markings_name, r_recruitments_name,
             phi_markings_name, phi_recruitments_name)
 
-        self._compute_and_write_ab_recruitment_and_recruitment_direction(
+        self._compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty(
             recruitment_intervals_name, recruitment_intervals_filter_name,
-            list_id_exp, ab_recruitment_name, recruitment_direction_name)
+            list_id_exp, ab_recruitment_name, recruitment_direction_name, recruitment_certainty_name)
 
-        self._compute_and_write_ab_recruitment_and_recruitment_direction_with_south_orientation(
-            ab_recruitment_name, recruitment_direction_name, setup_orientation_name)
+        self._compute_and_write_first_recruitment_direction(
+            first_recruitment_direction_name, recruitment_direction_name)
+
+        self._compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty_with_south_orientation(
+            ab_recruitment_name, recruitment_direction_name, first_recruitment_direction_name,
+            recruitment_certainty_name, setup_orientation_name)
+
+    def _compute_and_write_first_recruitment_direction(
+            self, first_recruitment_direction_name, recruitment_direction_name):
+
+        id_exp_ant_frame_array = self.exp.recruitment_directions.get_index_array_of_id_exp_ant_frame()
+
+        index_list = []
+        for id_exp in self.exp.id_exp_list:
+            temp_index_array = id_exp_ant_frame_array[id_exp_ant_frame_array[:, 0] == id_exp, :]
+            if len(temp_index_array) != 0:
+                frame_array = temp_index_array[:, 2]
+                idx_frame_min = frame_array.argmin()
+                idx_min = tuple(temp_index_array[idx_frame_min, :])
+                index_list.append(idx_min)
+
+        self.exp.add_copy1d(
+            name_to_copy=recruitment_direction_name, copy_name=first_recruitment_direction_name,
+            category='Recruitment', label='First recruitment directions',
+            description='First recruitment marking directions'
+        )
+        self.exp.__dict__[first_recruitment_direction_name].df = \
+            self.exp.__dict__[recruitment_direction_name].get_row_of_idx_array(index_list)
+
+        self.exp.write(first_recruitment_direction_name)
 
     def _compute_and_write_xy_r_phi_recruitment(
             self, setup_orientation_name, xy_markings_name, xy_recruitments_name,
@@ -76,13 +108,14 @@ class RecruitmentDirection:
             description='angular coordinates of recruitment markings'
         )
 
-    def _compute_and_write_ab_recruitment_and_recruitment_direction_with_south_orientation(
-            self, ab_recruitment_name, recruitment_direction_name, setup_orientation_name):
+    def _compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty_with_south_orientation(
+            self, ab_recruitment_name, recruitment_direction_name,
+            first_recruitment_direction_name, recruitment_certainty_name, setup_orientation_name):
 
         self.exp.filter_with_experiment_characteristics(
             name_to_filter=ab_recruitment_name, chara_name=setup_orientation_name,
             chara_values='S', result_name=ab_recruitment_name+'_orientS',
-            category='Recruitment', label='fit coefficient of recruitment with setup oriented South',
+            category='Recruitment', label='fit coefficients of recruitment with setup oriented South',
             xlabel='a', ylabel='b',
             description='Coefficients of the linear regression of the recruitment markings'
                         'in the circular arena with setup toward South'
@@ -90,17 +123,33 @@ class RecruitmentDirection:
         self.exp.filter_with_experiment_characteristics(
             name_to_filter=recruitment_direction_name, chara_name=setup_orientation_name,
             chara_values='S', result_name=recruitment_direction_name+'_orientS',
-            category='Recruitment', label='recruitment direction with setup oriented South',
-            xlabel='a', ylabel='b',
+            category='Recruitment', label='recruitment directions with setup oriented South',
             description='recruitment marking directions'
                         'in the circular arena with setup toward South'
         )
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=first_recruitment_direction_name, chara_name=setup_orientation_name,
+            chara_values='S', result_name=first_recruitment_direction_name+'_orientS',
+            category='Recruitment', label='first recruitment directions with setup oriented South',
+            description='first recruitment marking directions'
+                        'in the circular arena with setup toward South'
+        )
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=recruitment_certainty_name, chara_name=setup_orientation_name,
+            chara_values='S', result_name=recruitment_certainty_name+'_orientS',
+            category='Recruitment', label='recruitment direction certainty with setup oriented South',
+            description='recruitment marking direction certainty'
+                        'in the circular arena with setup toward South'
+        )
 
-        self.exp.write([ab_recruitment_name+'_orientS', recruitment_direction_name+'_orientS'])
+        self.exp.write([
+            ab_recruitment_name+'_orientS', recruitment_direction_name+'_orientS',
+            first_recruitment_direction_name + '_orientS', recruitment_certainty_name + '_orientS'
+        ])
 
-    def _compute_and_write_ab_recruitment_and_recruitment_direction(
+    def _compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty(
             self, recruitment_intervals_name, recruitment_intervals_filter_name, list_id_exp,
-            ab_recruitment_name, recruitment_direction_name):
+            ab_recruitment_name, recruitment_direction_name, recruitment_certainty_name):
         if list_id_exp is None:
             list_id_exp = self.exp.r_recruitments.get_index_array_of_id_exp()
         list_id_exp_ant = self.exp.r_recruitments.get_index_array_of_id_exp_ant()
@@ -112,9 +161,9 @@ class RecruitmentDirection:
 
         ab_list = []
         recruitment_direction_list = []
+        recruitment_certainty_list = []
         for id_exp, id_ant in list_id_exp_ant:
             if id_exp in list_id_exp:
-                print(id_exp)
 
                 r_array, phi_array, recruitment_interval_index_array =\
                     self._get_r_phi_and_recruitment_interval_index_arrays(
@@ -122,7 +171,7 @@ class RecruitmentDirection:
 
                 filter_value_set = set(recruitment_interval_index_array[:, -1])
                 for filter_val in filter_value_set:
-                    a, b = self._compute_fit_coefficient_of_recruitment_markings(
+                    a, b, sum_dist_squared = self._compute_fit_coefficient_of_recruitment_markings(
                         filter_val, r_array, phi_array, recruitment_interval_index_array)
                     phi_a = np.arctan(a)
                     temp_phi_mean = self.exp.get_data_object(mean_phi_name).get_value((id_exp, id_ant, filter_val))
@@ -133,6 +182,7 @@ class RecruitmentDirection:
                         phi_a = norm_angle(phi_a-np.pi)
                     ab_list.append((id_exp, id_ant, filter_val, a, b))
                     recruitment_direction_list.append((id_exp, id_ant, filter_val, phi_a))
+                    recruitment_certainty_list.append((id_exp, id_ant, filter_val, sum_dist_squared))
                     # plt.plot([0, 100*np.cos(phi_a)], [0, 100*np.sin(phi_a)])
                     # plt.plot([-500, 500], [-500*a+b, 500*a+b])
                     # plt.plot(-500, -500*a+b, 'o')
@@ -140,14 +190,21 @@ class RecruitmentDirection:
                     # plt.axis('equal')
                     # plt.show()
 
-        self._add_to_exp_ab_recruitment_and_recruitment_direction(
-            ab_list, ab_recruitment_name, recruitment_direction_list, recruitment_direction_name)
+        self._add_to_exp_ab_recruitment_and_recruitment_direction_and_certainty(
+            ab_list, ab_recruitment_name,
+            recruitment_direction_list, recruitment_direction_name,
+            recruitment_certainty_list, recruitment_certainty_name
+        )
 
-        self.exp.write([ab_recruitment_name, recruitment_direction_name])
+        self.exp.write([ab_recruitment_name, recruitment_direction_name, recruitment_certainty_name])
 
-    def _add_to_exp_ab_recruitment_and_recruitment_direction(self, ab_list, ab_recruitment_name,
-                                                             direction_list, recruitment_direction_name):
+    def _add_to_exp_ab_recruitment_and_recruitment_direction_and_certainty(
+            self, ab_list, ab_recruitment_name,
+            direction_list, recruitment_direction_name,
+            certainty_list, recruitment_certainty_name):
+
         idx_names = ['id_exp', 'id_ant', 'frame']
+
         df = pd.DataFrame(ab_list, columns=idx_names + ['a', 'b'])
         df.set_index(idx_names, inplace=True)
         self.exp.add_new2d_from_df(
@@ -156,13 +213,19 @@ class RecruitmentDirection:
             xlabel='a', ylabel='b',
             description='Coefficients of the linear regression of the recruitment markings in the circular arena')
 
-        idx_names = ['id_exp', 'id_ant', 'frame']
         df = pd.DataFrame(direction_list, columns=idx_names + [recruitment_direction_name])
         df.set_index(idx_names, inplace=True)
         self.exp.add_new1d_from_df(
             df=df, name=recruitment_direction_name, object_type='Events1d',
-            category='Recruitment', label='recruitment direction',
-            description='Direction of the recruitment markings in the circular arena')
+            category='Recruitment', label='recruitment directions',
+            description='Directions of the recruitment markings in the circular arena ')
+
+        df = pd.DataFrame(certainty_list, columns=idx_names + [recruitment_certainty_name])
+        df.set_index(idx_names, inplace=True)
+        self.exp.add_new1d_from_df(
+            df=df, name=recruitment_certainty_name, object_type='Events1d',
+            category='Recruitment', label='recruitment certainty',
+            description='Certainty of the directions of the recruitment markings in the circular arena ')
 
     def _compute_fit_coefficient_of_recruitment_markings(self, filter_val, r_array, phi_array,
                                                          recruitment_interval_index_array):
@@ -172,12 +235,12 @@ class RecruitmentDirection:
         # ax.plot(phi, r, 'o-')
         phi, phi0 = self._rotation_of_markings(phi)
         # ax.plot(phi, r, 'o-')
-        x_fit, y_fit = self._linear_fit_of_the_rotated_markings(r, phi)
+        x_fit, y_fit, sum_dist_squared = self._linear_fit_of_the_rotated_markings(r, phi)
         phi_fit, r_fit = self._rotation_of_the_fit_line(phi0, x_fit, y_fit)
         # ax.plot(phi_fit, r_fit)
         a, b = self._compute_ab_of_the_fit_line(r_fit, phi_fit)
         # plt.show()
-        return a, b
+        return a, b, sum_dist_squared
 
     def _get_r_phi_and_recruitment_interval_index_arrays(self, id_exp, id_ant, recruitment_interval_filter_name):
         phi_df = self.exp.phi_recruitments.get_row_of_id_exp_ant(id_exp, id_ant)
@@ -200,7 +263,8 @@ class RecruitmentDirection:
     def _linear_fit_of_the_rotated_markings(r, phi):
         x, y = convert_polar2cartesian(r, phi)
         a, b, x_fit, y_fit = linear_fit(x, y)
-        return x_fit, y_fit
+        sum_dist_squared = np.sum((y-y_fit)**2)
+        return x_fit, y_fit, sum_dist_squared/len(r)
 
     @staticmethod
     def _compute_ab_of_the_fit_line(r, phi):
