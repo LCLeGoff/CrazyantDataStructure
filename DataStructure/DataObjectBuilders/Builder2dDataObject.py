@@ -16,6 +16,9 @@ class Builder2dDataObject(BuilderDataObject):
     def get_y_values(self):
         return self.df[self.df.columns[1]]
 
+    def get_value(self, idx):
+        return self.df.loc[idx, self.df.columns]
+
     def get_array(self):
         return np.array(list(zip(self.get_x_values(), self.get_y_values())))
 
