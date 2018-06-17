@@ -159,15 +159,27 @@ class Plotter2d(BasePlotters):
                 self._plot_2d_obj_for_exp_ant(ax)
 
     def _plot_2d_obj_per_ant2(self, ax, list_id_exp):
-        id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
-        col_list_for_each_ant = ColorObject('cmap', self.cmap, range(10)).colors
+        # id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
+        # col_list_for_each_ant = ColorObject('cmap', self.cmap, range(10)).colors
+        #
+        # for id_exp, id_ant in id_exp_ant_list:
+        #     if id_exp in list_id_exp:
+        #         self.line['c'] = col_list_for_each_ant[id_ant % 10]
+        #         self.id_exp = id_exp
+        #         self.id_ant = id_ant
+        #         self._plot_2d_obj_for_exp_ant(ax)
 
-        for id_exp, id_ant in id_exp_ant_list:
-            if id_exp in list_id_exp:
-                self.line['c'] = col_list_for_each_ant[id_ant % 10]
-                self.id_exp = id_exp
-                self.id_ant = id_ant
-                self._plot_2d_obj_for_exp_ant(ax)
+        self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_2d_obj_for_exp_ant)
+        # idx_dict = self.obj.get_index_dict_of_id_exp_ant()
+        # for id_exp in list_id_exp:
+        #     if id_exp in idx_dict:
+        #         ant_list = sorted(idx_dict[id_exp])
+        #         col_list_for_each_ant = ColorObject('cmap', self.cmap, ant_list+['none']).colors
+        #         for id_ant in ant_list:
+        #             self.line['c'] = col_list_for_each_ant[id_ant]
+        #             self.id_exp = id_exp
+        #             self.id_ant = id_ant
+        #             self._plot_2d_obj_for_exp_ant(ax)
 
     def _plot_2d_obj_per_filter(self, ax, list_id_exp):
         col_list = ColorObject('cmap', self.cmap, 101).colors
@@ -291,19 +303,33 @@ class Plotter2d(BasePlotters):
                 self._plot_phi_direction(ax)
 
     def _plot_phi_direction_per_ant2(self, ax, list_id_exp):
-        idx_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
+        # idx_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
+        # for id_exp in list_id_exp:
+        #     if id_exp in idx_dict:
+        #         ant_list = sorted(idx_dict[id_exp])
+        #         col_list_for_each_ant = ColorObject('cmap', self.cmap, ant_list+['none']).colors
+        #         for id_ant in ant_list:
+        #             self.line['c'] = col_list_for_each_ant[id_ant]
+        #             frame_list = idx_dict[id_exp][id_ant]
+        #             for frame in frame_list:
+        #                 self.id_exp = id_exp
+        #                 self.id_ant = id_ant
+        #                 self.frame = frame
+        #                 self._plot_phi_direction(ax)
+
+        self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_phi_direction)
+
+    def _plot_with_colorization_ant2(self, ax, list_id_exp, fct):
+        idx_dict = self.obj.get_index_dict_of_id_exp_ant()
         for id_exp in list_id_exp:
             if id_exp in idx_dict:
                 ant_list = sorted(idx_dict[id_exp])
-                col_list_for_each_ant = ColorObject('cmap', self.cmap, ant_list).colors
+                col_list_for_each_ant = ColorObject('cmap', self.cmap, ant_list + ['none']).colors
                 for id_ant in ant_list:
                     self.line['c'] = col_list_for_each_ant[id_ant]
-                    frame_list = idx_dict[id_exp][id_ant]
-                    for frame in frame_list:
-                        self.id_exp = id_exp
-                        self.id_ant = id_ant
-                        self.frame = frame
-                        self._plot_phi_direction(ax)
+                    self.id_exp = id_exp
+                    self.id_ant = id_ant
+                    fct(ax)
 
     def _plot_phi_direction_per_frame2(self, ax, list_id_exp):
         self._plot_with_colorization_frame2(ax, list_id_exp, self._plot_phi_direction)
@@ -325,12 +351,28 @@ class Plotter2d(BasePlotters):
         y = self.circular_arena_radius * np.sin(phi)+center[1]
         ax.plot([center[0], x], [center[1], y], **self.line)
 
-    def plot_ab_line(self, preplot=None, list_id_exp=None, **kwarg):
+    def plot_ab_line(self, preplot=None, list_id_exp=None, color_variety=None, **kwarg):
 
         fig, ax = self.create_plot(preplot, (9, 5))
         self._change_arg_values('line', kwarg)
 
-        self._plot_with_colorization_frame2(ax, list_id_exp, self._plot_one_ab_line)
+        if color_variety == 'ant2':
+            # self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_one_ab_line)
+            idx_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
+            for id_exp in list_id_exp:
+                if id_exp in idx_dict:
+                    ant_list = sorted(idx_dict[id_exp])
+                    col_list_for_each_ant = ColorObject('cmap', self.cmap, ant_list+['none']).colors
+                    for id_ant in ant_list:
+                        self.line['c'] = col_list_for_each_ant[id_ant]
+                        frame_list = idx_dict[id_exp][id_ant]
+                        for frame in frame_list:
+                            self.id_exp = id_exp
+                            self.id_ant = id_ant
+                            self.frame = frame
+                            self._plot_one_ab_line(ax)
+        elif color_variety == 'frame2':
+            self._plot_with_colorization_frame2(ax, list_id_exp, self._plot_one_ab_line)
 
     def _plot_with_colorization_frame2(self, ax, list_id_exp, fct):
         if list_id_exp is None:
