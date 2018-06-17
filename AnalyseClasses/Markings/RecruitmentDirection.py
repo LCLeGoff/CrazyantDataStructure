@@ -31,7 +31,7 @@ class RecruitmentDirection:
 
         ab_recruitment_name = 'ab_recruitments'
         recruitment_certainty_name = 'recruitment_certainty'
-
+        first_recruitment_certainty_name = 'first_recruitment_certainty'
         recruitment_direction_name = 'recruitment_directions'
         first_recruitment_direction_name = 'first_recruitment_directions'
 
@@ -56,14 +56,16 @@ class RecruitmentDirection:
             list_id_exp, ab_recruitment_name, recruitment_direction_name, recruitment_certainty_name)
 
         self._compute_and_write_first_recruitment_direction(
-            first_recruitment_direction_name, recruitment_direction_name)
+            first_recruitment_direction_name, recruitment_direction_name,
+            first_recruitment_certainty_name, recruitment_certainty_name)
 
         self._compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty_with_south_orientation(
             ab_recruitment_name, recruitment_direction_name, first_recruitment_direction_name,
-            recruitment_certainty_name, setup_orientation_name)
+            recruitment_certainty_name, first_recruitment_certainty_name, setup_orientation_name)
 
     def _compute_and_write_first_recruitment_direction(
-            self, first_recruitment_direction_name, recruitment_direction_name):
+            self, first_recruitment_direction_name, recruitment_direction_name,
+            first_recruitment_certainty_name, recruitment_certainty_name):
 
         id_exp_ant_frame_array = self.exp.recruitment_directions.get_index_array_of_id_exp_ant_frame()
 
@@ -84,7 +86,15 @@ class RecruitmentDirection:
         self.exp.__dict__[first_recruitment_direction_name].df = \
             self.exp.__dict__[recruitment_direction_name].get_row_of_idx_array(index_list)
 
-        self.exp.write(first_recruitment_direction_name)
+        self.exp.add_copy1d(
+            name_to_copy=recruitment_certainty_name, copy_name=first_recruitment_certainty_name,
+            category='Recruitment', label='First recruitment certainty',
+            description='Certainty of the first recruitment'
+        )
+        self.exp.__dict__[first_recruitment_certainty_name].df = \
+            self.exp.__dict__[recruitment_certainty_name].get_row_of_idx_array(index_list)
+
+        self.exp.write([first_recruitment_direction_name, first_recruitment_certainty_name])
 
     def _compute_and_write_xy_r_phi_recruitment(
             self, setup_orientation_name, xy_markings_name, xy_recruitments_name,
@@ -110,7 +120,8 @@ class RecruitmentDirection:
 
     def _compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty_with_south_orientation(
             self, ab_recruitment_name, recruitment_direction_name,
-            first_recruitment_direction_name, recruitment_certainty_name, setup_orientation_name):
+            first_recruitment_direction_name, recruitment_certainty_name, first_recruitment_certainty_name,
+            setup_orientation_name):
 
         self.exp.filter_with_experiment_characteristics(
             name_to_filter=ab_recruitment_name, chara_name=setup_orientation_name,
@@ -142,9 +153,18 @@ class RecruitmentDirection:
                         'in the circular arena with setup toward South'
         )
 
+        self.exp.filter_with_experiment_characteristics(
+            name_to_filter=first_recruitment_certainty_name, chara_name=setup_orientation_name,
+            chara_values='S', result_name=first_recruitment_certainty_name+'_orientS',
+            category='Recruitment', label='first recruitment direction certainty with setup oriented South',
+            description='Certainty of the first recruitment'
+                        'in the circular arena with setup toward South'
+        )
+
         self.exp.write([
             ab_recruitment_name+'_orientS', recruitment_direction_name+'_orientS',
-            first_recruitment_direction_name + '_orientS', recruitment_certainty_name + '_orientS'
+            first_recruitment_direction_name + '_orientS', recruitment_certainty_name + '_orientS',
+            first_recruitment_certainty_name + '_orientS'
         ])
 
     def _compute_and_write_ab_recruitment_and_recruitment_direction_and_certainty(
@@ -263,8 +283,8 @@ class RecruitmentDirection:
     def _linear_fit_of_the_rotated_markings(r, phi):
         x, y = convert_polar2cartesian(r, phi)
         a, b, x_fit, y_fit = linear_fit(x, y)
-        sum_dist_squared = np.sum((y-y_fit)**2)
-        return x_fit, y_fit, sum_dist_squared/len(r)
+        sum_dist_squared = np.sum(np.abs(y-y_fit))/len(r)
+        return x_fit, y_fit, sum_dist_squared
 
     @staticmethod
     def _compute_ab_of_the_fit_line(r, phi):

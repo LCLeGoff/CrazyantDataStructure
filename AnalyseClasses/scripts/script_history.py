@@ -1,6 +1,7 @@
 from AnalyseClasses.Markings.BaseMarkings import AnalyseMarkings
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Markings.Recruitment import Recruitment
+from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from AnalyseClasses.scripts.root import root
 
@@ -22,3 +23,6 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
     recruit = Recruitment(root, group)
     # recruit.compute_marking_batch()
     # recruit.compute_recruitment()
+
+    recruit_direction = RecruitmentDirection(root, group)
+    recruit_direction.compute_recruitment_direction()

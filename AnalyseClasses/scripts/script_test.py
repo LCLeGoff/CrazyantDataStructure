@@ -151,7 +151,9 @@ group = 'FMAB'
 #     recruit_direction.exp.load([
 #         'xy_recruitments',
 #         'xy_recruitments_in_circular_arena_orientS',
-#         'recruitment_directions'])
+#         'recruitment_directions_orientS',
+#         'ab_recruitment_orientS'
+#     ])
 #     first_recruitment_direction_name = 'first_recruitment_directions'
 #
 #     recruit_direction.exp.load_as_2d('x', 'y', 'xy')
@@ -159,13 +161,49 @@ group = 'FMAB'
 #         preplot = BasePlotters().create_plot(figsize=(13, 10))
 #         recruit_direction.exp.xy_recruitments_in_circular_arena_orientS.plotter.repartition_in_arena(
 #             preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', title_prefix=str(id_exp))
-#         recruit_direction.exp.recruitment_directions_orientS.plotter.radial_direction_in_arena(
-#             center_obj=recruit_direction.exp.xy,
-#             preplot=preplot, list_id_exp=[id_exp], color_variety='frame2', ls='-')
+#         # recruit_direction.exp.recruitment_directions_orientS.plotter.radial_direction_in_arena(
+#         #     center_obj=recruit_direction.exp.xy,
+#         #     preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', ls='-')
+#         recruit_direction.exp.ab_recruitment_orientS.plotter.plot_ab_line(
+#             preplot=preplot, list_id_exp=[id_exp], color_variety='ant2', ls='-')
 #         plt.show()
 
 
-col = ['w', 'g', 'b']
+col = ['w', 'y', 'r']
+labels = ['nothing', 'sight only', 'smell and sight']
+labels2 = ['all recruitment', 'first recruitment']
+dt = 1 / 5.
+preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
+# preplot2 = BasePlotters().create_plot(figsize=(6.5, 5))
+for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
+    # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
+    print(group)
+    recruit_direction = RecruitmentDirection(root, group)
+    recruit_direction.exp.load([
+        'recruitment_directions_orientS', 'first_recruitment_directions_orientS',
+    ])
+
+    # recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
+    #     title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+    #     marker='o', lw=1, normed=True, preplot=preplot, c='b', label='all recruitments')
+    # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
+    #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+    #     marker='o', lw=1, normed=True, preplot=preplot, c='r', label='first recruitment')
+#
+    recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
+        title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+        marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+    # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
+    #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+    #     marker='o', lw=1, normed=True, preplot=preplot2, c=col[i], label=labels[i])
+    # preplot[0].legend()
+#
+preplot1[0].legend()
+# preplot2[0].legend()
+plt.show()
+
+
+col = ['w', 'y', 'r']
 labels = ['nothing', 'smell only', 'smell and sight']
 labels2 = ['all recruitment', 'first recruitment']
 dt = 1 / 5.
@@ -175,40 +213,39 @@ for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
     # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
     print(group)
     recruit_direction = RecruitmentDirection(root, group)
-    # recruit_direction.compute_recruitment_direction()
     recruit_direction.exp.load([
-        'recruitment_directions_orientS', 'first_recruitment_directions_orientS',
-        'recruitment_certainty_orientS', 'recruitment_directions_orientS'
+        'recruitment_certainty_orientS', 'recruitment_directions_orientS',
+        'first_recruitment_certainty_orientS', 'first_recruitment_directions_orientS'
     ])
-    recruit_direction.exp.recruitment_certainty_orientS.plotter.hist1d(
+    # recruit_direction.exp.recruitment_certainty_orientS.plotter.hist1d(
+    #     title_prefix=labels[i],
+    #     # yscale='log',
+    #     # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+    #     marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+    #
+    # recruit_direction.exp.add_2d_from_1ds(
+    #     name1='recruitment_directions_orientS', name2='recruitment_certainty_orientS',
+    #     result_name='certainty_vs_direction'
+    # )
+    #
+    # recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
+    #     preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
+
+    recruit_direction.exp.first_recruitment_certainty_orientS.plotter.hist1d(
         title_prefix=labels[i],
         # yscale='log',
         # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
         marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
 
     recruit_direction.exp.add_2d_from_1ds(
-        name1='recruitment_directions_orientS', name2='recruitment_certainty_orientS',
+        name1='first_recruitment_directions_orientS', name2='first_recruitment_certainty_orientS',
         result_name='certainty_vs_direction'
     )
 
     recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
         preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
 
-#     recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
-#         title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-#         marker='o', lw=1, normed=True, preplot=preplot, c='b', label='all recruitments')
-#     recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
-#         title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-#         marker='o', lw=1, normed=True, preplot=preplot, c='r', label='first recruitment')
-# #
-#     recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
-#         title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-#         marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
-#     recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
-#         title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-#         marker='o', lw=1, normed=True, preplot=preplot2, c=col[i], label=labels[i])
-#     preplot[0].legend()
-#
+
 preplot1[0].legend()
 # preplot2[0].legend()
 plt.show()
