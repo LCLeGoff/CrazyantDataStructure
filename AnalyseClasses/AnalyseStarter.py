@@ -6,9 +6,11 @@ from Tools.MiscellaneousTools.JsonFiles import import_obj, write_obj
 
 
 class AnalyseStarter:
-    def __init__(self, root, group):
+    def __init__(self, root, group, init_blobs=True):
         self.root = root + group + '/'
         self.group = group
+        self.init_blobs = init_blobs
+        self.characteristics = import_obj(self.root + '/Raw/Characteristics.json')
 
     def start(self, redo):
         self.__fill_and_write_definition_dict(redo)
@@ -22,12 +24,14 @@ class AnalyseStarter:
     def __fill_and_write_definition_dict(self, redo):
         definition_dict = self.__init_definition_dict(redo)
 
-        self.__fill_details_for_blob_features_and_markings(definition_dict)
-        self.__fill_details_for_xy(definition_dict)
-        self.__fill_details_for_absolute_orientation(definition_dict)
+        if self.init_blobs:
+            self.__fill_details_for_blob_features_and_markings(definition_dict)
+            self.__fill_details_for_xy(definition_dict)
+            self.__fill_details_for_absolute_orientation(definition_dict)
+
         self.__fill_details_for_experiment_features(definition_dict)
         self.__fill_details_for_entrance(definition_dict)
-        self.__fill_details_for_ref_pts(definition_dict)
+        self.__fill_details_for_obstacle(definition_dict)
 
         self.__write_definition_dict(definition_dict)
 
@@ -63,8 +67,19 @@ class AnalyseStarter:
             definition_dict[key]['description'] = 'One of the two reference points'
             definition_dict[key]['label'] = 'Reference points ' + str(i)
 
+    def __fill_details_for_obstacle(self, definition_dict):
+        print(self.characteristics[list(self.characteristics.keys())[0]])
+        if 'obstacle1' in self.characteristics[list(self.characteristics.keys())[0]]:
+            for i in [1, 2]:
+                key = 'obstacle' + str(i)
+                definition_dict[key] = dict()
+                definition_dict[key]['label'] = 'Obstacle point ' + str(i)
+                definition_dict[key]['category'] = 'Raw'
+                definition_dict[key]['object_type'] = 'Characteristics2d'
+                definition_dict[key]['description'] = 'Point at one of the two ends of the obstacle'
+
     @staticmethod
-    def __correct_object_types_for_som_experiment_features(definition_dict):
+    def __correct_object_types_for_some_experiment_features(definition_dict):
         definition_dict['food_center']['object_type'] = 'Characteristics2d'
         definition_dict['traj_translation']['object_type'] = 'Characteristics2d'
         definition_dict['crop_limit_x']['object_type'] = 'Characteristics2d'
@@ -80,6 +95,7 @@ class AnalyseStarter:
         definition_dict['crop_limit_x']['label'] = 'Crop limit x'
         definition_dict['crop_limit_y']['label'] = 'Crop limit y'
         definition_dict['setup_orientation']['label'] = 'Setup orientation'
+        definition_dict['temporary_result']['label'] = 'Preliminary results'
 
     @staticmethod
     def __fill_description_for_experiment_features(definition_dict):
@@ -95,18 +111,23 @@ class AnalyseStarter:
         definition_dict['crop_limit_x']['description'] = 'limits of the crop on the x coordinates'
         definition_dict['crop_limit_y']['description'] = 'limits of the crop on the y coordinates'
         definition_dict['setup_orientation']['description'] = 'Setup orientation'
+        definition_dict['date']['description'] = 'Date of experiment'
+        definition_dict['temperature']['description'] = 'Air temperature during experiment'
+        definition_dict['humidity']['description'] = 'Air humidity during experiment'
+        definition_dict['temporary_result']['description'] = 'Preliminary results got by watching movies'
 
     def __fill_details_for_experiment_features(self, definition_dict):
         self.__automatic_filling_details_for_experiment_features(definition_dict)
         self.__fill_description_for_experiment_features(definition_dict)
         self.__correct_labels_for_some_experiment_features(definition_dict)
-        self.__correct_object_types_for_som_experiment_features(definition_dict)
+        self.__correct_object_types_for_some_experiment_features(definition_dict)
 
     @staticmethod
     def __automatic_filling_details_for_experiment_features(definition_dict):
         for key in [
-            'session', 'trial', 'n_frames', 'fps', 'mm2px', 'food_radius', 'setup_orientation',
-            'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y'
+            'session', 'trial', 'date', 'temperature', 'humidity', 'temporary_result',
+            'n_frames', 'fps', 'mm2px', 'food_radius', 'setup_orientation',
+            'food_center', 'traj_translation', 'crop_limit_x', 'crop_limit_y',
         ]:
             definition_dict[key] = dict()
             definition_dict[key]['label'] = key.capitalize()
