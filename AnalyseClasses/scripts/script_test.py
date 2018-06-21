@@ -1,14 +1,36 @@
-from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
+from AnalyseClasses.AnalyseStarter import AnalyseStarter
+from AnalyseClasses.Markings.ObstacleTemporaryResults import ObstacleTemporaryResults
+# from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.scripts.root import root
 from matplotlib import pyplot as plt
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from Tools.Plotter.BasePlotters import BasePlotters
+# from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+# from DataStructure.DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
+# from DataStructure.DataManager.Loaders.DefinitionLoader import DefinitionLoader
+# from Tools.Plotter.BasePlotters import BasePlotters
 import numpy as np
+import scipy.stats as scs
 
-group = 'FMAB'
+group = 'FMASO'
+#
+# starter = AnalyseStarter(root, group, init_blobs=True)
+# starter.start(redo=True)
 
-# DefinitionLoader = DefinitionLoader(root, group)
+# DefLoader = DefinitionLoader(root, group)
+
+# CharaLoad = Characteristics1dLoader(root, group)
+# for name in ['date', 'temperature', 'humidity', 'temporary_result', 'viability']:
+#     print(name)
+#     Chara = CharaLoad.load(DefLoader.build(name))
+#     Chara.print()
+#
+# CharaLoad = Characteristics2dLoader(root, group)
+# for name in ['obstacle2']:
+#     print(name)
+#     Chara = CharaLoad.load(DefLoader.build(name))
+#     Chara.print()
+#     Chara.operation(lambda x: x/10.)
+#     Chara.print()
 
 # CharaLoad = Characteristics1dLoader(root, group)
 # for name in ['food_radius', 'mm2px']:
@@ -169,83 +191,140 @@ group = 'FMAB'
 #         plt.show()
 
 
-col = ['w', 'y', 'r']
-labels = ['nothing', 'sight only', 'smell and sight']
-labels2 = ['all recruitment', 'first recruitment']
-dt = 1 / 5.
-preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
+# col = ['w', 'y', 'r']
+# labels = ['nothing', 'sight only', 'smell and sight']
+# labels2 = ['all recruitment', 'first recruitment']
+# dt = 1 / 5.
+# preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
+# # preplot2 = BasePlotters().create_plot(figsize=(6.5, 5))
+# for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
+#     # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
+#     print(group)
+#     recruit_direction = RecruitmentDirection(root, group)
+#     recruit_direction.exp.load([
+#         'recruitment_directions_orientS', 'first_recruitment_directions_orientS',
+#     ])
+#
+#     # recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
+#     #     title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#     #     marker='o', lw=1, normed=True, preplot=preplot, c='b', label='all recruitments')
+#     # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
+#     #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#     #     marker='o', lw=1, normed=True, preplot=preplot, c='r', label='first recruitment')
+# #
+#     recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
+#         title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#         marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+#     # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
+#     #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#     #     marker='o', lw=1, normed=True, preplot=preplot2, c=col[i], label=labels[i])
+#     # preplot[0].legend()
+# #
+# preplot1[0].legend()
+# # preplot2[0].legend()
+# plt.show()
+
+
+# col = ['w', 'y', 'r']
+# labels = ['nothing', 'smell only', 'smell and sight']
+# labels2 = ['all recruitment', 'first recruitment']
+# dt = 1 / 5.
+# preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
 # preplot2 = BasePlotters().create_plot(figsize=(6.5, 5))
-for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
-    # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
-    print(group)
-    recruit_direction = RecruitmentDirection(root, group)
-    recruit_direction.exp.load([
-        'recruitment_directions_orientS', 'first_recruitment_directions_orientS',
-    ])
-
-    # recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
-    #     title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-    #     marker='o', lw=1, normed=True, preplot=preplot, c='b', label='all recruitments')
-    # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
-    #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-    #     marker='o', lw=1, normed=True, preplot=preplot, c='r', label='first recruitment')
+# for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
+#     # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
+#     print(group)
+#     recruit_direction = RecruitmentDirection(root, group)
+#     recruit_direction.exp.load([
+#         'recruitment_certainty_orientS', 'recruitment_directions_orientS',
+#         'first_recruitment_certainty_orientS', 'first_recruitment_directions_orientS'
+#     ])
+#     # recruit_direction.exp.recruitment_certainty_orientS.plotter.hist1d(
+#     #     title_prefix=labels[i],
+#     #     # yscale='log',
+#     #     # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#     #     marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+#     #
+#     # recruit_direction.exp.add_2d_from_1ds(
+#     #     name1='recruitment_directions_orientS', name2='recruitment_certainty_orientS',
+#     #     result_name='certainty_vs_direction'
+#     # )
+#     #
+#     # recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
+#     #     preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
 #
-    recruit_direction.exp.recruitment_directions_orientS.plotter.hist1d(
-        title_prefix=labels[i], bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-        marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
-    # recruit_direction.exp.first_recruitment_directions_orientS.plotter.hist1d(
-    #     title_prefix=labels[i] + ' (first)', bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-    #     marker='o', lw=1, normed=True, preplot=preplot2, c=col[i], label=labels[i])
-    # preplot[0].legend()
+#     recruit_direction.exp.first_recruitment_certainty_orientS.plotter.hist1d(
+#         title_prefix=labels[i],
+#         # yscale='log',
+#         # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
+#         marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
 #
-preplot1[0].legend()
-# preplot2[0].legend()
-plt.show()
+#     recruit_direction.exp.add_2d_from_1ds(
+#         name1='first_recruitment_directions_orientS', name2='first_recruitment_certainty_orientS',
+#         result_name='certainty_vs_direction'
+#     )
+#
+#     recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
+#         preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
+#
+#
+# preplot1[0].legend()
+# # preplot2[0].legend()
+# plt.show()
 
 
-col = ['w', 'y', 'r']
-labels = ['nothing', 'smell only', 'smell and sight']
-labels2 = ['all recruitment', 'first recruitment']
-dt = 1 / 5.
-preplot1 = BasePlotters().create_plot(figsize=(6.5, 5))
-preplot2 = BasePlotters().create_plot(figsize=(6.5, 5))
-for i, group in enumerate(['FMAB', 'FMABU', 'FMABW']):
-    # preplot = BasePlotters().create_plot(figsize=(6.5, 5))
+group = 'FMABO'
+for group in ['FMABO', 'FMASO']:
     print(group)
-    recruit_direction = RecruitmentDirection(root, group)
-    recruit_direction.exp.load([
-        'recruitment_certainty_orientS', 'recruitment_directions_orientS',
-        'first_recruitment_certainty_orientS', 'first_recruitment_directions_orientS'
-    ])
-    # recruit_direction.exp.recruitment_certainty_orientS.plotter.hist1d(
-    #     title_prefix=labels[i],
-    #     # yscale='log',
-    #     # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-    #     marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
-    #
-    # recruit_direction.exp.add_2d_from_1ds(
-    #     name1='recruitment_directions_orientS', name2='recruitment_certainty_orientS',
-    #     result_name='certainty_vs_direction'
-    # )
-    #
-    # recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
-    #     preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
+    # exp = ExperimentGroupBuilder(root).build(group)
+    # exp.load('temporary_result')
+    # exp.temporary_result.plotter.hist1d(bins=['RR', 'LL'])
 
-    recruit_direction.exp.first_recruitment_certainty_orientS.plotter.hist1d(
-        title_prefix=labels[i],
-        # yscale='log',
-        # bins=np.arange(-1 + dt / 2., 1 + dt / 2., dt) * np.pi,
-        marker='o', lw=1, normed=True, preplot=preplot1, c=col[i], label=labels[i])
+    obstacle_temp_res = ObstacleTemporaryResults(root, group)
+    obstacle_temp_res.convert_temporary_result()
+    obstacle_temp_res.exp.load(['temporary_arrival_side', 'temporary_departure_side', 'temporary_same_side'])
+    fig, ax = obstacle_temp_res.exp.temporary_arrival_side.plotter.hist1d(
+        bins=np.arange(-1.5, 2, 1.), ls='', marker='o', c='r', label='arrival')
+    fig, ax = obstacle_temp_res.exp.temporary_departure_side.plotter.hist1d(
+        bins=np.arange(-1.5, 2, 1.), ls='', marker='o', preplot=(fig, ax), c='g', label='departure')
 
-    recruit_direction.exp.add_2d_from_1ds(
-        name1='first_recruitment_directions_orientS', name2='first_recruitment_certainty_orientS',
-        result_name='certainty_vs_direction'
-    )
+    ax.legend()
+    # ax.set_ylim((0, 30))
+    ax.set_ylim((0, 60))
+    ax.set_xticks([-1, 0, 1])
+    ax.set_xticklabels(['left', 'ambiguous', 'right'])
+    ax.grid()
 
-    recruit_direction.exp.certainty_vs_direction.plotter.plot_scatter(
-        preplot=preplot2, c=col[i], title_prefix=labels[i], label=labels[i])
+    fig, ax = obstacle_temp_res.exp.temporary_same_side.plotter.hist1d(
+        bins=np.arange(-0.5, 2, 1.), ls='', marker='o')
+    # ax.set_ylim((0, 30))
+    ax.set_xlim((-0.5, 1.5))
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(['not same', 'same'])
+    # ax.set_yticks(range(0, 32, 2))
+    ax.set_yticks(range(0, 65, 5))
+    ax.grid()
+    # plt.show()
 
+    n_r = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == 1))
+    n_l = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == -1))
+    p_arrival_from_r = n_r/float(n_l+n_r)
 
-preplot1[0].legend()
-# preplot2[0].legend()
-plt.show()
+    n_r = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == 1))
+    n_l = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == -1))
+    p_departure_from_r = n_r/float(n_l+n_r)
+
+    n_rr = int(np.sum(obstacle_temp_res.exp.details.df == 0))
+    n = len(obstacle_temp_res.exp.details.df)
+    print('n', n)
+    p_rr = n_rr/float(n)
+    p_value = scs.binom_test(n_rr, n, p=p_arrival_from_r * p_departure_from_r)
+
+    print('p_arrival_from_r:', p_arrival_from_r)
+    print('p_departure_from_r:', p_departure_from_r)
+    print('p_arrival_from_r*p_departure_from_r:', p_arrival_from_r*p_departure_from_r)
+    print('p_rr:', p_rr)
+    print('p_value:', p_value)
+    print('hyp reject:', p_value < 0.05)
+    print()
+
