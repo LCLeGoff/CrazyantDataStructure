@@ -5,5 +5,8 @@ class BuilderExpIndexedDataObject:
         else:
             self.df = df
 
+    def get_row_of_id_exp(self, id_exp):
+        return self.df.loc[id_exp, :]
+
     def operation_on_id_exp(self, id_exp, fct):
         self.df.loc[id_exp] = fct(self.df.loc[id_exp])

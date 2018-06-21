@@ -18,5 +18,7 @@ class Characteristics1dWriter:
                 val = ant_chara.df.loc[id_exp][ant_chara.name]
                 if isinstance(val, float):
                     val = np.around(val, 3)
+                elif isinstance(val, np.int64):
+                    val = int(val)
                 chara_dict[str(id_exp)][ant_chara.name] = val
             write_obj(address, chara_dict)

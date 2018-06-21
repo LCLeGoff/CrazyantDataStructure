@@ -1,6 +1,7 @@
 from DataStructure.DataObjectBuilders.Builder1dDataObject import Builder1dDataObject
 from DataStructure.DataObjectBuilders.BuilderExpIndexedDataObject import BuilderExpIndexedDataObject
 from DataStructure.DataObjects.Definitions import DefinitionBuilder
+from Tools.Plotter.Plotter1d import Plotter1d
 
 
 class Characteristics1d(Builder1dDataObject, BuilderExpIndexedDataObject):
@@ -8,6 +9,7 @@ class Characteristics1d(Builder1dDataObject, BuilderExpIndexedDataObject):
         Builder1dDataObject.__init__(self, df)
         BuilderExpIndexedDataObject.__init__(self, df)
         DefinitionBuilder.build_from_definition(self, definition)
+        self.plotter = Plotter1d(self)
 
     def copy(self, name, category=None, label=None, description=None):
         return Characteristics1dBuilder.build(

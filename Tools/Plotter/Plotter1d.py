@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.stats as scs
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.ColorObject import ColorObject
@@ -16,9 +17,14 @@ class Plotter1d(BasePlotters):
 
     def hist1d(
             self, bins='fd', normed=False, label=None, xscale=None, yscale=None, multi_plot=None, title_prefix=None,
-            preplot=None, **kwargs):
+            preplot=None, list_id_exp=None, **kwargs):
         if label is None:
             label = ''
+
+        if list_id_exp is None:
+            list_id_exp = self.obj.get_index_array_of_id_exp()
+
+        self.obj.df = self.obj.df.loc[list_id_exp]
 
         self.arg_tools.change_arg_value('line', kwargs)
 
