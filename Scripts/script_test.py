@@ -1,8 +1,4 @@
-from AnalyseClasses.AnalyseStarter import AnalyseStarter
-from AnalyseClasses.Markings.ObstacleTemporaryResults import ObstacleTemporaryResults
 # from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
-from AnalyseClasses.scripts.root import root
-from matplotlib import pyplot as plt
 
 # from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 # from DataStructure.DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
@@ -273,58 +269,155 @@ group = 'FMASO'
 # plt.show()
 
 
-group = 'FMABO'
-for group in ['FMABO', 'FMASO']:
-    print(group)
-    # exp = ExperimentGroupBuilder(root).build(group)
-    # exp.load('temporary_result')
-    # exp.temporary_result.plotter.hist1d(bins=['RR', 'LL'])
+# # group = 'FMABO'
+# for group in ['FMABO', 'FMASO']:
+#     print(group)
+#     # exp = ExperimentGroupBuilder(root).build(group)
+#     # exp.load('temporary_result')
+#     # exp.temporary_result.plotter.hist1d(bins=['RR', 'LL'])
+#     print(root)
+#     obstacle_temp_res = ObstacleTemporaryResults(root, group)
+#     obstacle_temp_res.convert_temporary_result()
+#     obstacle_temp_res.exp.load(['temporary_arrival_side', 'temporary_departure_side', 'temporary_same_side'])
+#     fig, ax = obstacle_temp_res.exp.temporary_arrival_side.plotter.hist1d(
+#         bins=np.arange(-1.5, 2, 1.), ls='', marker='o', c='r', label='arrival')
+#     fig, ax = obstacle_temp_res.exp.temporary_departure_side.plotter.hist1d(
+#         bins=np.arange(-1.5, 2, 1.), ls='', marker='o', preplot=(fig, ax), c='g', label='departure')
+#
+#     ax.legend()
+#     # ax.set_ylim((0, 30))
+#     ax.set_ylim((0, 60))
+#     ax.set_xticks([-1, 0, 1])
+#     ax.set_xticklabels(['left', 'ambiguous', 'right'])
+#     ax.grid()
+#
+#     fig, ax = obstacle_temp_res.exp.temporary_same_side.plotter.hist1d(
+#         bins=np.arange(-0.5, 2, 1.), ls='', marker='o')
+#     # ax.set_ylim((0, 30))
+#     ax.set_xlim((-0.5, 1.5))
+#     ax.set_xticks([0, 1])
+#     ax.set_xticklabels(['not same', 'same'])
+#     # ax.set_yticks(range(0, 32, 2))
+#     ax.set_yticks(range(0, 65, 5))
+#     ax.grid()
+#     # plt.show()
+#
+#     n_r = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == 1))
+#     n_l = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == -1))
+#     p_arrival_from_r = n_r/float(n_l+n_r)
+#
+#     n_r = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == 1))
+#     n_l = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == -1))
+#     p_departure_from_r = n_r/float(n_l+n_r)
+#
+#     n_rr = int(np.sum(obstacle_temp_res.exp.details.df == 0))
+#     n = len(obstacle_temp_res.exp.details.df)
+#     print('n', n)
+#     p_rr = n_rr/float(n)
+#     p_value = scs.binom_test(n_rr, n, p=p_arrival_from_r * p_departure_from_r)
+#
+#     print('p_arrival_from_r:', p_arrival_from_r)
+#     print('p_departure_from_r:', p_departure_from_r)
+#     print('p_arrival_from_r*p_departure_from_r:', p_arrival_from_r*p_departure_from_r)
+#     print('p_rr:', p_rr)
+#     print('p_value:', p_value)
+#     print('hyp reject:', p_value < 0.05)
+#     print()
 
-    obstacle_temp_res = ObstacleTemporaryResults(root, group)
-    obstacle_temp_res.convert_temporary_result()
-    obstacle_temp_res.exp.load(['temporary_arrival_side', 'temporary_departure_side', 'temporary_same_side'])
-    fig, ax = obstacle_temp_res.exp.temporary_arrival_side.plotter.hist1d(
-        bins=np.arange(-1.5, 2, 1.), ls='', marker='o', c='r', label='arrival')
-    fig, ax = obstacle_temp_res.exp.temporary_departure_side.plotter.hist1d(
-        bins=np.arange(-1.5, 2, 1.), ls='', marker='o', preplot=(fig, ax), c='g', label='departure')
 
-    ax.legend()
-    # ax.set_ylim((0, 30))
-    ax.set_ylim((0, 60))
-    ax.set_xticks([-1, 0, 1])
-    ax.set_xticklabels(['left', 'ambiguous', 'right'])
-    ax.grid()
+seq_tot = [
+    ['11', '11', '01', '11', '01'],
+    ['10', '10', '00', '10', '00'],
+    ['01', '10', '10', '10', '10', '11', '00', '10'],
+    ['00', '00', '00', '01', '00', '00', '10', '00', '10'],
+    ['11', '01', '00', '00', '01', '11', '01', '00'],
+    ['00', '01', '11', '00', '00', '01', '01', '11', '11'],
+    ['00', '11', '00', '10', '00'],
+    ['11', '11', '11', '01', '10', '00'],
+    ['01', '11', '00', '00', '00', '00', '00', '00', '00']
+]
 
-    fig, ax = obstacle_temp_res.exp.temporary_same_side.plotter.hist1d(
-        bins=np.arange(-0.5, 2, 1.), ls='', marker='o')
-    # ax.set_ylim((0, 30))
-    ax.set_xlim((-0.5, 1.5))
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels(['not same', 'same'])
-    # ax.set_yticks(range(0, 32, 2))
-    ax.set_yticks(range(0, 65, 5))
-    ax.grid()
-    # plt.show()
 
-    n_r = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == 1))
-    n_l = int(np.sum(obstacle_temp_res.exp.temporary_arrival_side.df == -1))
-    p_arrival_from_r = n_r/float(n_l+n_r)
+def p_value(seq, p0=0.5):
+    # print(seq)
+    n0 = sum(seq)
+    n1 = len(seq)
+    p = n0 / float(n1)
+    print(n0, n1, p, scs.binom_test(n0, n1, p0))
+    return p
 
-    n_r = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == 1))
-    n_l = int(np.sum(obstacle_temp_res.exp.temporary_departure_side.df == -1))
-    p_departure_from_r = n_r/float(n_l+n_r)
 
-    n_rr = int(np.sum(obstacle_temp_res.exp.details.df == 0))
-    n = len(obstacle_temp_res.exp.details.df)
-    print('n', n)
-    p_rr = n_rr/float(n)
-    p_value = scs.binom_test(n_rr, n, p=p_arrival_from_r * p_departure_from_r)
+print('proportion arrival from right')
+seq_arrival = [int(seq_tot[i][j][0]) for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_arrival_from_r = p_value(seq_arrival)
+print()
 
-    print('p_arrival_from_r:', p_arrival_from_r)
-    print('p_departure_from_r:', p_departure_from_r)
-    print('p_arrival_from_r*p_departure_from_r:', p_arrival_from_r*p_departure_from_r)
-    print('p_rr:', p_rr)
-    print('p_value:', p_value)
-    print('hyp reject:', p_value < 0.05)
+print('proportion departure from right')
+seq_departure = [int(seq_tot[i][j][1]) for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_departure_from_r = p_value(seq_departure)
+print()
+#
+print()
+for i in range(len(seq_tot)):
+    arr = [int(seq_tot[i][j][0]) for j in range(len(seq_tot[i]))]
+    dep = [int(seq_tot[i][j][1]) for j in range(len(seq_tot[i]))]
+    p_value(arr)
+    p_value(dep)
     print()
 
+print('proportion LL')
+seq1 = [int(seq_tot[i][j] == '00') for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_ll = p_value(seq1)
+print()
+
+print('proportion RR')
+seq1 = [int(seq_tot[i][j] == '11') for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_00 = p_value(seq1)
+print()
+
+print('proportion departure from same arrival side ')
+seq1 = [int(seq_tot[i][j][0] == seq_tot[i][j][1]) for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_value(seq1)
+print()
+
+print('proportion RR uniform ?')
+seq1 = [int(seq_tot[i][j] == '11') for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_value(seq1, p_arrival_from_r * p_departure_from_r)
+
+print('proportion LL uniform ?')
+seq1 = [int(seq_tot[i][j] == '00') for i in range(len(seq_tot)) for j in range(len(seq_tot[i]))]
+p_value(seq1, (1-p_arrival_from_r) * (1-p_departure_from_r))
+
+lg_r = []
+lg_l = []
+for s in seq_tot:
+    arr = [int(s[j][1]) for j in range(len(s))]
+    lg = 1
+    choice = arr[0]
+    arr = arr[1:]
+    while len(arr) != 0:
+        if choice == arr[0]:
+            lg += 1
+        else:
+            if choice == 0:
+                lg_l.append(lg)
+            else:
+                lg_r.append(lg)
+            lg = 1
+        choice = arr[0]
+        arr = arr[1:]
+
+    if choice == 0:
+        lg_l.append(lg)
+    else:
+        lg_r.append(lg)
+print(lg_r, lg_l)
+# plt.hist(lg_l, range(10))
+# plt.show()
+
+print(scs.stats.kstest(lg_l, 'geom', (1-p_departure_from_r, )))
+print(scs.stats.kstest(lg_r, 'geom', (p_departure_from_r, )))
+print(scs.stats.kstest(lg_r+lg_l, 'geom', (0.5, )))
+print(scs.stats.kstest(np.random.geometric(0.5, 13), 'geom', (0.5, )))
+# plt.hist(lg_l+lg_r, range(1, 11, 2))
+# plt.show()

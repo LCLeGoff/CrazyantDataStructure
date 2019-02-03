@@ -3,7 +3,7 @@ from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Markings.Recruitment import Recruitment
 from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
-from AnalyseClasses.scripts.root import root
+from Scripts import root
 
 for group in ['FMAB', 'FMABU', 'FMABW']:
     print(group)
