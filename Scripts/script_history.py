@@ -3,7 +3,7 @@ from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Markings.Recruitment import Recruitment
 from AnalyseClasses.Markings.RecruitmentDirection import RecruitmentDirection
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
-from Scripts import root
+from Scripts.root import root
 
 for group in ['FMAB', 'FMABU', 'FMABW']:
     print(group)
@@ -17,7 +17,7 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
     mark = AnalyseMarkings(root, group)
     # mark.compute_xy_marking()
     # mark.compute_r_phi_marking()
-    mark.compute_marking_interval()
+    # mark.compute_marking_interval()
     # mark.compute_marking_distance()
 
     recruit = Recruitment(root, group)
@@ -25,4 +25,4 @@ for group in ['FMAB', 'FMABU', 'FMABW']:
     # recruit.compute_recruitment()
 
     recruit_direction = RecruitmentDirection(root, group)
-    recruit_direction.compute_recruitment_direction()
+    # recruit_direction.compute_recruitment_direction()
