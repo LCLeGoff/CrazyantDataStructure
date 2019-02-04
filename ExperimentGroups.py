@@ -465,10 +465,10 @@ class ExperimentGroups:
             self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), fct=fct)
         elif self._is_1d(name1) and not self._is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), fct=fct, obj_name_col=col_name2)
+                obj=self.get_data_object(name2), fct=fct, obj_name_col=col_name1)
         elif not self._is_1d(name1) and self._is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name1)
+                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name2)
         else:
             self.get_data_object(name1).operation_with_data_obj(
                 obj=self.get_data_object(name2), fct=fct, self_name_col=col_name1, obj_name_col=col_name2)
