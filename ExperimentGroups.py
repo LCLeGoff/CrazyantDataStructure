@@ -4,6 +4,7 @@ import numpy as np
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
 from DataStructure.DataObjectBuilders.Builder import Builder
+from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicTimeSeries2dBuilder
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
@@ -68,7 +69,7 @@ class ExperimentGroups:
     def get_index_names(self, name):
         return self.get_df(name).index.names
 
-    def set_id_exp_list(self, id_exp_list):
+    def set_id_exp_list(self, id_exp_list=None):
         if id_exp_list is None:
             id_exp_list = self.id_exp_list
         return id_exp_list
@@ -89,17 +90,20 @@ class ExperimentGroups:
     def load(self, names):
         names = self.turn_to_list(names)
         for name in names:
+            print('loading ', name)
             if name not in self.__dict__.keys():
                 self.add_object(name, self.data_manager.load(name), replace=True)
 
     def write(self, names):
         names = self.turn_to_list(names)
         for name in names:
+            print('writing ', name)
             self.data_manager.write(self.get_data_object(name))
 
     def delete_data(self, names):
         names = self.turn_to_list(names)
         for name in names:
+            print('deleting ', name)
             self.data_manager.delete(self.get_data_object(name))
 
     def load_as_2d(
@@ -118,20 +122,21 @@ class ExperimentGroups:
                 xname=xname, yname=yname, category=category,
                 label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
-    def _is_1d(self, name):
+    def __is_1d(self, name):
         object_type = self.get_object_type(name)
-        if object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d']:
+        if object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d', 'CharacteristicTimeSeries2d']:
             return False
-        elif object_type in ['Events1d', 'TimeSeries1d', 'Characteristics1d', 'AntCharacteristics1d']:
+        elif object_type in [
+                'Events1d', 'TimeSeries1d', 'Characteristics1d', 'AntCharacteristics1d', 'CharacteristicTimeSeries1d']:
             return True
         else:
             raise TypeError('Object type ' + object_type + ' unknown')
 
-    def _is_indexed_by_exp_ant_frame(self, name):
+    def __is_indexed_by_exp_ant_frame(self, name):
         object_type = self.get_object_type(name)
         return object_type in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']
 
-    def _is_same_index_names(self, name1, name2):
+    def __is_same_index_names(self, name1, name2):
         index_name1 = self.get_index_names(name1)
         index_name2 = self.get_index_names(name2)
         return set(index_name1) == set(index_name2)
@@ -144,14 +149,13 @@ class ExperimentGroups:
         self.write(new_name)
 
     def rename_object(self, old_name, new_name, replace=False):
-        if self._is_1d(old_name):
+        if self.__is_1d(old_name):
             self.add_copy1d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
         else:
             self.add_copy2d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
 
     def add_2d_from_1ds(
-            self, name1, name2, result_name,
-            xname=None, yname=None,
+            self, name1, name2, result_name, xname, yname,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
         object_type1 = self.get_object_type(name1)
@@ -172,6 +176,13 @@ class ExperimentGroups:
                 self.add_object(result_name, event, replace)
             elif object_type1 == 'TimeSeries1d':
                 ts = TimeSeries2dBuilder().build_from_1d(
+                    ts1=self.get_data_object(name1),
+                    ts2=self.get_data_object(name2), name=result_name, xname=xname,
+                    yname=yname, category=category, label=label, xlabel=xlabel,
+                    ylabel=ylabel, description=description)
+                self.add_object(result_name, ts, replace)
+            elif object_type1 == 'CharacteristicTimeSeries1d':
+                ts = CharacteristicTimeSeries2dBuilder().build_from_1d(
                     ts1=self.get_data_object(name1),
                     ts2=self.get_data_object(name2), name=result_name, xname=xname,
                     yname=yname, category=category, label=label, xlabel=xlabel,
@@ -214,6 +225,12 @@ class ExperimentGroups:
                 description=self.get_description(name_to_copy)
             )
         else:
+            if new_xname is None:
+                new_xname = self.get_xname(name_to_copy)
+
+            if new_yname is None:
+                new_yname = self.get_yname(name_to_copy)
+
             obj = self.get_data_object(name_to_copy).copy(
                 name=copy_name, xname=new_xname, yname=new_yname,
                 category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
@@ -222,7 +239,7 @@ class ExperimentGroups:
 
     def add_new1d_empty(self, name, object_type, category=None, label=None, description=None, replace=False):
         df = self._create_empty_df(name, object_type)
-        obj = Builder.build1d(
+        obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace=replace)
 
@@ -237,6 +254,10 @@ class ExperimentGroups:
             df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_2d_df(name[0], name[1])
         elif object_type in ['Characteristics2d']:
             df = self.pandas_index_manager.create_empty_exp_indexed_2d_df(name[0], name[1])
+        elif object_type in ['CharacteristicTimeSeries1d']:
+            df = self.pandas_index_manager.create_empty_exp_frame_indexed_1d_df(name)
+        elif object_type in ['CharacteristicTimeSeries2d']:
+            df = self.pandas_index_manager.create_empty_exp_frame_indexed_2d_df(name[0], name[1])
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
@@ -253,7 +274,7 @@ class ExperimentGroups:
         self.add_object(name, obj, replace)
 
     def add_new1d_from_df(self, df, name, object_type, category=None, label=None, description=None, replace=False):
-        obj = Builder.build1d(
+        obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace)
 
@@ -273,20 +294,22 @@ class ExperimentGroups:
 
         df = self.__convert_array_to_1d_df(array, name, object_type)
 
-        obj = Builder.build1d(
+        obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
 
         self.add_object(name, obj, replace=replace)
 
     def __convert_array_to_1d_df(self, array, name, object_type):
-        if object_type in ['Events1d', 'TimeSeries1d']:
+        if not self.__is_1d(name):
+            raise TypeError('Object in 2d')
+        elif object_type in ['Events1d', 'TimeSeries1d']:
             df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_1d_df(array, name)
         elif object_type in ['AntCharacteristics1d']:
             df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
         elif object_type in ['Characteristics1d']:
             df = self.pandas_index_manager.convert_to_exp_indexed_df(array, name)
-        elif object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d']:
-            raise TypeError('Object in 2d')
+        elif object_type in ['CharacteristicTimeSeries1d']:
+            df = self.pandas_index_manager.convert_to_exp_frame_indexed_1d_df(array, name)
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
@@ -302,7 +325,7 @@ class ExperimentGroups:
         if result_name is None:
             result_name = name_to_filter + '_over_' + filter_name
 
-        is_filter_and_to_filter_same_index_names = self._is_same_index_names(filter_name, name_to_filter)
+        is_filter_and_to_filter_same_index_names = self.__is_same_index_names(filter_name, name_to_filter)
 
         if is_filter_and_to_filter_same_index_names:
             obj_filtered = Filters().filter_with_value(
@@ -323,8 +346,8 @@ class ExperimentGroups:
         if result_name is None:
             result_name = name_to_filter + '_over_' + filter_name
 
-        name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
-        name_filter_can_be_a_filter = self._is_indexed_by_exp_ant_frame(filter_name)
+        name_to_filter_can_be_filtered = self.__is_indexed_by_exp_ant_frame(name_to_filter)
+        name_filter_can_be_a_filter = self.__is_indexed_by_exp_ant_frame(filter_name)
 
         if name_to_filter_can_be_filtered and name_filter_can_be_a_filter:
             obj_filtered = Filters().filter(
@@ -347,7 +370,7 @@ class ExperimentGroups:
         if result_name is None:
             result_name = name_to_filter + '_over_' + name_intervals
 
-        name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
+        name_to_filter_can_be_filtered = self.__is_indexed_by_exp_ant_frame(name_to_filter)
         name_interval_can_be_a_filter = self.get_object_type(name_intervals) == 'Events1d'
 
         interval_index_name = 'interval_idx_'+result_name
@@ -373,7 +396,7 @@ class ExperimentGroups:
         if not isinstance(chara_values, list):
             chara_values = [chara_values]
 
-        name_to_filter_can_be_filtered = self._is_indexed_by_exp_ant_frame(name_to_filter)
+        name_to_filter_can_be_filtered = self.__is_indexed_by_exp_ant_frame(name_to_filter)
         chara_name_can_be_a_filter = self.get_object_type(chara_name) == 'Characteristics1d'
 
         if name_to_filter_can_be_filtered and chara_name_can_be_a_filter:
@@ -387,7 +410,7 @@ class ExperimentGroups:
                 self.operation('filter', lambda x: x == val)
             self.filter.df[self.filter.df == 0] = np.nan
 
-            if self._is_1d(name_to_filter):
+            if self.__is_1d(name_to_filter):
                 self.add_copy1d(
                     name_to_copy=name_to_filter, copy_name=result_name,
                     category=category, label=label, description=description, replace=replace
@@ -442,7 +465,7 @@ class ExperimentGroups:
             self, model_name, result_name,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
-        name_to_filter_is_1d = self._is_1d(model_name)
+        name_to_filter_is_1d = self.__is_1d(model_name)
         if name_to_filter_is_1d:
             self.add_new1d_empty(
                 name=result_name, object_type='Events1d',
@@ -461,12 +484,12 @@ class ExperimentGroups:
 
     def operation_between_2names(self, name1, name2, fct, col_name1=None, col_name2=None):
 
-        if self._is_1d(name1) and self._is_1d(name2):
+        if self.__is_1d(name1) and self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), fct=fct)
-        elif self._is_1d(name1) and not self._is_1d(name2):
+        elif self.__is_1d(name1) and not self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
                 obj=self.get_data_object(name2), fct=fct, obj_name_col=col_name1)
-        elif not self._is_1d(name1) and self._is_1d(name2):
+        elif not self.__is_1d(name1) and self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
                 obj=self.get_data_object(name2), fct=fct, self_name_col=col_name2)
         else:
@@ -498,7 +521,7 @@ class ExperimentGroups:
 
         delta_df = self.get_data_object(name_to_delta).compute_delta(name=result_name, filter_obj=filter_obj)
 
-        if self._is_1d(name_to_delta):
+        if self.__is_1d(name_to_delta):
             self.add_new1d_from_df(
                 df=delta_df, name=result_name, object_type=self.get_object_type(name_to_delta),
                 category=category, label=label, description=description, replace=replace
@@ -525,7 +548,7 @@ class ExperimentGroups:
 
         mean_df = self.get_data_object(name_to_average).mean_over_ants()
 
-        if self._is_1d(name_to_average):
+        if self.__is_1d(name_to_average):
             self.add_new1d_from_df(
                 mean_df, result_name, 'AntCharacteristics1d',
                 category=category, label=label, description=description, replace=replace)
@@ -558,7 +581,7 @@ class ExperimentGroups:
 
         self.remove_object([temp_name, interval_index_name])
 
-        if self._is_1d(name_to_average):
+        if self.__is_1d(name_to_average):
             self.add_new1d_from_df(
                 mean_df, result_name, 'Events1d',
                 category=category, label=label, description=description, replace=replace)

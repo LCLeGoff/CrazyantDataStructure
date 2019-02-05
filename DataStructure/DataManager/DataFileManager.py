@@ -23,12 +23,19 @@ class DataFileManager:
         self.id_exp_list = import_id_exp_list(self.root)
         self.id_exp_list.sort()
         self.exp_ant_frame_index = None
+        self.exp_frame_index = None
 
     def get_exp_ant_frame_index(self):
         if self.exp_ant_frame_index is None:
-            self.data_loader.time_series_loader.load_category('Raw')
-            self.exp_ant_frame_index = self.data_loader.time_series_loader.categories['Raw'].index
+            self.data_loader.timeseries1d_loader.load_category('Raw')
+            self.exp_ant_frame_index = self.data_loader.timeseries1d_loader.categories['Raw'].index
         return self.exp_ant_frame_index
+
+    def get_exp_frame_index(self):
+        if self.exp_frame_index is None:
+            self.data_loader.timeseries1d_loader.load_category('Raw')
+            self.exp_frame_index = self.data_loader.characteristic_timeseries1d_loader.categories['Raw'].index
+        return self.exp_frame_index
 
     def load(self, name):
         if name in self.data_loader.definition_loader.definition_dict.keys():
@@ -49,6 +56,8 @@ class DataFileManager:
             write_obj(add + 'Characteristics.json', chara)
             df = pd.DataFrame(index=self.get_exp_ant_frame_index())
             df.to_csv(add + 'TimeSeries.csv')
+            df = pd.DataFrame(index=self.get_exp_frame_index())
+            df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
     def write(self, obj):
         if obj.category is None or obj.label is None or obj.description is None:

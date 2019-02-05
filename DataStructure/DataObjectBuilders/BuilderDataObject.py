@@ -17,6 +17,7 @@ class BuilderDataObject:
             self_name_col = self.df.columns[0]
         if obj_name_col is None:
             obj_name_col = obj.name_col
+
         self.df[self_name_col] = fct(self.df[self_name_col], obj.df[obj_name_col])
 
     def print(self, short=True):
@@ -40,11 +41,17 @@ class BuilderDataObject:
     def get_index_array_of_id_exp_ant(self):
         return PandasIndexManager().get_array_id_exp_ant(self.df)
 
+    def get_index_array_of_id_exp_frame(self):
+        return PandasIndexManager().get_array_id_exp_frame(self.df)
+
     def get_index_array_of_id_exp_ant_frame(self):
         return PandasIndexManager().get_array_id_exp_ant_frame(self.df)
 
     def get_index_dict_of_id_exp_ant(self):
         return PandasIndexManager().get_dict_id_exp_ant(self.df)
+
+    def get_index_dict_of_id_exp_frame(self):
+        return PandasIndexManager().get_dict_id_exp_frame(self.df)
 
     def get_index_dict_of_id_exp_ant_frame(self):
         return PandasIndexManager().get_dict_id_exp_ant_frame(self.df)
@@ -57,9 +64,12 @@ class BuilderDataObject:
         return np.array(res)
 
     def get_array_of_all_frames_of_exp(self, id_exp):
-        id_exp_ant_frame_array = self.get_index_array_of_id_exp_ant_frame()
-        idx_where_id_exp = np.where(id_exp_ant_frame_array[:, 0] == id_exp)[0]
-        res = set(id_exp_ant_frame_array[idx_where_id_exp, 2])
+        if 'id_ant' not in self.df.columns:
+            id_exp_frame_array = self.get_index_array_of_id_exp_ant_frame()
+        else:
+            id_exp_frame_array = self.get_index_array_of_id_exp_frame()
+        idx_where_id_exp = np.where(id_exp_frame_array[:, 0] == id_exp)[0]
+        res = set(id_exp_frame_array[idx_where_id_exp, 2])
         res = sorted(res)
         return np.array(res)
 
@@ -92,7 +102,10 @@ class BuilderDataObject:
         return self.df.mean(level='id_exp')
 
     def mean_over_frames(self):
-        return self.df.mean(level=['id_exp', 'id_ant', 'frame'])
+        if 'id_ant' not in self.df.columns:
+            return self.df.mean(level=['id_exp', 'id_ant', 'frame'])
+        else:
+            return self.df.mean(level=['id_exp', 'frame'])
 
     def mean_over(self, level_df, mean_level=None, new_level_as=None):
         df = self.df.copy()

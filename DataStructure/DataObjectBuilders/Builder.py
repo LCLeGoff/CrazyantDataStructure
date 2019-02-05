@@ -13,7 +13,7 @@ class Builder:
         self.pandas_index_manager = PandasIndexManager()
 
     @staticmethod
-    def build1d(df, name, object_type, category=None, label=None, description=None):
+    def build1d_from_df(df, name, object_type, category=None, label=None, description=None):
         if object_type == 'TimeSeries1d':
             return TimeSeries1dBuilder.build(
                 df=df.sort_index(), name=name, category=category, label=label, description=description)
