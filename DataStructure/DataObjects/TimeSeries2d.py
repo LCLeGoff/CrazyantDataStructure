@@ -11,6 +11,12 @@ class TimeSeries2d(BuilderExpAntFrameIndexed2dDataObject):
         DefinitionBuilder.build_from_definition(self, definition)
         self.plotter = Plotter2d(self)
 
+    def copy(
+            self, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):
+        return TimeSeries2dBuilder.build_from_df(
+            df=self.df.copy(), name=name, xname=xname, yname=yname,
+            category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
 
 class TimeSeries2dBuilder:
     def __init__(self):
