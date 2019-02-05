@@ -12,11 +12,11 @@ class AnalyseStarter:
         self.init_blobs = init_blobs
         self.characteristics = import_obj(self.root + '/Raw/Characteristics.json')
 
-    def start(self, redo, markings=True, food=False):
-        self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=food)
+    def start(self, redo, markings=True, dynamic_food=False):
+        self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=dynamic_food)
         if markings is True:
             self.__sort_and_rewrite_markings()
-        if food is True:
+        if dynamic_food is True:
             self.__sort_and_rewrite_food()
 
     def __sort_and_rewrite_markings(self):
@@ -25,8 +25,8 @@ class AnalyseStarter:
         df.sort_index().to_csv(add)
 
     def __sort_and_rewrite_food(self):
-        add = self.root + 'Raw/Food.csv'
-        df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame', 'x0', 'y0'])
+        add = self.root + 'Raw/CharacteristicTimeSeries.csv'
+        df = pd.read_csv(add, index_col=['id_exp', 'frame', 'food_x0', 'food_y0'])
         df.sort_index().to_csv(add)
 
     def __fill_and_write_definition_dict(self, redo, markings=True, dynamic_food=False):
@@ -205,9 +205,16 @@ class AnalyseStarter:
 
     @staticmethod
     def __fill_details_for_dynamic_food(definition_dict):
-        key = 'food'
+        key = 'food_x0'
         definition_dict[key] = dict()
-        definition_dict[key]['label'] = key.capitalize()
+        definition_dict[key]['label'] = 'X0 food'
         definition_dict[key]['category'] = 'Raw'
-        definition_dict[key]['object_type'] = 'TimeSeries2d'
-        definition_dict[key]['description'] = 'Food trajectory'
+        definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
+        definition_dict[key]['description'] = 'X coordinates of the food trajectory'
+
+        key = 'food_y0'
+        definition_dict[key] = dict()
+        definition_dict[key]['label'] = 'Y0 food'
+        definition_dict[key]['category'] = 'Raw'
+        definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
+        definition_dict[key]['description'] = 'Y coordinates of the food trajectory'
