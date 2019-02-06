@@ -12,5 +12,6 @@ traj = AnalyseTrajectory(root, group)
 # traj.initialize_xy_orientation_food(dynamic_food=True)
 
 BaseFood = AnalyseBaseFood(root, group)
-BaseFood.compute_traj_next_food()
+# BaseFood.compute_food_distance()
+BaseFood.compute_next_food()
 
