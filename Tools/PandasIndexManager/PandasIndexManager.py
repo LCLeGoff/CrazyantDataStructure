@@ -82,43 +82,49 @@ class PandasIndexManager:
         return np.array(df.reset_index())
 
     @staticmethod
+    def convert_pandas_series_to_df(df, name):
+        df = pd.DataFrame(df)
+        df.columns = [name]
+        return df
+
+    @staticmethod
     def get_row_of_idx_array(idx_array, df):
         return df.loc[list(map(tuple, np.array(idx_array))), :]
 
     @staticmethod
     def get_array_id_exp(df_arg):
-        df = df_arg.reset_index()
-        if 'id_exp' not in df.columns:
+        if 'id_exp' not in df_arg.columns:
             raise IndexError('df does not have id_exp as index')
         else:
-            idx_set = set([idx for idx in df.set_index(['id_exp']).index])
+            idx_set = set(df_arg.index.get_level_values('id_exp'))
             return np.array(sorted(idx_set), dtype=int)
 
     @staticmethod
     def get_array_id_exp_ant(df_arg):
-        df = df_arg.reset_index()
-        if 'id_exp' not in df.columns or 'id_ant' not in df.columns:
+        if 'id_exp' not in df_arg.columns or 'id_ant' not in df_arg.columns:
             raise IndexError('df does not have id_exp or id_ant as index')
         else:
-            idx_set = set([idx for idx in df.set_index(['id_exp', 'id_ant']).index])
+            id_exps = df_arg.index.get_level_values('id_exp')
+            id_ants = df_arg.index.get_level_values('id_ant')
+            idx_set = set(list(zip(id_exps, id_ants)))
             return np.array(sorted(idx_set), dtype=int)
 
     @staticmethod
     def get_array_id_exp_frame(df_arg):
-        df = df_arg.reset_index()
-        if 'id_exp' not in df.columns or 'frame' not in df.columns:
-            raise IndexError('df does not have id_exp or frame as index')
+        if 'id_exp' not in df_arg.columns or 'frame' not in df_arg.columns:
+            raise IndexError('df_arg does not have id_exp or frame as index')
         else:
-            idx_set = set([idx for idx in df.set_index(['id_exp', 'frame']).index])
+            id_exps = df_arg.index.get_level_values('id_exp')
+            frames = df_arg.index.get_level_values('frame')
+            idx_set = set(list(zip(id_exps, frames)))
             return np.array(sorted(idx_set), dtype=int)
 
     @staticmethod
     def get_array_id_exp_ant_frame(df_arg):
-        df = df_arg.reset_index()
-        if 'id_exp' not in df.columns or 'id_ant' not in df.columns or 'frame' not in df.columns:
+        if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names or 'frame' not in df_arg.index.names:
             raise IndexError('df does not have id_exp or id_ant or frame as index')
         else:
-            idx_set = set([idx for idx in df.set_index(['id_exp', 'id_ant', 'frame']).index])
+            idx_set = set(df_arg.index)
             return np.array(sorted(idx_set), dtype=int)
 
     def get_dict_id_exp_ant(self, df):
@@ -165,6 +171,23 @@ class PandasIndexManager:
         for id_exp in res:
             for id_ant in res[id_exp]:
                 res[id_exp][id_ant].sort()
+        return res
+
+    def get_dict_id_exp_frame_ant(self, df):
+        index_array = self.get_array_id_exp_ant_frame(df)
+        res = dict()
+        for (id_exp, id_ant, frame) in index_array:
+            if id_exp in res:
+                if frame in res[id_exp]:
+                    res[id_exp][frame].append(id_ant)
+                else:
+                    res[id_exp][frame] = [id_ant]
+            else:
+                res[id_exp] = dict()
+                res[id_exp][frame] = [id_ant]
+        for id_exp in res:
+            for frame in res[id_exp]:
+                res[id_exp][frame].sort()
         return res
 
     @staticmethod
