@@ -300,9 +300,7 @@ class ExperimentGroups:
         self.add_object(name, obj, replace=replace)
 
     def __convert_array_to_1d_df(self, array, name, object_type):
-        if not self.__is_1d(name):
-            raise TypeError('Object in 2d')
-        elif object_type in ['Events1d', 'TimeSeries1d']:
+        if object_type in ['Events1d', 'TimeSeries1d']:
             df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_1d_df(array, name)
         elif object_type in ['AntCharacteristics1d']:
             df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
@@ -310,6 +308,9 @@ class ExperimentGroups:
             df = self.pandas_index_manager.convert_to_exp_indexed_df(array, name)
         elif object_type in ['CharacteristicTimeSeries1d']:
             df = self.pandas_index_manager.convert_to_exp_frame_indexed_1d_df(array, name)
+        elif object_type in [
+                'Events2d', 'TimeSeries2d', 'CharacteristicTimeSeries2d', 'Characteristics2d', 'AntCharacteristics2d']:
+            raise TypeError('Object in 2d')
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
