@@ -16,16 +16,16 @@ class Builder:
     def build1d_from_df(df, name, object_type, category=None, label=None, description=None):
         if object_type == 'TimeSeries1d':
             return TimeSeries1dBuilder.build(
-                df=df.sort_index(), name=name, category=category, label=label, description=description)
+                df=df, name=name, category=category, label=label, description=description)
         elif object_type == 'Events1d':
             return Events1dBuilder.build(
-                df=df.sort_index(), name=name, category=category, label=label, description=description)
+                df=df, name=name, category=category, label=label, description=description)
         elif object_type == 'Characteristics1d':
             return Characteristics1dBuilder.build(
-                df=df.sort_index(), name=name, category=category, label=label, description=description)
+                df=df, name=name, category=category, label=label, description=description)
         elif object_type == 'AntCharacteristics1d':
             return AntCharacteristics1dBuilder.build(
-                df=df.sort_index(), name=name, category=category, label=label, description=description)
+                df=df, name=name, category=category, label=label, description=description)
         else:
             raise TypeError('Type ' + object_type + ' is unknown or 2d')
 

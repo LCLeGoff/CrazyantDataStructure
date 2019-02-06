@@ -38,4 +38,4 @@ class TimeSeries1dBuilder:
             label=label, description=description
         )
         df.columns = [name]
-        return TimeSeries1d(df.sort_index(), definition)
+        return TimeSeries1d(df, definition)
