@@ -10,40 +10,102 @@ class AnalyseStarter:
         self.root = root + group + '/'
         self.group = group
         self.init_blobs = init_blobs
-        self.characteristics = import_obj(self.root + '/Raw/Characteristics.json')
+        self.characteristics = import_obj(self.root + 'Raw/Characteristics.json')
 
-    def start(self, redo, markings=True, dynamic_food=False):
+    def start(self, redo, index_dicts=True, markings=True, dynamic_food=False):
         self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=dynamic_food)
+        self.__sort_and_rewrite_markings(markings)
+        self.__sort_and_rewrite_food(dynamic_food)
+        self.__write_timeseries_index_dicts(index_dicts)
+
+    def __write_timeseries_index_dicts(self, index_dicts):
+        if index_dicts is True:
+            print('write index dicts')
+            add = self.root + 'Raw/TimeSeries.csv'
+            df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+
+            dict_exp_ant = self.__get_2index_dict(df, 'id_ant')
+            dict_exp_frame = self.__get_2index_dict(df, 'frame')
+            write_obj(self.root + 'TimeSeries_exp_ant_index.json', dict_exp_ant)
+            write_obj(self.root + 'TimeSeries_exp_frame_index.json', dict_exp_frame)
+
+            dict_exp_frame_ant = dict()
+            dict_exp_ant_frame = dict()
+            for (id_exp, id_ant, frame) in df.index:
+                self.__add_to_index_dict(id_ant, frame, id_exp, dict_exp_ant_frame)
+                self.__add_to_index_dict(frame, id_ant, id_exp, dict_exp_frame_ant)
+            self.__sort_index_dict(dict_exp_ant_frame)
+            self.__sort_index_dict(dict_exp_frame_ant)
+
+            write_obj(self.root + 'TimeSeries_exp_ant_frame_index.json', dict_exp_ant_frame)
+            write_obj(self.root + 'TimeSeries_exp_frame_ant_index.json', dict_exp_frame_ant)
+
+    @staticmethod
+    def __get_2index_dict(df, idx_name):
+        id_exps = df.index.get_level_values('id_exp')
+        id_ants = df.index.get_level_values(idx_name)
+        idx_set = set(list(zip(id_exps, id_ants)))
+
+        res_dict = dict()
+        for (id_exp, idx) in idx_set:
+            if id_exp in res_dict:
+                res_dict[id_exp].append(idx)
+            else:
+                res_dict[id_exp] = [idx]
+        for id_exp in res_dict:
+            res_dict[id_exp].sort()
+
+        return res_dict
+
+    @staticmethod
+    def __add_to_index_dict(idx1, idx2, id_exp, res_dict):
+        if id_exp in res_dict:
+            if idx1 in res_dict[id_exp]:
+                res_dict[id_exp][idx1].append(idx2)
+            else:
+                res_dict[id_exp][idx1] = [idx2]
+        else:
+            res_dict[id_exp] = dict()
+            res_dict[id_exp][idx1] = [idx2]
+
+    @staticmethod
+    def __sort_index_dict(res_dict):
+        for id_exp in res_dict:
+            for idx in res_dict[id_exp]:
+                res_dict[id_exp][idx].sort()
+
+    def __sort_and_rewrite_markings(self, markings):
         if markings is True:
-            self.__sort_and_rewrite_markings()
+            print('write markings')
+            add = self.root + 'Raw/markings.csv'
+            df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+            df.sort_index().to_csv(add)
+
+    def __sort_and_rewrite_food(self, dynamic_food):
         if dynamic_food is True:
-            self.__sort_and_rewrite_food()
+            print('write dynamic food')
+            add = self.root + 'Raw/CharacteristicTimeSeries.csv'
+            df = pd.read_csv(add, index_col=['id_exp', 'frame', 'food_x0', 'food_y0'])
+            df.sort_index().to_csv(add)
 
-    def __sort_and_rewrite_markings(self):
-        add = self.root + 'Raw/markings.csv'
-        df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
-        df.sort_index().to_csv(add)
-
-    def __sort_and_rewrite_food(self):
-        add = self.root + 'Raw/CharacteristicTimeSeries.csv'
-        df = pd.read_csv(add, index_col=['id_exp', 'frame', 'food_x0', 'food_y0'])
-        df.sort_index().to_csv(add)
+            dict_exp_frame = self.__get_2index_dict(df, 'frame')
+            write_obj(self.root + 'CharacteristicTimeSeries_exp_frame_index.json', dict_exp_frame)
 
     def __fill_and_write_definition_dict(self, redo, markings=True, dynamic_food=False):
+
+        print('fill definition')
 
         definition_dict = self.__init_definition_dict(redo)
 
         self.__fill_details_for_basic_experiment_features(definition_dict)
 
-        if self.init_blobs:
+        if self.init_blobs is True:
             self.__fill_details_for_blob_features(definition_dict)
             self.__fill_details_for_xy(definition_dict)
             self.__fill_details_for_absolute_orientation(definition_dict)
 
-        if markings is True:
-            self.__fill_details_for_markings(definition_dict)
-        if dynamic_food is True:
-            self.__fill_details_for_dynamic_food(definition_dict)
+        self.__fill_details_for_markings(definition_dict, markings)
+        self.__fill_details_for_dynamic_food(definition_dict, dynamic_food)
 
         self.__fill_details_food_radius_features(definition_dict)
         self.__fill_details_food_center_features(definition_dict)
@@ -56,7 +118,7 @@ class AnalyseStarter:
 
     def __init_definition_dict(self, redo):
         address = self.root + 'definition_dict.json'
-        if redo or not (os.path.exists(address)):
+        if redo is True or not (os.path.exists(address)) is True:
             def_dict = dict()
         else:
             def_dict = import_obj(address)
@@ -195,26 +257,28 @@ class AnalyseStarter:
             definition_dict[key2]['description'] = key + ' coordinate (in the cropped image system)'
 
     @staticmethod
-    def __fill_details_for_markings(definition_dict):
-        key = 'markings'
-        definition_dict[key] = dict()
-        definition_dict[key]['label'] = key.capitalize()
-        definition_dict[key]['object_type'] = 'Events1d'
-        definition_dict[key]['category'] = 'Raw'
-        definition_dict[key]['description'] = 'Marking events'
+    def __fill_details_for_markings(definition_dict, markings):
+        if markings is True:
+            key = 'markings'
+            definition_dict[key] = dict()
+            definition_dict[key]['label'] = key.capitalize()
+            definition_dict[key]['object_type'] = 'Events1d'
+            definition_dict[key]['category'] = 'Raw'
+            definition_dict[key]['description'] = 'Marking events'
 
     @staticmethod
-    def __fill_details_for_dynamic_food(definition_dict):
-        key = 'food_x0'
-        definition_dict[key] = dict()
-        definition_dict[key]['label'] = 'X0 food'
-        definition_dict[key]['category'] = 'Raw'
-        definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
-        definition_dict[key]['description'] = 'X coordinates of the food trajectory'
+    def __fill_details_for_dynamic_food(definition_dict, dynamic_food):
+        if dynamic_food is True:
+            key = 'food_x0'
+            definition_dict[key] = dict()
+            definition_dict[key]['label'] = 'X0 food'
+            definition_dict[key]['category'] = 'Raw'
+            definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
+            definition_dict[key]['description'] = 'X coordinates of the food trajectory'
 
-        key = 'food_y0'
-        definition_dict[key] = dict()
-        definition_dict[key]['label'] = 'Y0 food'
-        definition_dict[key]['category'] = 'Raw'
-        definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
-        definition_dict[key]['description'] = 'Y coordinates of the food trajectory'
+            key = 'food_y0'
+            definition_dict[key] = dict()
+            definition_dict[key]['label'] = 'Y0 food'
+            definition_dict[key]['category'] = 'Raw'
+            definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
+            definition_dict[key]['description'] = 'Y coordinates of the food trajectory'

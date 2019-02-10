@@ -8,17 +8,28 @@ from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicT
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from Tools.MiscellaneousTools.Geometry import norm_angle
+from Tools.MiscellaneousTools.JsonFiles import import_obj
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class ExperimentGroups:
 
-    def __init__(self, root, group, id_exp_list):
-        self.root = root
+    def __init__(self, root, group):
+        self.root = root + group + '/'
         self.group = group
         self.data_manager = DataFileManager(root, group)
         self.pandas_index_manager = PandasIndexManager()
-        self.id_exp_list = id_exp_list
+
+        self.timeseries_exp_ant_frame_index = import_obj(self.root + 'TimeSeries_exp_ant_frame_index.json')
+        self.timeseries_exp_frame_ant_index = import_obj(self.root + 'TimeSeries_exp_frame_ant_index.json')
+        self.timeseries_exp_ant_index = import_obj(self.root + 'TimeSeries_exp_ant_index.json')
+        self.timeseries_exp_frame_index = import_obj(self.root + 'TimeSeries_exp_frame_index.json')
+
+        self.characteristic_timeseries_exp_frame_index = import_obj(
+            self.root + 'CharacteristicTimeSeries_exp_frame_index.json')
+
+        self.id_exp_list = [int(v) for v in self.timeseries_exp_ant_frame_index.keys()]
         self.id_exp_list.sort()
         self.names = set()
 
@@ -90,8 +101,8 @@ class ExperimentGroups:
     def load(self, names):
         names = self.turn_to_list(names)
         for name in names:
-            print('loading ', name)
             if name not in self.__dict__.keys():
+                print('loading ', name)
                 self.add_object(name, self.data_manager.load(name), replace=True)
 
     def write(self, names):
@@ -202,6 +213,8 @@ class ExperimentGroups:
                 label=self.get_label(name_to_copy),
                 description=self.get_description(name_to_copy))
         else:
+            if category is None:
+                category = self.get_category(name_to_copy)
             obj = self.get_data_object(name_to_copy).copy(
                 name=copy_name, category=category, label=label,
                 description=description)
@@ -238,12 +251,12 @@ class ExperimentGroups:
         self.add_object(copy_name, obj, replace)
 
     def add_new1d_empty(self, name, object_type, category=None, label=None, description=None, replace=False):
-        df = self._create_empty_df(name, object_type)
+        df = self.__create_empty_df(name, object_type)
         obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace=replace)
 
-    def _create_empty_df(self, name, object_type):
+    def __create_empty_df(self, name, object_type):
         if object_type in ['Events1d', 'TimeSeries1d']:
             df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_1d_df(name)
         elif object_type in ['AntCharacteristics1d']:
@@ -377,7 +390,7 @@ class ExperimentGroups:
         interval_index_name = 'interval_idx_'+result_name
         if name_to_filter_can_be_filtered and name_interval_can_be_a_filter:
 
-            self._compute_time_interval_filter(
+            self.__compute_time_interval_filter(
                 name_to_filter, name_intervals, result_name, interval_index_name,
                 category, label, xlabel, ylabel, description, replace)
 
@@ -436,7 +449,7 @@ class ExperimentGroups:
 
             self.remove_object('filter')
 
-    def _compute_time_interval_filter(
+    def __compute_time_interval_filter(
             self, name_to_filter, name_intervals, result_name, interval_index_name,
             category, label, xlabel, ylabel, description, replace):
 

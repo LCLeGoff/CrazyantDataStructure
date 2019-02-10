@@ -1,5 +1,4 @@
 from ExperimentGroups import ExperimentGroups
-from Tools.MiscellaneousTools.JsonFiles import import_id_exp_list
 
 
 class ExperimentGroupBuilder:
@@ -7,5 +6,4 @@ class ExperimentGroupBuilder:
         self.root = root
 
     def build(self, group):
-        id_exp_list = import_id_exp_list(self.root + group + '/')
-        return ExperimentGroups(self.root, group, id_exp_list)
+        return ExperimentGroups(self.root, group)
