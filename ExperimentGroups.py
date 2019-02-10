@@ -663,3 +663,49 @@ class ExperimentGroups:
                         return result_name
                     else:
                         return df_fit
+
+    def convert_xy_to_movie_system(self, id_exp, id_ant, frame):
+        self.load(['x', 'y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
+
+        x = float(self.x.df.loc[id_exp, id_ant, frame])
+        y = float(self.y.df.loc[id_exp, id_ant, frame])
+
+        x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
+
+        return x, y
+
+    def convert_food_xy_to_movie_system(self, id_exp, id_ant, frame):
+        self.load(['food_x', 'food_y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
+
+        x = float(self.food_x.df.loc[id_exp, id_ant, frame])
+        y = float(self.food_y.df.loc[id_exp, id_ant, frame])
+
+        x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
+
+        return x, y
+
+    def __computation_to_covert_to_movie_system(self, id_exp, x, y):
+
+        if int(self.traj_reoriented.df.loc[id_exp]) == 1:
+            x *= -1
+            y *= -1
+
+        x *= float(self.mm2px.df.loc[id_exp])
+        y *= float(self.mm2px.df.loc[id_exp])
+
+        x += float(self.food_center.df.x.loc[id_exp])
+        y += float(self.food_center.df.y.loc[id_exp])
+
+        x += float(self.traj_translation.df.x.loc[id_exp])
+        y += float(self.traj_translation.df.y.loc[id_exp])
+
+        return x, y
+
+    def convert_orientation_to_movie_system(self, id_exp, id_ant, frame):
+        self.load(['orientation', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
+
+        orientation = float(self.orientation.df.loc[id_exp, id_ant, frame])
+        if int(self.traj_reoriented.df.loc[id_exp]) == 1:
+            orientation = norm_angle(orientation-np.pi)
+
+        return orientation
