@@ -93,7 +93,7 @@ class PandasIndexManager:
 
     @staticmethod
     def get_array_id_exp(df_arg):
-        if 'id_exp' not in df_arg.columns:
+        if 'id_exp' not in df_arg.index.names:
             raise IndexError('df does not have id_exp as index')
         else:
             idx_set = set(df_arg.index.get_level_values('id_exp'))
@@ -101,7 +101,7 @@ class PandasIndexManager:
 
     @staticmethod
     def get_array_id_exp_ant(df_arg):
-        if 'id_exp' not in df_arg.columns or 'id_ant' not in df_arg.columns:
+        if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names:
             raise IndexError('df does not have id_exp or id_ant as index')
         else:
             id_exps = df_arg.index.get_level_values('id_exp')
@@ -111,7 +111,7 @@ class PandasIndexManager:
 
     @staticmethod
     def get_array_id_exp_frame(df_arg):
-        if 'id_exp' not in df_arg.columns or 'frame' not in df_arg.columns:
+        if 'id_exp' not in df_arg.index.names or 'frame' not in df_arg.index.names:
             raise IndexError('df_arg does not have id_exp or frame as index')
         else:
             id_exps = df_arg.index.get_level_values('id_exp')

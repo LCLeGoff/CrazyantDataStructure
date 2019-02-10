@@ -36,7 +36,7 @@ class Plotter2d(BasePlotters):
         self.center_obj = None
         self.filter_obj = None
 
-    def _change_arg_values(self, names, kwargs):
+    def __change_arg_values(self, names, kwargs):
         if isinstance(names, str):
             names = [names]
         for name in names:
@@ -50,12 +50,12 @@ class Plotter2d(BasePlotters):
         return radius * np.cos(theta) + center[0], radius * np.sin(theta) + center[1]
 
     def draw_food(self, ax, **kwargs):
-        self._change_arg_values('food', kwargs)
+        self.__change_arg_values('food', kwargs)
         x, y = self.make_circle(self.food_radius, self.food_location)
         ax.plot(x, y, **self.food)
 
     def draw_arena(self, ax, **kwargs):
-        self._change_arg_values('arena', kwargs)
+        self.__change_arg_values('arena', kwargs)
         self.draw_rectangle(ax, self.food_location, self.arena_length, self.arena_width, self.arena)
 
     @staticmethod
@@ -67,12 +67,12 @@ class Plotter2d(BasePlotters):
         ax.plot([x - length / 2., x + length / 2.], [y - width / 2., y - width / 2.], **plot_features)
 
     def draw_gate(self, ax, **kwargs):
-        self._change_arg_values('gate', kwargs)
+        self.__change_arg_values('gate', kwargs)
         x = self.arena_length / 2.
         ax.plot([x, x], np.array([-1, 1]) * self.gate_length / 2., **self.gate)
 
     def draw_setup(self, fig, ax, **kwargs):
-        self._change_arg_values(['arena', 'gate', 'food'], kwargs)
+        self.__change_arg_values(['arena', 'gate', 'food'], kwargs)
         ax.axis('equal')
         self.remove_axis(fig, ax)
         self.draw_arena(ax)
@@ -94,25 +94,25 @@ class Plotter2d(BasePlotters):
         return fig, ax
 
     def plot_scatter(self, list_id_exp=None, color_variety=None, preplot=None, title_prefix=None, **kwargs):
-        list_id_exp = self._get_list_id_exp(list_id_exp)
-        self._change_arg_values('line', kwargs)
+        list_id_exp = self.__get_list_id_exp(list_id_exp)
+        self.__change_arg_values('line', kwargs)
 
         fig, ax = self.create_plot(preplot, (6.5, 5))
         if color_variety == 'exp':
-            self._plot_2d_obj_per_exp(ax, list_id_exp)
+            self.__plot_2d_obj_per_exp(ax, list_id_exp)
         elif color_variety == 'ant':
-            self._plot_2d_obj_per_ant(ax, list_id_exp)
+            self.__plot_2d_obj_per_ant(ax, list_id_exp)
         elif color_variety == 'ant2':
-            self._plot_2d_obj_per_ant2(ax, list_id_exp)
+            self.__plot_2d_obj_per_ant2(ax, list_id_exp)
         elif color_variety == 'frame':
-            self._plot_2d_obj_per_frame(ax, list_id_exp)
+            self.__plot_2d_obj_per_frame(ax, list_id_exp)
         else:
-            self._plot_2d_obj(ax, list_id_exp)
+            self.__plot_2d_obj(ax, list_id_exp)
 
         self.display_title(ax, title_prefix)
         return fig, ax
 
-    def _plot_2d_obj_per_frame(self, ax, list_id_exp):
+    def __plot_2d_obj_per_frame(self, ax, list_id_exp):
         col_list = ColorObject('cmap', self.cmap, 101).colors
 
         id_exp_ant_frame_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
@@ -128,27 +128,27 @@ class Plotter2d(BasePlotters):
                     self.id_ant = id_ant
                     self.frame = frame
                     self.line['c'] = col
-                    self._plot_2d_obj_for_exp_ant_frame(ax)
+                    self.__plot_2d_obj_for_exp_ant_frame(ax)
 
-    def _plot_2d_obj_for_exp_ant(self, ax):
+    def __plot_2d_obj_for_exp_ant(self, ax):
         x_array = self.obj.get_x_values().loc[self.id_exp, self.id_ant, :]
         y_array = self.obj.get_y_values().loc[self.id_exp, self.id_ant, :]
         ax.plot(x_array, y_array, **self.line)
 
-    def _plot_2d_obj_for_exp_ant_frame(self, ax):
+    def __plot_2d_obj_for_exp_ant_frame(self, ax):
         x = self.obj.get_x_values().loc[self.id_exp, self.id_ant, self.frame]
         y = self.obj.get_y_values().loc[self.id_exp, self.id_ant, self.frame]
         ax.plot(x, y, **self.line)
 
-    def _plot_2d_obj(self, ax, list_id_exp):
+    def __plot_2d_obj(self, ax, list_id_exp):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         for id_exp, id_ant in id_exp_ant_list:
             if id_exp in list_id_exp:
                 self.id_exp = id_exp
                 self.id_ant = id_ant
-                self._plot_2d_obj_for_exp_ant(ax)
+                self.__plot_2d_obj_for_exp_ant(ax)
 
-    def _plot_2d_obj_per_ant(self, ax, list_id_exp):
+    def __plot_2d_obj_per_ant(self, ax, list_id_exp):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, id_exp_ant_list).colors
         for id_exp, id_ant in id_exp_ant_list:
@@ -156,9 +156,9 @@ class Plotter2d(BasePlotters):
                 self.id_exp = id_exp
                 self.id_ant = id_ant
                 self.line['c'] = col_list_for_each_exp_ant[(id_exp, id_ant)]
-                self._plot_2d_obj_for_exp_ant(ax)
+                self.__plot_2d_obj_for_exp_ant(ax)
 
-    def _plot_2d_obj_per_ant2(self, ax, list_id_exp):
+    def __plot_2d_obj_per_ant2(self, ax, list_id_exp):
         # id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         # col_list_for_each_ant = ColorObject('cmap', self.cmap, range(10)).colors
         #
@@ -169,7 +169,7 @@ class Plotter2d(BasePlotters):
         #         self.id_ant = id_ant
         #         self._plot_2d_obj_for_exp_ant(ax)
 
-        self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_2d_obj_for_exp_ant)
+        self.__plot_with_colorization_ant2(ax, list_id_exp, self.__plot_2d_obj_for_exp_ant)
         # idx_dict = self.obj.get_index_dict_of_id_exp_ant()
         # for id_exp in list_id_exp:
         #     if id_exp in idx_dict:
@@ -181,7 +181,7 @@ class Plotter2d(BasePlotters):
         #             self.id_ant = id_ant
         #             self._plot_2d_obj_for_exp_ant(ax)
 
-    def _plot_2d_obj_per_filter(self, ax, list_id_exp):
+    def __plot_2d_obj_per_filter(self, ax, list_id_exp):
         col_list = ColorObject('cmap', self.cmap, 101).colors
 
         id_exp_ant_frame_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
@@ -197,7 +197,7 @@ class Plotter2d(BasePlotters):
                     self.id_ant = id_ant
                     self.frame = frame
                     self.line['c'] = col
-                    self._plot_2d_obj_for_exp_ant_frame(ax)
+                    self.__plot_2d_obj_for_exp_ant_frame(ax)
 
         # col_list = ColorObject('cmap', self.cmap, 101).colors
         #
@@ -216,7 +216,7 @@ class Plotter2d(BasePlotters):
         #             self.line['c'] = col
         #             self._plot_2d_obj_for_exp_ant_frame(ax)
 
-    def _plot_2d_obj_per_exp(self, ax, list_id_exp):
+    def __plot_2d_obj_per_exp(self, ax, list_id_exp):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         col_list = ColorObject('cmap', self.cmap, list_id_exp).colors
         for id_exp, id_ant in id_exp_ant_list:
@@ -224,7 +224,7 @@ class Plotter2d(BasePlotters):
                 self.id_exp = id_exp
                 self.id_ant = id_ant
                 self.line['c'] = col_list[id_exp]
-                self._plot_2d_obj_for_exp_ant(ax)
+                self.__plot_2d_obj_for_exp_ant(ax)
 
     def hist2d_in_arena(self, bins=100, normed=False, title_prefix=None, preplot=None, cmap=None):
         if cmap is None:
@@ -245,33 +245,33 @@ class Plotter2d(BasePlotters):
                                   **kwarg):
 
         self.center_obj = center_obj
-        list_id_exp = self._get_list_id_exp(list_id_exp)
+        list_id_exp = self.__get_list_id_exp(list_id_exp)
 
         self.line['marker'] = ''
         self.line['ls'] = '-'
-        self._change_arg_values('line', kwarg)
+        self.__change_arg_values('line', kwarg)
 
         fig, ax = self.create_plot(preplot, (9, 5))
 
         if color_variety == 'exp':
-            self._plot_phi_direction_per_exp(ax, list_id_exp)
+            self.__plot_phi_direction_per_exp(ax, list_id_exp)
         elif color_variety == 'ant':
-            self._plot_phi_direction_per_ant(ax, list_id_exp)
+            self.__plot_phi_direction_per_ant(ax, list_id_exp)
         elif color_variety == 'ant2':
-            self._plot_phi_direction_per_ant2(ax, list_id_exp)
+            self.__plot_phi_direction_per_ant2(ax, list_id_exp)
         elif color_variety == 'frame2':
-            self._plot_phi_direction_per_frame2(ax, list_id_exp)
+            self.__plot_phi_direction_per_frame2(ax, list_id_exp)
         else:
-            self._plot_all_phi_direction(ax, list_id_exp)
+            self.__plot_all_phi_direction(ax, list_id_exp)
 
         self.draw_setup(fig, ax)
 
-    def _get_list_id_exp(self, list_id_exp):
+    def __get_list_id_exp(self, list_id_exp):
         if list_id_exp is None:
             list_id_exp = self.obj.get_index_array_of_id_exp()
         return list_id_exp
 
-    def _get_center(self):
+    def __get_center(self):
         if self.center_obj is None:
             center = [0, 0]
         else:
@@ -279,7 +279,7 @@ class Plotter2d(BasePlotters):
                 int(self.id_exp), int(self.id_ant), int(self.frame))
         return center
 
-    def _plot_phi_direction_per_exp(self, ax, list_id_exp):
+    def __plot_phi_direction_per_exp(self, ax, list_id_exp):
         col_list_for_each_exp = ColorObject('cmap', self.cmap, list_id_exp).colors
         df_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in df_array:
@@ -288,9 +288,9 @@ class Plotter2d(BasePlotters):
                 self.id_ant = id_ant
                 self.frame = frame
                 self.line['c'] = col_list_for_each_exp[id_exp]
-                self._plot_phi_direction(ax)
+                self.__plot_phi_direction(ax)
 
-    def _plot_phi_direction_per_ant(self, ax, list_id_exp):
+    def __plot_phi_direction_per_ant(self, ax, list_id_exp):
         id_exp_ant_list = self.obj.get_index_array_of_id_exp_ant()
         col_list_for_each_exp_ant = ColorObject('cmap', self.cmap, id_exp_ant_list).colors
         phi_array = self.obj.convert_df_to_array()
@@ -300,9 +300,9 @@ class Plotter2d(BasePlotters):
                 self.id_ant = id_ant
                 self.frame = frame
                 self.line['c'] = col_list_for_each_exp_ant[(id_exp, id_ant)]
-                self._plot_phi_direction(ax)
+                self.__plot_phi_direction(ax)
 
-    def _plot_phi_direction_per_ant2(self, ax, list_id_exp):
+    def __plot_phi_direction_per_ant2(self, ax, list_id_exp):
         # idx_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
         # for id_exp in list_id_exp:
         #     if id_exp in idx_dict:
@@ -317,9 +317,9 @@ class Plotter2d(BasePlotters):
         #                 self.frame = frame
         #                 self._plot_phi_direction(ax)
 
-        self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_phi_direction)
+        self.__plot_with_colorization_ant2(ax, list_id_exp, self.__plot_phi_direction)
 
-    def _plot_with_colorization_ant2(self, ax, list_id_exp, fct):
+    def __plot_with_colorization_ant2(self, ax, list_id_exp, fct):
         idx_dict = self.obj.get_index_dict_of_id_exp_ant()
         for id_exp in list_id_exp:
             if id_exp in idx_dict:
@@ -331,21 +331,21 @@ class Plotter2d(BasePlotters):
                     self.id_ant = id_ant
                     fct(ax)
 
-    def _plot_phi_direction_per_frame2(self, ax, list_id_exp):
-        self._plot_with_colorization_frame2(ax, list_id_exp, self._plot_phi_direction)
+    def __plot_phi_direction_per_frame2(self, ax, list_id_exp):
+        self.__plot_with_colorization_frame2(ax, list_id_exp, self.__plot_phi_direction)
 
-    def _plot_all_phi_direction(self, ax, list_id_exp):
+    def __plot_all_phi_direction(self, ax, list_id_exp):
         phi_array = self.obj.convert_df_to_array()
         for id_exp, id_ant, frame, phi in phi_array:
             if id_exp in list_id_exp:
                 self.id_exp = id_exp
                 self.id_ant = id_ant
                 self.frame = frame
-                self._plot_phi_direction(ax)
+                self.__plot_phi_direction(ax)
 
-    def _plot_phi_direction(self, ax):
+    def __plot_phi_direction(self, ax):
 
-        center = self._get_center()
+        center = self.__get_center()
         phi = self.obj.get_value((self.id_exp, self.id_ant, self.frame))
         x = self.circular_arena_radius * np.cos(phi)+center[0]
         y = self.circular_arena_radius * np.sin(phi)+center[1]
@@ -354,7 +354,7 @@ class Plotter2d(BasePlotters):
     def plot_ab_line(self, preplot=None, list_id_exp=None, color_variety=None, **kwarg):
 
         fig, ax = self.create_plot(preplot, (9, 5))
-        self._change_arg_values('line', kwarg)
+        self.__change_arg_values('line', kwarg)
 
         if color_variety == 'ant2':
             # self._plot_with_colorization_ant2(ax, list_id_exp, self._plot_one_ab_line)
@@ -370,11 +370,11 @@ class Plotter2d(BasePlotters):
                             self.id_exp = id_exp
                             self.id_ant = id_ant
                             self.frame = frame
-                            self._plot_one_ab_line(ax)
+                            self.__plot_one_ab_line(ax)
         elif color_variety == 'frame2':
-            self._plot_with_colorization_frame2(ax, list_id_exp, self._plot_one_ab_line)
+            self.__plot_with_colorization_frame2(ax, list_id_exp, self.__plot_one_ab_line)
 
-    def _plot_with_colorization_frame2(self, ax, list_id_exp, fct):
+    def __plot_with_colorization_frame2(self, ax, list_id_exp, fct):
         if list_id_exp is None:
             list_id_exp = self.obj.get_index_array_of_id_exp
         index_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
@@ -390,7 +390,7 @@ class Plotter2d(BasePlotters):
                         self.line['c'] = col_list_for_each_ant[frame]
                         fct(ax)
 
-    def _plot_one_ab_line(self, ax):
+    def __plot_one_ab_line(self, ax):
         a, b = self.obj.get_value((self.id_exp, self.id_ant, self.frame))
         x0 = ax.get_xlim()[0]
         y0 = a * x0 + b
