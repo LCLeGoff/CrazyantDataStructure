@@ -1,7 +1,7 @@
 import numpy as np
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle
+from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle_tab
 from math import pi
 
 
@@ -15,8 +15,8 @@ class AnalyseTrajectory:
 
         self.__load_xy_reorientation(dynamic_food=dynamic_food)
         self.__copy_xy0_to_xy(dynamic_food=dynamic_food)
+        # self.__translate_xy(dynamic_food=dynamic_food)
         self.__centered_xy_on_food(dynamic_food=dynamic_food)
-        self.__translate_xy(dynamic_food=dynamic_food)
         self.__convert_xy_to_mm(dynamic_food=dynamic_food)
         self.__orient_all_in_same_direction(id_exp_list, dynamic_food=dynamic_food)
         self.__write_initialize_xy_orientation(dynamic_food)
@@ -31,11 +31,11 @@ class AnalyseTrajectory:
         print('coping xy0, absoluteOrientation and food0')
         self.exp.add_copy1d(
             name_to_copy='x0', copy_name='x', category='Trajectory',
-            label='x', description='x coordinate (in the initial food system)'
+            label='x (mm)', description='x coordinate (mm, in the initial food system)'
         )
         self.exp.add_copy1d(
             name_to_copy='y0', copy_name='y', category='Trajectory',
-            label='y', description='y coordinate (in the initial food system)'
+            label='y (mm)', description='y coordinate (mm, in the initial food system)'
         )
         self.exp.add_copy1d(
             name_to_copy='absoluteOrientation', copy_name='orientation', category='Trajectory',
@@ -44,11 +44,11 @@ class AnalyseTrajectory:
         if dynamic_food is True:
             self.exp.add_copy1d(
                 name_to_copy='food_x0', copy_name='food_x', category='FoodBase',
-                label='x', description='x coordinate of the food (in the initial food system)'
+                label='x (mm)', description='x coordinate of the food (mm, in the initial food system)'
             )
             self.exp.add_copy1d(
                 name_to_copy='food_y0', copy_name='food_y', category='FoodBase',
-                label='y', description='y coordinate of the food (in the initial food system)'
+                label='y (mm)', description='y coordinate of the food (mm, in the initial food system)'
             )
 
     def __centered_xy_on_food(self, dynamic_food):
@@ -77,6 +77,11 @@ class AnalyseTrajectory:
 
     def __orient_all_in_same_direction(self, id_exp_list, dynamic_food):
         print('orientation in same direction')
+        self.exp.add_copy1d(
+            name_to_copy='mm2px', copy_name='traj_reoriented',
+            category='Trajectory', label='trajectory reoriented',
+            description='Trajectories reoriented to be in the same orientation of the other experiments'
+        )
         for id_exp in id_exp_list:
             food_center = np.array(self.exp.food_center.get_row(id_exp))
             entrance_pts1 = np.array(self.exp.entrance1.get_row(id_exp))
@@ -107,15 +112,18 @@ class AnalyseTrajectory:
         if abs(a) > pi / 2:
             self.exp.x.operation_on_id_exp(id_exp, lambda z: z * -1)
             self.exp.y.operation_on_id_exp(id_exp, lambda z: z * -1)
-            self.exp.orientation.operation_on_id_exp(id_exp, lambda z: norm_angle(z+np.pi))
+            self.exp.orientation.operation_on_id_exp(id_exp, lambda z: norm_angle_tab(z+np.pi))
+            self.exp.traj_reoriented.df.loc[id_exp] = 1
             if dynamic_food is True:
                 self.exp.food_x.operation_on_id_exp(id_exp, lambda z: z * -1)
                 self.exp.food_y.operation_on_id_exp(id_exp, lambda z: z * -1)
+        else:
+            self.exp.traj_reoriented.df.loc[id_exp] = 0
 
     def __write_initialize_xy_orientation(self, dynamic_food):
+        self.exp.write(['traj_reoriented', 'x', 'y', 'orientation'])
         if dynamic_food is True:
             self.exp.write(['food_x', 'food_y'])
-        self.exp.write(['x', 'y', 'orientation'])
 
     def compute_r_phi(self):
         print('r, phi')
