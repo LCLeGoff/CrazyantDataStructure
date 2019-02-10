@@ -66,3 +66,8 @@ def norm_angle(theta):
         return theta + 2 * np.pi
     else:
         return theta
+
+def norm_angle_tab(theta):
+    theta[theta > np.pi] -= 2*np.pi
+    theta[theta < np.pi] += 2*np.pi
+    return theta
