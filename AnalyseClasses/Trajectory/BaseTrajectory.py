@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from pandas import IndexSlice as IdxSc
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle_tab
@@ -160,3 +162,38 @@ class AnalyseTrajectory:
             category='Trajectory', label='coordinates', xlabel='x', ylabel='y',
             description='coordinates of ant positions'
         )
+
+    def compute_speed(self):
+        name = 'speed'
+        self.exp.load(['x', 'y', 'fps'])
+        self.exp.load_timeseries_exp_ant_frame_index()
+
+        self.exp.add_copy1d(
+            name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
+            description='Instantaneous speed of the ants'
+        )
+
+        for id_exp in self.exp.timeseries_exp_ant_frame_index:
+            for id_ant in self.exp.timeseries_exp_ant_frame_index[id_exp]:
+                print(id_exp, id_ant)
+
+                dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
+                dx[1:-1, :] = dx[2:, ]-dx[:-2, :]
+                dx[0, :] = np.nan
+                dx[-1, :] = np.nan
+
+                dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
+                dy[1:-1, :] = dy[2:, ]-dy[:-2, :]
+                dy[0, :] = np.nan
+                dy[-1, :] = np.nan
+
+                dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
+                dt[0] = np.nan
+                dt[-1] = np.nan
+                dt[dt > 2] = np.nan
+
+                self.exp.speed.df.loc[id_exp, id_ant, :] = np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps/2.
+        
+        self.exp.write(name)
