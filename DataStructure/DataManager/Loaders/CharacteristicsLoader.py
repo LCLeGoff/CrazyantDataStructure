@@ -3,7 +3,7 @@ import numpy as np
 
 from DataStructure.DataObjects.Characteristics1d import Characteristics1d
 from DataStructure.DataObjects.Characteristics2d import Characteristics2d
-from Tools.MiscellaneousTools.JsonFiles import import_obj
+from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_json
 
 
 class Characteristics1dLoader:
@@ -11,7 +11,7 @@ class Characteristics1dLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        chara_dict = import_obj(self.root + definition.category + '/Characteristics.json')
+        chara_dict = import_obj_json(self.root + definition.category + '/Characteristics.json')
         res = pd.DataFrame(
             [chara_dict[key][definition.name] for key in chara_dict.keys()],
             index=np.array(list(chara_dict.keys()), dtype=int),
@@ -25,7 +25,7 @@ class Characteristics2dLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        chara_dict = import_obj(self.root + definition.category + '/Characteristics.json')
+        chara_dict = import_obj_json(self.root + definition.category + '/Characteristics.json')
         res = pd.DataFrame(
             [np.array(chara_dict[key][definition.name], dtype=float) for key in chara_dict.keys()],
             index=np.array(list(chara_dict.keys()), dtype=int),

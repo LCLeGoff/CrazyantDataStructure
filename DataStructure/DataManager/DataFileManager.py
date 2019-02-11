@@ -4,7 +4,7 @@ import pandas as pd
 from DataStructure.DataManager.Deleters.DataDeleter import DataDeleter
 from DataStructure.DataManager.Loaders.DataLoader import DataLoader
 from DataStructure.DataManager.Writers.DataWriter import DataWriter
-from Tools.MiscellaneousTools.JsonFiles import import_id_exp_list, write_obj
+from Tools.MiscellaneousTools.PickleJsonFiles import import_id_exp_list, write_obj_json
 
 
 class DataFileManager:
@@ -53,7 +53,7 @@ class DataFileManager:
             chara = dict()
             for id_exp in self.id_exp_list:
                 chara[str(id_exp)] = dict()
-            write_obj(add + 'Characteristics.json', chara)
+            write_obj_json(add + 'Characteristics.json', chara)
             df = pd.DataFrame(index=self.get_exp_ant_frame_index())
             df.to_csv(add + 'TimeSeries.csv')
             df = pd.DataFrame(index=self.get_exp_frame_index())

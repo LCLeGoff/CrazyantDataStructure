@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from Tools.MiscellaneousTools.JsonFiles import import_obj, write_obj
+from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_json, write_obj_pickle, write_obj_json
 
 
 class AnalyseStarter:
@@ -10,7 +10,7 @@ class AnalyseStarter:
         self.root = root + group + '/'
         self.group = group
         self.init_blobs = init_blobs
-        self.characteristics = import_obj(self.root + 'Raw/Characteristics.json')
+        self.characteristics = import_obj_json(self.root + 'Raw/Characteristics.json')
 
     def start(self, redo, index_dicts=True, markings=True, dynamic_food=False):
         self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=dynamic_food)
@@ -26,8 +26,8 @@ class AnalyseStarter:
 
             dict_exp_ant = self.__get_2index_dict(df, 'id_ant')
             dict_exp_frame = self.__get_2index_dict(df, 'frame')
-            write_obj(self.root + 'TimeSeries_exp_ant_index.json', dict_exp_ant)
-            write_obj(self.root + 'TimeSeries_exp_frame_index.json', dict_exp_frame)
+            write_obj_pickle(self.root + 'TimeSeries_exp_ant_index.p', dict_exp_ant)
+            write_obj_pickle(self.root + 'TimeSeries_exp_frame_index.p', dict_exp_frame)
 
             dict_exp_frame_ant = dict()
             dict_exp_ant_frame = dict()
@@ -37,8 +37,8 @@ class AnalyseStarter:
             self.__sort_index_dict(dict_exp_ant_frame)
             self.__sort_index_dict(dict_exp_frame_ant)
 
-            write_obj(self.root + 'TimeSeries_exp_ant_frame_index.json', dict_exp_ant_frame)
-            write_obj(self.root + 'TimeSeries_exp_frame_ant_index.json', dict_exp_frame_ant)
+            write_obj_pickle(self.root + 'TimeSeries_exp_ant_frame_index.p', dict_exp_ant_frame)
+            write_obj_pickle(self.root + 'TimeSeries_exp_frame_ant_index.p', dict_exp_frame_ant)
 
     @staticmethod
     def __get_2index_dict(df, idx_name):
@@ -89,7 +89,7 @@ class AnalyseStarter:
             df.sort_index().to_csv(add)
 
             dict_exp_frame = self.__get_2index_dict(df, 'frame')
-            write_obj(self.root + 'CharacteristicTimeSeries_exp_frame_index.json', dict_exp_frame)
+            write_obj_pickle(self.root + 'CharacteristicTimeSeries_exp_frame_index.p', dict_exp_frame)
 
     def __fill_and_write_definition_dict(self, redo, markings=True, dynamic_food=False):
 
@@ -121,11 +121,11 @@ class AnalyseStarter:
         if redo is True or not (os.path.exists(address)) is True:
             def_dict = dict()
         else:
-            def_dict = import_obj(address)
+            def_dict = import_obj_json(address)
         return def_dict
 
     def __write_definition_dict(self, definition_dict):
-        write_obj(self.root + 'definition_dict.json', definition_dict)
+        write_obj_json(self.root + 'definition_dict.json', definition_dict)
 
     @staticmethod
     def __fill_details_for_blob_features(definition_dict):
