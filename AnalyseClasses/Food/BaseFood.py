@@ -10,8 +10,8 @@ class AnalyseBaseFood:
         self.pd_idx_manager = PandasIndexManager()
         self.exp = ExperimentGroupBuilder(root).build(group)
 
-    def compute_food_distance(self):
-        name = 'food_distance'
+    def compute_distance_to_food(self):
+        name = 'distance_to_food'
         print(name)
         self.exp.load(['food_x', 'food_y', 'x', 'y'])
 
@@ -30,7 +30,7 @@ class AnalyseBaseFood:
 
         self.exp.add_new1d_from_df(
             df=df_d, name=name, object_type='TimeSeries1d',
-            category='FoodBase', label='Food distance', description='Distance between the food and the ants'
+            category='FoodBase', label='Food to distance', description='Distance between the food and the ants'
         )
         self.exp.write(name)
 
@@ -48,10 +48,10 @@ class AnalyseBaseFood:
         df_d = pd.DataFrame(df_d)
         return df_d
 
-    def compute_next_food(self):
-        name = 'next_food'
+    def compute_next_to_food(self):
+        name = 'next_to_food'
 
-        name_distance = 'food_distance'
+        name_distance = 'distance_to_food'
         self.exp.load(name_distance)
         self.exp.add_copy1d(
             name_to_copy=name_distance, copy_name=name, category='FoodBase',
@@ -60,5 +60,5 @@ class AnalyseBaseFood:
 
         neighbor_distance = 30.
         self.exp.operation(name, lambda x: x < neighbor_distance)
-        self.exp.next_food.df = self.exp.next_food.df.astype(int)
+        self.exp.next_to_food.df = self.exp.next_to_food.df.astype(int)
         self.exp.write(name)
