@@ -8,8 +8,8 @@ from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicT
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
-from Tools.MiscellaneousTools.Geometry import norm_angle
-from Tools.MiscellaneousTools.JsonFiles import import_obj
+from Tools.MiscellaneousTools.Geometry import norm_angle_tab
+from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -21,17 +21,26 @@ class ExperimentGroups:
         self.data_manager = DataFileManager(root, group)
         self.pandas_index_manager = PandasIndexManager()
 
-        self.timeseries_exp_ant_frame_index = import_obj(self.root + 'TimeSeries_exp_ant_frame_index.json')
-        self.timeseries_exp_frame_ant_index = import_obj(self.root + 'TimeSeries_exp_frame_ant_index.json')
-        self.timeseries_exp_ant_index = import_obj(self.root + 'TimeSeries_exp_ant_index.json')
-        self.timeseries_exp_frame_index = import_obj(self.root + 'TimeSeries_exp_frame_index.json')
-
-        self.characteristic_timeseries_exp_frame_index = import_obj(
-            self.root + 'CharacteristicTimeSeries_exp_frame_index.json')
-
-        self.id_exp_list = [int(v) for v in self.timeseries_exp_ant_frame_index.keys()]
+        self.timeseries_exp_ant_frame_index = None
+        self.timeseries_exp_frame_ant_index = None
+        self.timeseries_exp_ant_index = import_obj_pickle(self.root + 'TimeSeries_exp_ant_index.p')
+        self.timeseries_exp_frame_index = import_obj_pickle(self.root + 'TimeSeries_exp_frame_index.p')
+        self.characteristic_timeseries_exp_frame_index = import_obj_pickle(
+            self.root + 'CharacteristicTimeSeries_exp_frame_index.p')
+        self.id_exp_list = list(self.timeseries_exp_frame_index.keys())
         self.id_exp_list.sort()
+
+        self.ref_id_exp = np.array(pd.read_csv(self.root + 'ref_id_exp.csv'))
+
         self.names = set()
+
+    def load_timeseries_exp_ant_frame_index(self):
+        if self.timeseries_exp_ant_frame_index is None:
+            self.timeseries_exp_ant_frame_index = import_obj_pickle(self.root + 'TimeSeries_exp_ant_frame_index.p')
+
+    def load_timeseries_exp_frame_ant_index(self):
+        if self.timeseries_exp_frame_ant_index is None:
+            self.timeseries_exp_frame_ant_index = import_obj_pickle(self.root + 'TimeSeries_exp_frame_ant_index.p')
 
     @staticmethod
     def turn_to_list(names):
@@ -79,6 +88,9 @@ class ExperimentGroups:
 
     def get_index_names(self, name):
         return self.get_df(name).index.names
+
+    def get_ref_id_exp(self, id_exp):
+        return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
 
     def set_id_exp_list(self, id_exp_list=None):
         if id_exp_list is None:
@@ -667,22 +679,28 @@ class ExperimentGroups:
     def convert_xy_to_movie_system(self, id_exp, id_ant, frame):
         self.load(['x', 'y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
 
-        x = float(self.x.df.loc[id_exp, id_ant, frame])
-        y = float(self.y.df.loc[id_exp, id_ant, frame])
+        x = np.array(self.x.df.loc[id_exp, id_ant, frame])
+        y = np.array(self.y.df.loc[id_exp, id_ant, frame])
 
         x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
 
-        return x, y
+        if len(x) == 1:
+            return x[0], y[0]
+        else:
+            return x, y
 
     def convert_food_xy_to_movie_system(self, id_exp, id_ant, frame):
         self.load(['food_x', 'food_y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
 
-        x = float(self.food_x.df.loc[id_exp, id_ant, frame])
-        y = float(self.food_y.df.loc[id_exp, id_ant, frame])
+        x = np.array(self.food_x.df.loc[id_exp, id_ant, frame])
+        y = np.array(self.food_y.df.loc[id_exp, id_ant, frame])
 
         x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
 
-        return x, y
+        if len(x) == 1:
+            return x[0], y[0]
+        else:
+            return x, y
 
     def __computation_to_covert_to_movie_system(self, id_exp, x, y):
 
@@ -690,22 +708,25 @@ class ExperimentGroups:
             x *= -1
             y *= -1
 
-        x *= float(self.mm2px.df.loc[id_exp])
-        y *= float(self.mm2px.df.loc[id_exp])
+        x *= np.array(self.mm2px.df.loc[id_exp])
+        y *= np.array(self.mm2px.df.loc[id_exp])
 
-        x += float(self.food_center.df.x.loc[id_exp])
-        y += float(self.food_center.df.y.loc[id_exp])
+        x += np.array(self.food_center.df.x.loc[id_exp])
+        y += np.array(self.food_center.df.y.loc[id_exp])
 
-        x += float(self.traj_translation.df.x.loc[id_exp])
-        y += float(self.traj_translation.df.y.loc[id_exp])
+        x += np.array(self.traj_translation.df.x.loc[id_exp])
+        y += np.array(self.traj_translation.df.y.loc[id_exp])
 
         return x, y
 
     def convert_orientation_to_movie_system(self, id_exp, id_ant, frame):
         self.load(['orientation', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
 
-        orientation = float(self.orientation.df.loc[id_exp, id_ant, frame])
+        orientation = np.array(self.orientation.df.loc[id_exp, id_ant, frame])
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
-            orientation = norm_angle(orientation-np.pi)
+            orientation = norm_angle_tab(orientation-np.pi)
 
-        return orientation
+        if len(orientation) == 1:
+            return orientation[0]
+        else:
+            return orientation
