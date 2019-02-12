@@ -11,6 +11,9 @@ class Builder1dDataObject(BuilderDataObject):
             BuilderDataObject.__init__(self, df)
             self.name_col = self.df.columns[0]
 
+    def rename_df(self, name):
+        self.df.columns = [name]
+
     def get_values(self):
         return self.df[self.df.columns[0]]
 

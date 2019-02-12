@@ -8,8 +8,33 @@ from Tools.Plotter.Plotter2d import Plotter2d
 class CharacteristicTimeSeries2d(BuilderExpFrameIndexed2dDataObject):
     def __init__(self, df, definition):
         BuilderExpFrameIndexed2dDataObject.__init__(self, df)
-        DefinitionBuilder.build_from_definition(self, definition)
+        DefinitionBuilder.add_definition_to_class(self, definition)
         self.plotter = Plotter2d(self)
+
+    def rename(
+            self, name, xname=None, yname=None, category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+        if xname is None:
+            xname = self.xname
+        if yname is None:
+            yname = self.yname
+        if category is None:
+            category = self.category
+        if label is None:
+            label = self.label
+        if xlabel is None:
+            xlabel = self.xlabel
+        if ylabel is None:
+            ylabel = self.ylabel
+        if description is None:
+            description = self.description
+
+        self.rename_df(xname, yname)
+
+        definition = DefinitionBuilder().build2d(
+            name=name, object_type='CharacteristicTimeSeries2d', category=category,
+            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+        DefinitionBuilder.add_definition_to_class(self, definition=definition)
 
     def copy(
             self, name, xname, yname, category=None, label=None, xlabel=None, ylabel=None, description=None):

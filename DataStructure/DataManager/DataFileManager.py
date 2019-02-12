@@ -3,6 +3,7 @@ import pandas as pd
 
 from DataStructure.DataManager.Deleters.DataDeleter import DataDeleter
 from DataStructure.DataManager.Loaders.DataLoader import DataLoader
+from DataStructure.DataManager.Renamers.DataRenamer import DataRenamer
 from DataStructure.DataManager.Writers.DataWriter import DataWriter
 from Tools.MiscellaneousTools.PickleJsonFiles import import_id_exp_list, write_obj_json
 
@@ -15,6 +16,7 @@ class DataFileManager:
         self.data_loader = DataLoader(root, group)
         self.data_writer = DataWriter(root, group)
         self.data_deleter = DataDeleter(root, group)
+        self.data_renamer = DataRenamer(root, group)
 
         self.existing_categories = set([
             self.data_loader.definition_loader.definition_dict[key]['category']
@@ -33,7 +35,7 @@ class DataFileManager:
 
     def get_exp_frame_index(self):
         if self.exp_frame_index is None:
-            self.data_loader.timeseries1d_loader.load_category('Raw')
+            self.data_loader.characteristic_timeseries1d_loader.load_category('Raw')
             self.exp_frame_index = self.data_loader.characteristic_timeseries1d_loader.categories['Raw'].index
         return self.exp_frame_index
 

@@ -7,7 +7,21 @@ class AntCharacteristics1d(Builder1dDataObject, BuilderExpAntIndexedDataObject):
     def __init__(self, df, definition):
         Builder1dDataObject.__init__(self, df)
         BuilderExpAntIndexedDataObject.__init__(self, df)
-        DefinitionBuilder.build_from_definition(self, definition)
+        DefinitionBuilder.add_definition_to_class(self, definition)
+
+    def rename(self, name, category=None, label=None, description=None):
+
+        if category is None:
+            category = self.category
+        if label is None:
+            label = self.label
+        if description is None:
+            description = self.description
+
+        self.rename_df(name)
+        definition = DefinitionBuilder().build1d(
+            name=name, object_type='AntCharacteristics1d', category=category, label=label, description=description)
+        DefinitionBuilder.add_definition_to_class(self, definition=definition)
 
     def copy(self, name, category=None, label=None, description=None):
         return AntCharacteristics1dBuilder.build(

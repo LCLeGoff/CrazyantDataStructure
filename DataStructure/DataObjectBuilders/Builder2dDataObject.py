@@ -10,6 +10,9 @@ class Builder2dDataObject(BuilderDataObject):
         else:
             BuilderDataObject.__init__(self, df)
 
+    def rename_df(self, xname, yname):
+        self.df.columns = [xname, yname]
+
     def get_x_values(self):
         return self.df[self.df.columns[0]]
 
