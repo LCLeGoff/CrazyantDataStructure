@@ -8,6 +8,8 @@ from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicT
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from Movies.Movies import Movies
+from Scripts.root import root_movie
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -92,6 +94,14 @@ class ExperimentGroups:
     def get_ref_id_exp(self, id_exp):
         return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
 
+    def get_movie_address(self, id_exp):
+        session, trial = self.get_ref_id_exp(id_exp)
+        return root_movie+self.group+'/'+self.group+'_S'+str(session).zfill(2)+'_T'+str(trial).zfill(2)+'.MP4'
+
+    def get_movie(self, id_exp):
+        address = self.get_movie_address(id_exp)
+        return Movies(address, id_exp)
+
     def set_id_exp_list(self, id_exp_list=None):
         if id_exp_list is None:
             id_exp_list = self.id_exp_list
@@ -125,6 +135,7 @@ class ExperimentGroups:
 
     def delete_data(self, names):
         names = self.turn_to_list(names)
+        self.load(names)
         for name in names:
             print('deleting ', name)
             self.data_manager.delete(self.get_data_object(name))
@@ -164,21 +175,58 @@ class ExperimentGroups:
         index_name2 = self.get_index_names(name2)
         return set(index_name1) == set(index_name2)
 
-    def rename_data(self, old_name, new_name):
-        self.load(old_name)
-        self.rename_object(old_name, new_name)
-        self.delete_data(old_name)
-        self.remove_object(old_name)
-        self.write(new_name)
+    def rename_data(
+            self, old_name, new_name, xname=None, yname=None, category=None,
+            label=None, xlabel=None, ylabel=None, description=None):
+        print('renaming ', old_name, 'to', new_name)
 
-    def rename_object(self, old_name, new_name, replace=False):
+        self.load(old_name)
+        self.data_manager.data_renamer.rename(
+            self.get_data_object(old_name), name=new_name, xname=xname, yname=yname, category=category,
+            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+        # print('renaming ', old_name, 'to', new_name)
+        # self.load(old_name)
+        #
+        # self.add_copy(old_name=old_name, new_name=new_name)
+        # self.rename(
+        #     old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
+        #     label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+        # self.write(new_name)
+        #
+        # self.delete_data(old_name)
+        # self.remove_object(old_name)
+
+    def rename(
+            self, old_name, new_name, xname=None, yname=None, category=None,
+            label=None, xlabel=None, ylabel=None, description=None):
+
+        if self.__is_1d(old_name):
+            self.rename1d(old_name=old_name, new_name=new_name, category=category, label=label, description=description)
+        else:
+            self.rename2d(
+                old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
+                label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+    def rename1d(self, old_name, new_name, category=None, label=None, description=None):
+        self.__dict__[old_name].rename(name=new_name, category=category, label=label, description=description)
+
+    def rename2d(
+            self, old_name, new_name, xname=None, yname=None, category=None,
+            label=None, xlabel=None, ylabel=None, description=None):
+
+        self.__dict__[old_name].rename(
+            ame=new_name, xname=xname, yname=yname, category=category,
+            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+    def add_copy(self, old_name, new_name, replace=False):
         if self.__is_1d(old_name):
             self.add_copy1d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
         else:
             self.add_copy2d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
 
     def add_2d_from_1ds(
-            self, name1, name2, result_name, xname, yname,
+            self, name1, name2, result_name, xname=None, yname=None,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
         object_type1 = self.get_object_type(name1)
@@ -342,8 +390,7 @@ class ExperimentGroups:
 
     def filter_with_values(
             self, name_to_filter, filter_name, filter_values=1, result_name=None,
-            xname=None, yname=None, label=None, xlabel=None, ylabel=None,
-            category=None, description=None, redo=False):
+            xname=None, yname=None, category=None, label=None, xlabel=None, ylabel=None, description=None, redo=False):
 
         if not isinstance(filter_values, list):
             filter_values = [filter_values]

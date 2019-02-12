@@ -304,7 +304,7 @@ class RecruitmentDirection:
             name_to_filter=r_markings,
             name_intervals=recruitment_intervals
         )
-        self.exp.rename_object(interval_index_name, recruitment_interval_index_name)
+        self.exp.add_copy(interval_index_name, recruitment_interval_index_name)
 
     def _extract_recruitment_period_in_circular_arena_for(
             self, markings_name, recruitments_name, setup_orientation_name,

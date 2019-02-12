@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 
 
 class Movies:
-    def __init__(self, add):
+    def __init__(self, add, id_exp):
         self.add = add
         self.cap = cv2.VideoCapture(self.add)
+        self.id_exp = id_exp
 
     def display(self):
 
