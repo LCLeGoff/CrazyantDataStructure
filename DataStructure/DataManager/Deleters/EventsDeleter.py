@@ -17,7 +17,7 @@ class Events2dDeleter:
     def __init__(self, root, group):
         self.root = root + group + '/'
 
-    def write(self, events):
+    def delete(self, events):
         if events.category == 'Raw':
             raise OSError('not allowed to delete Events2d of the category Raw')
         else:

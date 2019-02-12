@@ -20,7 +20,7 @@ class DataDeleter:
         elif obj.object_type == 'Events1d':
             self.events1d_deleter.delete(obj)
         elif obj.object_type == 'Events2d':
-            self.events2d_deleter.write(obj)
+            self.events2d_deleter.delete(obj)
         elif obj.object_type == 'AntCharacteristics1d':
             self.ant_characteristics1d_deleter.delete(obj)
         elif obj.object_type == 'CharacteristicTimeSeries1d':
