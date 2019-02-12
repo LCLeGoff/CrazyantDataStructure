@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
@@ -26,4 +27,4 @@ class BuilderExpFrameIndexedDataObject:
             return self.df.loc[pd.IndexSlice[id_exp, frame0:frame1], :]
 
     def operation_on_id_exp(self, id_exp, fct):
-        self.df.loc[id_exp, :] = fct(self.df.loc[id_exp, :])
+        self.df.loc[id_exp, :] = np.array(fct(self.df.loc[id_exp, :]))
