@@ -10,9 +10,11 @@ starter = AnalyseStarter(root, group)
 
 traj = AnalyseTrajectory(root, group)
 # traj.initialize_xy_orientation_food(dynamic_food=True)
-traj.compute_speed()
+# traj.compute_speed()
 
 BaseFood = AnalyseBaseFood(root, group)
 # BaseFood.compute_distance_to_food()
-# BaseFood.compute_next_to_food()
-
+# BaseFood.compute_is_xy_next_to_food()
+# BaseFood.compute_xy_next_to_food()
+# BaseFood.compute_speed_next_to_food()
+# BaseFood.compute_orientation_next_to_food()

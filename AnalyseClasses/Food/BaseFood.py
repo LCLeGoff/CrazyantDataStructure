@@ -48,17 +48,77 @@ class AnalyseBaseFood:
         df_d = pd.DataFrame(df_d)
         return df_d
 
-    def compute_next_to_food(self):
-        name = 'next_to_food'
+    def compute_is_xy_next_to_food(self):
+        name = 'is_xy_next_to_food'
 
         name_distance = 'distance_to_food'
         self.exp.load(name_distance)
         self.exp.add_copy1d(
             name_to_copy=name_distance, copy_name=name, category='FoodBase',
-            label='Next to food', description='Ants next to the food'
+            label='Is next to food?', description='Is ants next to the food?'
         )
 
         neighbor_distance = 30.
         self.exp.operation(name, lambda x: x < neighbor_distance)
-        self.exp.next_to_food.df = self.exp.next_to_food.df.astype(int)
+        self.exp.is_xy_next_to_food.df = self.exp.is_xy_next_to_food.df.astype(int)
         self.exp.write(name)
+
+    def compute_xy_next_to_food(self):
+        name = 'xy_next_to_food'
+
+        self.exp.load(['x', 'y', 'is_xy_next_to_food'])
+
+        self.exp.add_2d_from_1ds(
+            name1='x', name2='y', result_name='xy'
+        )
+
+        self.exp.filter_with_values(
+            name_to_filter='xy', filter_name='is_xy_next_to_food', result_name=name,
+            xname='x', yname='y', category='BaseFood',
+            label='XY next to food', xlabel='x', ylabel='y', description='Trajectory of ant next to food'
+        )
+
+        self.exp.write(name)
+
+    def compute_dxy_next_to_food(self):
+        name = 'dxy_next_to_food'
+
+        self.exp.load(['dx', 'dy', 'is_xy_next_to_food'])
+
+        self.exp.add_2d_from_1ds(
+            name1='dx', name2='dy', result_name='dxy'
+        )
+
+        self.exp.filter_with_values(
+            name_to_filter='xy', filter_name='is_xy_next_to_food', result_name=name,
+            xname='x', yname='y', category='BaseFood',
+            label='dXY next to food', xlabel='x', ylabel='y', description='Trajectory of ant next to food'
+        )
+
+        self.exp.write(name)
+
+    def compute_speed_next_to_food(self):
+        name = 'speed'
+        res_name = name+'_next_to_food'
+
+        self.exp.load([name, 'is_xy_next_to_food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            category='BaseFood', label='speed next to food', description='Instantaneous speed of ant next to food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_orientation_next_to_food(self):
+        name = 'orientation'
+        res_name = name + '_next_to_food'
+
+        self.exp.load([name, 'is_xy_next_to_food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            category='BaseFood', label='orientation next to food', description='Body orientation of ant next to food'
+        )
+
+        self.exp.write(res_name)

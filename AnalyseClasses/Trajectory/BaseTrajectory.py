@@ -123,9 +123,9 @@ class AnalyseTrajectory:
             self.exp.traj_reoriented.df.loc[id_exp] = 0
 
     def __write_initialize_xy_orientation(self, dynamic_food):
-        self.exp.write(['traj_reoriented', 'x', 'y', 'orientation'])
         if dynamic_food is True:
             self.exp.write(['food_x', 'food_y'])
+        self.exp.write(['traj_reoriented', 'x', 'y', 'orientation'])
 
     def compute_r_phi(self):
         print('r, phi')
@@ -172,28 +172,39 @@ class AnalyseTrajectory:
             name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
             description='Instantaneous speed of the ants'
         )
+        self.exp.add_copy1d(
+            name_to_copy='x', copy_name=name+'_x', category='Trajectory', label='X speed',
+            description='X coordinate of the instantaneous speed of the ants'
+        )
+        self.exp.add_copy1d(
+            name_to_copy='x', copy_name=name+'_y', category='Trajectory', label='Y speed',
+            description='Y coordinate of the instantaneous speed of the ants'
+        )
 
         for id_exp in self.exp.timeseries_exp_ant_frame_index:
             for id_ant in self.exp.timeseries_exp_ant_frame_index[id_exp]:
                 print(id_exp, id_ant)
 
                 dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
-                dx[1:-1, :] = dx[2:, ]-dx[:-2, :]
-                dx[0, :] = np.nan
-                dx[-1, :] = np.nan
+                dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
+                dx[0, :] = dx[1, :]-dx[0, :]
+                dx[-1, :] = dx[-1, :]-dx[-2, :]
 
                 dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
-                dy[1:-1, :] = dy[2:, ]-dy[:-2, :]
-                dy[0, :] = np.nan
-                dy[-1, :] = np.nan
+                dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
+                dy[0, :] = dy[1, :]-dy[0, :]
+                dy[-1, :] = dy[-1, :]-dy[-2, :]
 
                 dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
                 dt.sort()
+                dt[0] = 1
+                dt[-1] = 1
                 dt[1:-1] = dt[2:]-dt[:-2]
-                dt[0] = np.nan
-                dt[-1] = np.nan
-                dt[dt > 2] = np.nan
+                dx[dt > 2] = np.nan
+                dy[dt > 2] = np.nan
 
-                self.exp.speed.df.loc[id_exp, id_ant, :] = np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps/2.
-        
-        self.exp.write(name)
+                self.exp.speed_x.df.loc[id_exp, id_ant, :] = dx*self.exp.fps.df.loc[id_exp].fps
+                self.exp.speed_y.df.loc[id_exp, id_ant, :] = dy*self.exp.fps.df.loc[id_exp].fps
+                self.exp.speed.df.loc[id_exp, id_ant, :] = np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps
+
+        self.exp.write([name, name+'_x', name+'_y'])
