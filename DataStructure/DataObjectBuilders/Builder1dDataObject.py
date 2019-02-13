@@ -23,6 +23,9 @@ class Builder1dDataObject(BuilderDataObject):
     def change_value(self, idx, val):
         self.df.loc[idx, self.df.columns[0]] = val
 
+    def change_values(self, val):
+        self.df[self.df.columns[0]] = val
+
     def get_array(self):
         return np.array(self.df[self.df.columns[0]])
 

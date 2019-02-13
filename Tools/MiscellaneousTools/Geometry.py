@@ -30,7 +30,33 @@ def dot2d(u, v):
 
 
 def angle(u, v=None):
-    return np.arctan2(cross2d(u, v), dot2d(u, v))
+    u2 = norm_vect(u)
+    if v is None:
+        return  np.arctan2(-u2[:, 1], u2[:, 0])
+    else:
+        v2 = norm_vect(v)
+        return np.arctan2(cross2d(u2, v2), dot2d(u2, v2))
+
+
+def cross2d_df(u, v):
+    u2 = convert2vect(u)
+    v2 = convert2vect(v)
+    return u2.iloc[:, 0] * v2.iloc[:, 1] - u2.iloc[:, 1] * v2.iloc[:, 0]
+
+
+def dot2d_df(u, v):
+    u2 = convert2vect(u)
+    v2 = convert2vect(v)
+    return u2.iloc[:, 0] * v2.iloc[:, 0] + u2.iloc[:, 1] * v2.iloc[:, 1]
+
+
+def angle_df(u, v=None):
+    u2 = norm_vect_df(u)
+    if v is None:
+        return  np.arctan2(-u2.iloc[:, 1], u2.iloc[:, 0])
+    else:
+        v2 = norm_vect_df(v)
+        return np.arctan2(cross2d_df(u2, v2), dot2d_df(u2, v2))
 
 
 def squared_distance(p, q=None):
@@ -42,8 +68,21 @@ def squared_distance(p, q=None):
         return (p2[:, 0] - q2[:, 0]) ** 2 + (p2[:, 1] - q2[:, 1]) ** 2
 
 
+def squared_distance_df(p, q=None):
+    if q is None:
+        return p.iloc[:, 0] ** 2 + p.iloc[:, 1] ** 2
+    else:
+        p2 = convert2vect(p)
+        q2 = convert2vect(q)
+        return (p2.iloc[:, 0] - q2.iloc[:, 0]) ** 2 + (p2.iloc[:, 1] - q2.iloc[:, 1]) ** 2
+
+
 def distance(p, q=None):
     return np.sqrt(squared_distance(p, q))
+
+
+def distance_df(p, q=None):
+    return np.sqrt(squared_distance_df(p, q))
 
 
 def convert_polar2cartesian(r, phi):
@@ -67,7 +106,20 @@ def norm_angle(theta):
     else:
         return theta
 
+
 def norm_angle_tab(theta):
     theta[theta > np.pi] -= 2*np.pi
     theta[theta < np.pi] += 2*np.pi
     return theta
+
+
+def norm_vect(vect):
+    return vect/distance(vect)
+
+
+def norm_vect_df(vect):
+    v = vect.copy()
+    d = distance_df(vect)
+    v[v.columns[0]] /= d
+    v[v.columns[1]] /= d
+    return v

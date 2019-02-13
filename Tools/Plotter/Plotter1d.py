@@ -19,7 +19,7 @@ class Plotter1d(BasePlotters):
             self, bins='fd', normed=False, label=None, xscale=None, yscale=None, multi_plot=None, title_prefix=None,
             preplot=None, list_id_exp=None, **kwargs):
         if label is None:
-            label = ''
+            label = self.obj.label
 
         if list_id_exp is None:
             list_id_exp = self.obj.get_index_array_of_id_exp()
@@ -61,7 +61,7 @@ class Plotter1d(BasePlotters):
         ax.plot(x, y, '.-', **self.line, label=label)
 
     def _compute_histogram(self, sub_obj, bins, normed):
-        y, x = np.histogram(sub_obj.df, bins, normed=normed)
+        y, x = np.histogram(sub_obj.df.dropna(), bins, normed=normed)
         x = self.compute_x_inter(x)
         return x, y
 
