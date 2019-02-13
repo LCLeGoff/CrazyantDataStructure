@@ -1,6 +1,6 @@
 import pandas as pd
-
 import numpy as np
+import matplotlib.pylab as plt
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
 from DataStructure.DataObjectBuilders.Builder import Builder
@@ -101,6 +101,38 @@ class ExperimentGroups:
     def get_movie(self, id_exp):
         address = self.get_movie_address(id_exp)
         return Movies(address, id_exp)
+
+    def get_array_all_indexes(self, name):
+        return self.pandas_index_manager.get_array_all_indexes(self.get_df(name))
+
+    def plot_traj_on_movie(self, trajs_names, id_exp, frame, id_ants=None):
+        self.load_timeseries_exp_frame_ant_index()
+        if id_ants is None:
+            id_ants = self.timeseries_exp_frame_ant_index[id_exp][frame]
+        elif len(np.array(id_ants)) == 1:
+            id_ants = [id_ants]
+
+        self.load(trajs_names)
+
+        mov = self.get_movie(id_exp)
+        img_frame = mov.get_frame(frame)
+
+        # plt.figure(figsize=(12, 12))
+        plt.imshow(img_frame, cmap='gray')
+        for id_ant in id_ants:
+
+            if (id_exp, id_ant, frame) in self.__dict__[trajs_names[0]].df.index:
+                x, y = np.array(self.__dict__[trajs_names[0]].df.loc[id_exp, id_ant, frame])
+                orientation = np.array(self.__dict__[trajs_names[1]].df.loc[id_exp, id_ant, frame])
+                x, y = self.convert_xy_to_movie_system(id_exp, x, y)
+                orientation = self.convert_orientation_to_movie_system(id_exp, orientation)
+
+                lg = 10
+                plt.plot(x, y, '.')
+                plt.plot(x+np.array([-1, 1])*lg*np.cos(orientation)/2., y+np.array([-1, 1])*lg*np.sin(orientation)/2.)
+
+        plt.title(frame)
+        plt.show()
 
     def set_id_exp_list(self, id_exp_list=None):
         if id_exp_list is None:
@@ -216,7 +248,7 @@ class ExperimentGroups:
             label=None, xlabel=None, ylabel=None, description=None):
 
         self.__dict__[old_name].rename(
-            ame=new_name, xname=xname, yname=yname, category=category,
+            name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
     def add_copy(self, old_name, new_name, replace=False):
@@ -723,33 +755,8 @@ class ExperimentGroups:
                     else:
                         return df_fit
 
-    def convert_xy_to_movie_system(self, id_exp, id_ant, frame):
-        self.load(['x', 'y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
-
-        x = np.array(self.x.df.loc[id_exp, id_ant, frame])
-        y = np.array(self.y.df.loc[id_exp, id_ant, frame])
-
-        x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
-
-        if len(x) == 1:
-            return x[0], y[0]
-        else:
-            return x, y
-
-    def convert_food_xy_to_movie_system(self, id_exp, id_ant, frame):
-        self.load(['food_x', 'food_y', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
-
-        x = np.array(self.food_x.df.loc[id_exp, id_ant, frame])
-        y = np.array(self.food_y.df.loc[id_exp, id_ant, frame])
-
-        x, y = self.__computation_to_covert_to_movie_system(id_exp, x, y)
-
-        if len(x) == 1:
-            return x[0], y[0]
-        else:
-            return x, y
-
-    def __computation_to_covert_to_movie_system(self, id_exp, x, y):
+    def convert_xy_to_movie_system(self, id_exp, x, y):
+        self.load(['food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
 
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
             x *= -1
@@ -766,14 +773,7 @@ class ExperimentGroups:
 
         return x, y
 
-    def convert_orientation_to_movie_system(self, id_exp, id_ant, frame):
-        self.load(['orientation', 'food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
-
-        orientation = np.array(self.orientation.df.loc[id_exp, id_ant, frame])
+    def convert_orientation_to_movie_system(self, id_exp, orientation):
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
-            orientation = norm_angle_tab(orientation-np.pi)
-
-        if len(orientation) == 1:
-            return orientation[0]
-        else:
-            return orientation
+            orientation = norm_angle_tab(orientation - np.pi)
+        return orientation
