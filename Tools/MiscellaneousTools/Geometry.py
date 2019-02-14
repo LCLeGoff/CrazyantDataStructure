@@ -30,12 +30,13 @@ def dot2d(u, v):
 
 
 def angle(u, v=None):
-    u2 = norm_vect(u)
+    # u2 = norm_vect(u)
     if v is None:
-        return  np.arctan2(-u2[:, 1], u2[:, 0])
+        u2 = convert2vect(u)
+        return -np.arctan2(-u2[:, 1], u2[:, 0])
     else:
-        v2 = norm_vect(v)
-        return np.arctan2(cross2d(u2, v2), dot2d(u2, v2))
+        # v2 = norm_vect(v)
+        return np.arctan2(cross2d(u, v), dot2d(u, v))
 
 
 def cross2d_df(u, v):
@@ -53,7 +54,7 @@ def dot2d_df(u, v):
 def angle_df(u, v=None):
     u2 = norm_vect_df(u)
     if v is None:
-        return  np.arctan2(-u2.iloc[:, 1], u2.iloc[:, 0])
+        return -np.arctan2(-u2.iloc[:, 1], u2.iloc[:, 0])
     else:
         v2 = norm_vect_df(v)
         return np.arctan2(cross2d_df(u2, v2), dot2d_df(u2, v2))
@@ -109,12 +110,19 @@ def norm_angle(theta):
 
 def norm_angle_tab(theta):
     theta[theta > np.pi] -= 2*np.pi
-    theta[theta < np.pi] += 2*np.pi
+    theta[theta < -np.pi] += 2*np.pi
+    return theta
+
+
+def norm_angle_tab2(theta):
+    theta[theta > np.pi/2.] -= np.pi
+    theta[theta < -np.pi/2.] += np.pi
     return theta
 
 
 def norm_vect(vect):
-    return vect/distance(vect)
+    v = convert2vect(vect)
+    return v/distance(v)
 
 
 def norm_vect_df(vect):

@@ -774,6 +774,7 @@ class ExperimentGroups:
         return x, y
 
     def convert_orientation_to_movie_system(self, id_exp, orientation):
+        self.load(['traj_reoriented'])
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
             orientation = norm_angle_tab(orientation - np.pi)
         return orientation

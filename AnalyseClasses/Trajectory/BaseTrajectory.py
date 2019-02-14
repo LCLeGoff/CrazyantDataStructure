@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-from pandas import IndexSlice as IdxSc
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle_tab
@@ -125,7 +123,7 @@ class AnalyseTrajectory:
     def __write_initialize_xy_orientation(self, dynamic_food):
         if dynamic_food is True:
             self.exp.write(['food_x', 'food_y'])
-        self.exp.write(['traj_reoriented', 'x', 'y', 'orientation'])
+        self.exp.write(['traj_reoriented', 'orientation', 'x', 'y'])
 
     def compute_r_phi(self):
         print('r, phi')
