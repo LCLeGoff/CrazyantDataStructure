@@ -26,8 +26,9 @@ BaseFood = AnalyseBaseFood(root, group)
 # BaseFood.compute_speed_next_to_food()
 # BaseFood.compute_orientation_next_to_food()
 BaseFood.compute_orientation_to_food()
+BaseFood.exp.delete_data(['ant_food_orientation', 'vector_ant_body'])
 
-print(angle([0.5, 0.5])*180/pi)
+# print(angle([0.5, 0.5])*180/pi)
 
 # BaseFood.exp.plot_traj_on_movie(['xy_next_to_food', 'orientation_next_to_food'], 1, 2114)
 

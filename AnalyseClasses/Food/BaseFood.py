@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from Tools.MiscellaneousTools.Geometry import angle, angle_df, norm_angle, norm_vect
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2
 
 
 class AnalyseBaseFood:
@@ -169,107 +168,32 @@ class AnalyseBaseFood:
     def compute_orientation_to_food(self):
         name = 'orientation_to_food'
 
-        # self.exp.load(['food_x', 'food_y', 'xy_next_to_food', 'orientation_next_to_food'])
-        #
-        # id_exps = self.exp.xy_next_to_food.df.index.get_level_values('id_exp')
-        # id_ants = self.exp.xy_next_to_food.df.index.get_level_values('id_ant')
-        # frames = self.exp.xy_next_to_food.df.index.get_level_values('frame')
-        # idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frames'])
-        # self.exp.add_2d_from_1ds(
-        #     name1='food_x', name2='food_y', result_name='food_xy',
-        #     xname='x', yname='y'
-        # )
-        # df_food = self.__reindexing_food_xy(id_ants, idxs)
-        #
-        # df_ant_vector = df_food.copy()
-        # df_ant_vector.x = df_food.x - self.exp.xy_next_to_food.df.x
-        # df_ant_vector.y = df_food.y - self.exp.xy_next_to_food.df.y
-        #
-        # # self.exp.add_copy('orientation_next_to_food', 'ant_food_orientation')
-        # self.exp.add_copy('xy_next_to_food', 'ant_food_orientation')
-        #
-        # self.exp.ant_food_orientation.df = df_ant_vector
-        # # self.exp.ant_food_orientation.change_values(angle_df(df_ant_vector))
-        #
-        # self.exp.add_copy('orientation_next_to_food', 'x_vector_ant_body')
-        # self.exp.add_copy('orientation_next_to_food', 'y_vector_ant_body')
-        # self.exp.operation(name='x_vector_ant_body', fct=lambda x: np.cos(x))
-        # self.exp.operation(name='y_vector_ant_body', fct=lambda x: np.sin(x))
-        # self.exp.add_2d_from_1ds('x_vector_ant_body', 'y_vector_ant_body', 'vector_ant_body')
-        #
-        # self.exp.add_copy('orientation_next_to_food', name)
-        # self.exp.rename(
-        #     old_name=name, new_name=name, category='BaseFood', label='Body orientation to food',
-        #     description='Angle between the ant-food vector and the body orientation vector'
-        # )
-        #
-        # # self.exp.orientation_to_food.df = angle_df(df_ant_vector, self.exp.vector_ant_body.df)
-        # self.exp.orientation_to_food.change_values(angle_df(df_ant_vector, self.exp.vector_ant_body.df))
-        # # print('compute ant food orientation')
-        # # self.exp.operation_between_2names(
-        # #     name1=name, name2='ant_food_orientation', fct=lambda x, y: x-y
-        # # )
-        # # self.exp.orientation_to_food.df =\
-        # #     self.exp.orientation_next_to_food.df.orientation_next_to_food - df_ant_food_orientation
-        #
-        # self.exp.write([name, 'ant_food_orientation'])
-        self.exp.load(['food_x', 'food_y', name, 'ant_food_orientation', 'orientation_next_to_food', 'xy_next_to_food'])
+        self.exp.load(['food_x', 'food_y', 'xy_next_to_food', 'orientation_next_to_food'])
 
-        print('plot')
-        id_exp = 1
-        id_ant = 2
-        frame = 2568
-        mov = self.exp.get_movie(id_exp)
-        img_frame = mov.get_frame(frame)
+        id_exps = self.exp.xy_next_to_food.df.index.get_level_values('id_exp')
+        id_ants = self.exp.xy_next_to_food.df.index.get_level_values('id_ant')
+        frames = self.exp.xy_next_to_food.df.index.get_level_values('frame')
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frames'])
+        self.exp.add_2d_from_1ds(
+            name1='food_x', name2='food_y', result_name='food_xy',
+            xname='x_ant', yname='y_ant'
+        )
+        df_food = self.__reindexing_food_xy(id_ants, idxs)
 
-        plt.imshow(img_frame, cmap='gray')
+        df_ant_vector = df_food.copy()
+        df_ant_vector.x = df_food.x - self.exp.xy_next_to_food.df.x
+        df_ant_vector.y = df_food.y - self.exp.xy_next_to_food.df.y
+        self.exp.add_copy('orientation_next_to_food', 'ant_food_orientation')
+        self.exp.ant_food_orientation.change_values(angle_df(df_ant_vector))
 
-        x, y = np.array(self.exp.xy_next_to_food.df.loc[id_exp, id_ant, frame])
-        x, y = self.exp.convert_xy_to_movie_system(id_exp, x, y)
-        plt.plot(x, y, '.')
-        plt.xlim((x-100, x+100))
-        plt.ylim((y-100, y+100))
+        self.exp.add_copy('orientation_next_to_food', name)
+        self.exp.rename(
+            old_name=name, new_name=name, category='BaseFood', label='Body theta_res to food',
+            description='Angle between the ant-food vector and the body theta_res vector'
+        )
+        self.exp.orientation_to_food.change_values(norm_angle_tab(
+            self.exp.ant_food_orientation.df.ant_food_orientation
+            - self.exp.orientation_next_to_food.df.orientation_next_to_food))
+        self.exp.operation('orientation_to_food', lambda x: norm_angle_tab2(x))
 
-        x2 = np.array(self.exp.food_x.df.loc[id_exp, frame])
-        y2 = np.array(self.exp.food_y.df.loc[id_exp, frame])
-        x2, y2 = self.exp.convert_xy_to_movie_system(id_exp, x2, y2)
-        plt.plot(x2, y2, '.')
-        #
-        # orientation = angle(np.array(df_ant_vector.loc[id_exp, id_ant, frame]))
-        # orientation = -self.exp.convert_orientation_to_movie_system(id_exp, orientation)
-        # plt.plot(x2+np.array([0, 1])*50*np.cos(orientation), y2+np.array([0, 1])*50*np.sin(orientation), '--')
-
-        orientation = np.c_[self.exp.orientation_next_to_food.df.loc[id_exp, id_ant, frame]]
-        orientation = self.exp.convert_orientation_to_movie_system(id_exp, orientation[0])[0]
-        plt.plot(x[0]+np.array([-1, 1])*50*np.cos(orientation)/2., y[0]+np.array([-1, 1])*50*np.sin(orientation)/2., label='orientation_next_to_food')
-
-        # orientation = np.c_[self.exp.ant_food_orientation.df.loc[id_exp, id_ant, frame]]
-        # orientation = self.exp.convert_orientation_to_movie_system(id_exp, orientation[0])[0]
-        # plt.plot(x+np.array([-1, 1])*50*np.cos(orientation)/2., y+np.array([-1, 1])*50*np.sin(orientation)/2., '--', label='ant_food_orientation')
-        x3, y3 = self.exp.ant_food_orientation.df.loc[id_exp, id_ant, frame]
-        # x3, y3 = self.exp.convert_xy_to_movie_system(id_exp, x3, y3)
-        plt.plot(x+np.array([-1, 0])*x3*10, y+np.array([-1, 0])*y3*10, '--', label='ant_food_orientation')
-
-        orientation2 = -np.c_[self.exp.orientation_to_food.df.loc[id_exp, id_ant, frame]]
-        # orientation2 = self.exp.convert_orientation_to_movie_system(id_exp, orientation2[0])[0]
-        # plt.plot(
-        #     x+np.array([-1, 1])*50*np.cos(orientation2)/2.,
-        #     y+np.array([-1, 1])*50*np.sin(orientation2)/2.)
-        plt.plot(
-            x+x3+np.array([-1, 1])*50*np.cos(orientation2[0][0])/2.,
-            y+y3+np.array([-1, 1])*50*np.sin(orientation2[0][0])/2., ':', label='orientation_to_food')
-
-        # orientation2 = np.c_[self.exp.orientation_to_food.df.loc[id_exp, id_ant, frame]]
-        # orientation2 = self.exp.convert_orientation_to_movie_system(id_exp, orientation2)
-        # dx = float(np.cos(orientation2)*20)
-        # dy = float(np.sin(orientation2)*20)
-        # plt.plot([x2, x+dx], [y2, y+dy])
-        # plt.plot(x+np.array([-1, 1])*50*np.cos(orientation2)/2., y+np.array([-1, 1])*50*np.sin(orientation2)/2., '--')
-
-        # plt.plot([x, x2], [y, y2])
-        # x3, y3 = np.array(df_ant_vector.loc[id_exp, id_ant, frame])
-        # plt.plot([x, x-x3], [y, y-y3], '--')
-        plt.legend()
-        plt.show()
-
-        # self.exp.write(name)
+        self.exp.write(name)
