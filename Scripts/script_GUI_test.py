@@ -36,12 +36,13 @@ class Application(tk.Frame):
         bt.pack(side="left")
 
     def plot_background(self):
-        bg = self.ax.imshow(self.movie.get_frame(2091), cmap='gray')
-        canvas = FigureCanvasTkAgg(self.fig, self)
-        canvas.get_tk_widget().pack()
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
-        toolbar.update()
-        return bg
+        # bg = self.ax.imshow(self.movie.get_frame(2091), cmap='gray')
+        # canvas = FigureCanvasTkAgg(self.fig, self)
+        # canvas.get_tk_widget().pack()
+        # toolbar = NavigationToolbar2TkAgg(canvas, self)
+        # toolbar.update()
+        self.image = self.movie.get_frame(2091)
+        # return bg
 
     def quit_button(self):
         bt = tk.Button(self, text="QUIT", fg="red", command=self.master.destroy)
@@ -50,7 +51,7 @@ class Application(tk.Frame):
     def refresh_bg(self):
         frame = 5000
         frame_img = self.movie.get_frame(frame)
-        self.bg.set_array = frame_img
+        self.bg.set_data = frame_img
         canvas = FigureCanvasTkAgg(self.fig, self)
         canvas.get_tk_widget().pack()
 
