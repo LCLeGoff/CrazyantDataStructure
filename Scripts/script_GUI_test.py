@@ -1,15 +1,15 @@
 from __future__ import unicode_literals
+
 import sys
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from PyQt5 import QtCore
-from PyQt5.QtCore import QRect
+from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QPushButton, QLabel
-from matplotlib.backends.qt_compat import QtWidgets
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
@@ -20,7 +20,7 @@ from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 class MovieCanvas(FigureCanvas):
 
-    def __init__(self, exp, parent=None, id_exp=1, width=1920, height=1080*1.15, zoom=3):
+    def __init__(self, exp, parent=None, id_exp=1, width=1920, height=1080*1.15, zoom=4):
 
         self.exp = exp
         self.zoom = zoom
@@ -70,7 +70,7 @@ class MovieCanvas(FigureCanvas):
             if last_treated_ant < len(self.id_ant_list):
                 return np.where(np.array(self.id_ant_list) == last_treated_ant)[0][0]
             else:
-                return None
+                return -1
 
     def get_treated_ant_list(self):
         return list(self.exp.carrying_training_set.df.index.get_level_values('id_ant'))
@@ -153,7 +153,7 @@ class MovieCanvas(FigureCanvas):
 
         self.ax.cla()
         self.frame_graph = self.ax.imshow(frame_img, cmap='gray')
-        self.xy_graph, = self.ax.plot(xy.x, xy.y, '.-')
+        self.xy_graph, = self.ax.plot(xy.x, xy.y, '.-', lw=0.5, mew=0.5)
         self.ant_text = self.ax.text(
             self.dx, 0, 'Ant: '+str(self.id_ant), color='black', weight='bold', size='xx-large',
             horizontalalignment='center', verticalalignment='top')
@@ -189,7 +189,7 @@ class MovieCanvas(FigureCanvas):
                 frame_img = self.crop_frame_img(self.movie.get_next_frame())
                 for i in range(self.frame_list[self.iter_frame - 1] + 1, frame):
                     frame_img = self.crop_frame_img(self.movie.get_next_frame())
-                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, :frame+1], :]
+                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, frame-100:frame+1], :]
 
                 self.frame_graph.set_data(frame_img)
                 self.xy_graph.set_xdata(xy.x)
@@ -232,7 +232,7 @@ class DataManager:
             for id_exp, id_ant, frame in index:
                 self.exp.carrying_training_set.df.loc[id_exp, id_ant, frame] = is_carrying
         else:
-            df = pd.DataFrame(np.full(len(index), is_carrying), columns=[self.name], index=index)
+            df = pd.DataFrame(np.full(len(index), is_carrying, dtype=int), columns=[self.name], index=index)
             self.exp.carrying_training_set.df = self.exp.carrying_training_set.df.append(df)
 
     def remove_entry(self, id_ant):
@@ -279,7 +279,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.create_button(1, 3, "RePlay", self.replay)
         self.create_button(0, 2.5, "Pause", self.pause_play)
 
-        self.create_button(0, 5, "Prev", self.movie_canvas.prev_ant)
+        self.create_button(0, 5, "Prev", self.prev)
         self.create_button(0, 6, "Next", self.next)
         self.create_button(0, 8, "Carrying", self.carrying)
         self.create_button(0, 9, "Not carr.", self.not_carrying)
@@ -287,6 +287,26 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_X:
+            self.not_carrying()
+        elif key == Qt.Key_C:
+            self.carrying()
+        elif key == Qt.Key_V:
+            self.carrying_and_not_carrying()
+        elif key == Qt.Key_Space:
+            self.replay()
+        elif key == Qt.Key_S:
+            self.save()
+        elif key == Qt.Key_Right:
+            self.next()
+        elif key == Qt.Key_Left:
+            self.prev()
+        else:
+            pass
+        self.update()
 
     def create_button(self, n_line, n_col, text, fct):
         button = QPushButton(text, self)
@@ -310,24 +330,31 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     def carrying(self):
         self.data_manager.add_new_entry(self.movie_canvas.xy_df.index, 1)
         self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.pause_play()
         self.next()
 
     def not_carrying(self):
         self.data_manager.add_new_entry(self.movie_canvas.xy_df.index, 0)
         self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.pause_play()
         self.next()
 
     def carrying_and_not_carrying(self):
         self.data_manager.remove_entry(self.movie_canvas.id_ant)
         self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.pause_play()
         self.next()
 
+    def prev(self):
+        return self.movie_canvas.prev_ant()
+
     def next(self):
-        self.movie_canvas.set_to_play()
+        # self.movie_canvas.set_to_play()
         self.movie_canvas.next_ant()
 
     def save(self):
         self.data_manager.write_data()
+        print('save')
 
     def quit(self):
         self.save()
