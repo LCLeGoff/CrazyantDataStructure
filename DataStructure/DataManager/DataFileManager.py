@@ -40,7 +40,7 @@ class DataFileManager:
         return self.exp_frame_index
 
     def load(self, name):
-        if name in self.data_loader.definition_loader.definition_dict.keys():
+        if self.is_name_in_data(name) == 1:
             return self.data_loader.load(name)
         else:
             raise NameError(name + ' does not exist')
@@ -70,3 +70,6 @@ class DataFileManager:
 
     def delete(self, obj):
         self.data_deleter.delete(obj)
+
+    def is_name_in_data(self, name):
+        return int(name in self.data_loader.definition_loader.definition_dict.keys())

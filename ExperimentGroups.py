@@ -172,6 +172,9 @@ class ExperimentGroups:
             print('deleting ', name)
             self.data_manager.delete(self.get_data_object(name))
 
+    def is_name_in_data(self, name):
+        return self.data_manager.is_name_in_data(name)
+
     def load_as_2d(
             self, name1, name2, result_name,
             xname=None, yname=None,

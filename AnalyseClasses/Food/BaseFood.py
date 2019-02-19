@@ -39,7 +39,7 @@ class AnalyseBaseFood:
         df_d['id_ant'] = id_ants
         df_d.reset_index(inplace=True)
         df_d.columns = ['id_exp', 'frame', 'x', 'y', 'id_ant']
-        df_d.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+        df_d.get_id_ant_and_frame_list(['id_exp', 'id_ant', 'frame'], inplace=True)
         return df_d
 
     def __compute_distance_from_food(self, df_f):
@@ -101,7 +101,8 @@ class AnalyseBaseFood:
         )
 
         neighbor_distance = 15.
-        self.exp.operation(name, lambda x: x < neighbor_distance)
+        neighbor_distance2 = 5.
+        self.exp.operation(name, lambda x: (x < neighbor_distance)*(x > neighbor_distance2))
         self.exp.is_xy_next_to_food.df = self.exp.is_xy_next_to_food.df.astype(int)
         self.exp.write(name)
 

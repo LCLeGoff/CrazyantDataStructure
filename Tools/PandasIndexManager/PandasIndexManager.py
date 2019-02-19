@@ -124,8 +124,18 @@ class PandasIndexManager:
         if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names or 'frame' not in df_arg.index.names:
             raise IndexError('df does not have id_exp or id_ant or frame as index')
         else:
-            idx_set = set(df_arg.index)
-            return np.array(sorted(idx_set), dtype=int)
+            idx_set = list(df_arg.index)
+            return np.array(idx_set, dtype=int)
+
+    @staticmethod
+    def get_array_id_ant_frame(df_arg, id_exp):
+        idx_names = frozenset({'id_exp', 'id_ant', 'frame'})
+        if df_arg.index.names == idx_names:
+            raise IndexError('df is not (id_exp, id_ant, frame) indexed')
+        else:
+            idx_set = list(df_arg.index)
+            arr_idx = np.array(idx_set, dtype=int)
+            return arr_idx[arr_idx[:, 0] == id_exp, 1:]
 
     def get_dict_id_exp_ant(self, df):
         index_array = self.get_array_id_exp_ant(df)
@@ -158,6 +168,7 @@ class PandasIndexManager:
 
     def get_dict_id_exp_ant_frame(self, df):
         index_array = self.get_array_id_exp_ant_frame(df)
+
         res = dict()
         for (id_exp, id_ant, frame) in index_array:
             if id_exp in res:
@@ -171,6 +182,21 @@ class PandasIndexManager:
         for id_exp in res:
             for id_ant in res[id_exp]:
                 res[id_exp][id_ant].sort()
+        return res
+
+    def get_dict_id_ant_frame_index(self, df, id_exp):
+        index_array = self.get_array_id_ant_frame(df, id_exp)
+
+        res = dict()
+        for (id_ant, frame) in index_array:
+            if id_ant in res:
+                res[id_ant].append(frame)
+            else:
+                res[id_ant] = [frame]
+
+        for id_ant in res:
+            res[id_ant].sort()
+
         return res
 
     def get_dict_id_exp_frame_ant(self, df):
@@ -205,14 +231,14 @@ class PandasIndexManager:
         index_names = df.index.names
         df.reset_index(inplace=True)
         df[index_names] = df[index_names].astype(int)
-        df.set_index(index_names, inplace=True)
+        df.get_id_ant_and_frame_list(index_names, inplace=True)
 
     @staticmethod
     def add_index_level(df, index_level_name, index_values):
         index_names = df.index.names
         df.reset_index(inplace=True)
         df[index_level_name] = index_values
-        df.set_index(index_names + [index_level_name], inplace=True)
+        df.get_id_ant_and_frame_list(index_names + [index_level_name], inplace=True)
 
     @staticmethod
     def remove_index_level(df, index_level_name):
@@ -220,7 +246,7 @@ class PandasIndexManager:
         index_name_list.remove(index_level_name)
         df.reset_index(inplace=True)
         df.drop(index_level_name, axis=1, inplace=True)
-        df.set_index(index_name_list, inplace=True)
+        df.get_id_ant_and_frame_list(index_name_list, inplace=True)
 
     @staticmethod
     def rename_index_level(df, old_name, new_name):

@@ -177,10 +177,10 @@ class TestRecruitment:
             label='first markings', description='Markings of the first marking ant'
         )
         self.exp.first_markings.df.reset_index(inplace=True)
-        self.exp.first_markings.df.set_index(['id_exp', 'id_ant'], inplace=True)
+        self.exp.first_markings.df.get_id_ant_and_frame_list(['id_exp', 'id_ant'], inplace=True)
         self.exp.first_markings.df = self.exp.first_markings.df.loc[exp_ant_label, :]
         self.exp.first_markings.df.reset_index(inplace=True)
-        self.exp.first_markings.df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+        self.exp.first_markings.df.get_id_ant_and_frame_list(['id_exp', 'id_ant', 'frame'], inplace=True)
         self.exp.first_markings.df.sort_index(inplace=True)
 
         self.exp.filter_with_time_occurrences(
@@ -423,7 +423,7 @@ class TestRecruitment:
                 label='first markings (setup oriented ' + orientation + ')', xlabel='x', ylabel='y',
                 description='Markings of the first marking ant with the setup oriented ' + orientation
             )
-            self.exp.__dict__[new_name].df.reset_index().set_index('id_exp', inplace=True)
+            self.exp.__dict__[new_name].df.reset_index().get_id_ant_and_frame_list('id_exp', inplace=True)
             self.exp.__dict__[new_name].df = self.exp.__dict__[new_name].df.loc[indexes]
             self.exp.plot_repartition(new_name, **kwargs)
             # self.exp.plot_repartition_hist(new_name)
@@ -448,7 +448,7 @@ class TestRecruitment:
             )
             indexes = np.array(
                 self.exp.setup_orientation.df.loc[lambda df: df.setup_orientation == orientation].index)
-            self.exp.__dict__[new_name].df.reset_index().set_index('id_exp', inplace=True)
+            self.exp.__dict__[new_name].df.reset_index().get_id_ant_and_frame_list('id_exp', inplace=True)
             self.exp.__dict__[new_name].df = self.exp.__dict__[new_name].df.loc[indexes]
 
             indexes = np.array(self.exp.xy_first_markings.df.loc[lambda df: df.x ** 2 + df.y ** 2 < 110 ** 2].index)
