@@ -231,14 +231,14 @@ class PandasIndexManager:
         index_names = df.index.names
         df.reset_index(inplace=True)
         df[index_names] = df[index_names].astype(int)
-        df.get_id_ant_and_frame_list(index_names, inplace=True)
+        df.set_index(index_names, inplace=True)
 
     @staticmethod
     def add_index_level(df, index_level_name, index_values):
         index_names = df.index.names
         df.reset_index(inplace=True)
         df[index_level_name] = index_values
-        df.get_id_ant_and_frame_list(index_names + [index_level_name], inplace=True)
+        df.set_index(index_names + [index_level_name], inplace=True)
 
     @staticmethod
     def remove_index_level(df, index_level_name):
@@ -246,7 +246,7 @@ class PandasIndexManager:
         index_name_list.remove(index_level_name)
         df.reset_index(inplace=True)
         df.drop(index_level_name, axis=1, inplace=True)
-        df.get_id_ant_and_frame_list(index_name_list, inplace=True)
+        df.set_index(index_name_list, inplace=True)
 
     @staticmethod
     def rename_index_level(df, old_name, new_name):
