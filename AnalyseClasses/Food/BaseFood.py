@@ -39,7 +39,7 @@ class AnalyseBaseFood:
         df_d['id_ant'] = id_ants
         df_d.reset_index(inplace=True)
         df_d.columns = ['id_exp', 'frame', 'x', 'y', 'id_ant']
-        df_d.get_id_ant_and_frame_list(['id_exp', 'id_ant', 'frame'], inplace=True)
+        df_d.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
         return df_d
 
     def __compute_distance_from_food(self, df_f):
@@ -149,6 +149,20 @@ class AnalyseBaseFood:
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
             category='BaseFood', label='speed next to food', description='Instantaneous speed of ant next to food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_distance_to_food_next_to_food(self):
+        name = 'distance_to_food'
+        res_name = name+'_next_to_food'
+
+        self.exp.load([name, 'is_xy_next_to_food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            category='BaseFood', label='Food distance next to food',
+            description='Distance the food and the ants next to the food'
         )
 
         self.exp.write(res_name)
