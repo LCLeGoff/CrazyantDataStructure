@@ -243,7 +243,7 @@ class DataManager:
     def write_data(self):
         self.exp.write(self.name)
 
-    def get_quantity_of_each_category(self):
+    def get_quantity_of_each_label(self):
         return int(self.exp.carrying_training_set.df.sum()), int((1-self.exp.carrying_training_set.df).sum())
 
 
@@ -263,11 +263,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.main_widget = QtWidgets.QWidget(self)
         self.movie_canvas = MovieCanvas(self.exp, self.main_widget)
 
-        self.categories_text = QLabel(str(self.data_manager.get_quantity_of_each_category()))
+        self.label_text = QLabel(str(self.data_manager.get_quantity_of_each_label()))
 
         layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(self.movie_canvas)
-        layout.addWidget(self.categories_text)
+        layout.addWidget(self.label_text)
 
         self.setWindowTitle("Experiment"+str(self.movie_canvas.id_exp))
         self.addToolBar(QtCore.Qt.BottomToolBarArea, NavigationToolbar(self.movie_canvas, self))
@@ -329,19 +329,19 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def carrying(self):
         self.data_manager.add_new_entry(self.movie_canvas.xy_df.index, 1)
-        self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.label_text.setText(str(self.data_manager.get_quantity_of_each_label()))
         self.pause_play()
         self.next()
 
     def not_carrying(self):
         self.data_manager.add_new_entry(self.movie_canvas.xy_df.index, 0)
-        self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.label_text.setText(str(self.data_manager.get_quantity_of_each_label()))
         self.pause_play()
         self.next()
 
     def carrying_and_not_carrying(self):
         self.data_manager.remove_entry(self.movie_canvas.id_ant)
-        self.categories_text.setText(str(self.data_manager.get_quantity_of_each_category()))
+        self.label_text.setText(str(self.data_manager.get_quantity_of_each_label()))
         self.pause_play()
         self.next()
 
