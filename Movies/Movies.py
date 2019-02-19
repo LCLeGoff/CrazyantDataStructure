@@ -23,8 +23,14 @@ class Movies:
         cv2.destroyAllWindows()
 
     def get_frame(self, frame):
-
+        self.cap = cv2.VideoCapture(self.add)
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
+        ret, frame_img = self.cap.read()
+        frame_img = cv2.cvtColor(frame_img, cv2.COLOR_BGR2GRAY)
+        cv2.destroyAllWindows()
+        return frame_img
+
+    def get_next_frame(self):
         ret, frame_img = self.cap.read()
         frame_img = cv2.cvtColor(frame_img, cv2.COLOR_BGR2GRAY)
         cv2.destroyAllWindows()
