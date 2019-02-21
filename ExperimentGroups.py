@@ -105,6 +105,21 @@ class ExperimentGroups:
     def get_array_all_indexes(self, name):
         return self.pandas_index_manager.get_array_all_indexes(self.get_df(name))
 
+    def get_array_id_exp_ant(self, name):
+        return self.pandas_index_manager.get_array_id_exp_ant(self.get_df(name))
+
+    def get_dict_id_exp_ant(self, name):
+        if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
+            return self.timeseries_exp_ant_index
+        else:
+            return self.pandas_index_manager.get_dict_id_exp_ant(self.get_df(name))
+
+    def get_dict_id_exp_ant_frame(self, name):
+        if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
+            return self.timeseries_exp_ant_frame_index
+        else:
+            return self.pandas_index_manager.get_dict_id_exp_ant_frame(self.get_df(name))
+
     def plot_traj_on_movie(self, trajs_names, id_exp, frame, id_ants=None):
         self.load_timeseries_exp_frame_ant_index()
         if id_ants is None:
@@ -201,9 +216,27 @@ class ExperimentGroups:
         else:
             raise TypeError('Object type ' + object_type + ' unknown')
 
+    def __is_indexed_by_exp(self, name):
+        object_type = self.get_object_type(name)
+        return object_type in ['Characteristics1d', 'Characteristics2d']
+
     def __is_indexed_by_exp_ant_frame(self, name):
         object_type = self.get_object_type(name)
         return object_type in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']
+
+    def __is_indexed_by_exp_ant(self, name):
+        object_type = self.get_object_type(name)
+        return object_type in ['AntCharacteristics1d', 'AntCharacteristics2d']
+
+    def __is_indexed_by_exp_frame(self, name):
+        object_type = self.get_object_type(name)
+        return object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
+
+    def __is_frame_in_indexes(self, name):
+        object_type = self.get_object_type(name)
+        return object_type in [
+            'Events1d', 'Events2d', 'TimeSeries1d', 'TimeSeries2d',
+            'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
 
     def __is_same_index_names(self, name1, name2):
         index_name1 = self.get_index_names(name1)
@@ -219,18 +252,6 @@ class ExperimentGroups:
         self.data_manager.data_renamer.rename(
             self.get_data_object(old_name), name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-
-        # print('renaming ', old_name, 'to', new_name)
-        # self.load(old_name)
-        #
-        # self.add_copy(old_name=old_name, new_name=new_name)
-        # self.rename(
-        #     old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
-        #     label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-        # self.write(new_name)
-        #
-        # self.delete_data(old_name)
-        # self.remove_object(old_name)
 
     def rename(
             self, old_name, new_name, xname=None, yname=None, category=None,
@@ -254,11 +275,20 @@ class ExperimentGroups:
             name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
-    def add_copy(self, old_name, new_name, replace=False):
+    def add_copy(
+            self, old_name, new_name, copy_definition=True,
+            category=None, label=None, xlabel=None, ylabel=None, description=None,
+            replace=False):
+
         if self.__is_1d(old_name):
-            self.add_copy1d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
+            self.add_copy1d(
+                name_to_copy=old_name, copy_name=new_name, copy_definition=copy_definition,
+                category=category, label=label, description=description, replace=replace)
         else:
-            self.add_copy2d(name_to_copy=old_name, copy_name=new_name, copy_definition=True, replace=replace)
+            self.add_copy2d(
+                name_to_copy=old_name, copy_name=new_name, copy_definition=copy_definition,
+                category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
+                replace=replace)
 
     def add_2d_from_1ds(
             self, name1, name2, result_name, xname=None, yname=None,
@@ -487,8 +517,12 @@ class ExperimentGroups:
             self.__compute_time_interval_filter(
                 name_to_filter, name_intervals, result_name, interval_index_name,
                 category, label, xlabel, ylabel, description, replace)
+        else:
+            raise TypeError(
+                name_to_filter+' cannot be filtered (not indexed by exp,ant,frame or '
+                + name_intervals+' cannot be used as a filter (not an event)'
+            )
 
-        # self.rename_object('temp', result_name, replace)
         return result_name, interval_index_name
 
     def filter_with_experiment_characteristics(
@@ -757,6 +791,48 @@ class ExperimentGroups:
                         return result_name
                     else:
                         return df_fit
+
+    def moving_mean(
+            self, name_to_average, time_window, result_name=None,
+            category=None, label=None, description=None, replace=False):
+
+        if not self.__is_1d(name_to_average):
+            raise TypeError(name_to_average + ' is not 1d')
+
+        elif not self.__is_frame_in_indexes(name_to_average):
+            raise TypeError(name_to_average+' is not indexed by frame')
+
+        else:
+
+            if result_name is None:
+                result_name = 'mm'+str(time_window)+'_of_'+name_to_average
+
+            if label is None:
+                label = 'MM of '+name_to_average+' on '+str(time_window)+' frames'
+
+            if description is None:
+                description = 'Moving mean of '+name_to_average+' on a time window of '+str(time_window)+' frames'
+
+            self.add_copy(
+                old_name=name_to_average, new_name=result_name, category=category,
+                label=label, description=description, replace=replace
+            )
+
+            idx_list = self.get_array_all_indexes(name_to_average)
+            if self.__is_indexed_by_exp_ant_frame(name_to_average):
+
+                for id_exp, id_ant, frame in idx_list:
+                    print(id_exp, id_ant, frame)
+                    self.get_df(result_name).loc[id_exp, id_ant, frame] \
+                        = self.get_df(name_to_average).loc[id_exp, id_ant, frame-time_window/2:frame+time_window/2].mean()
+
+            elif self.__is_indexed_by_exp_frame(name_to_average):
+                for id_exp, frame in idx_list:
+                    print(id_exp, frame)
+                    self.get_df(result_name).loc[id_exp, frame] \
+                        = self.get_df(name_to_average).loc[id_exp, frame-time_window/2:frame+time_window/2]
+
+        return result_name
 
     def convert_xy_to_movie_system(self, id_exp, x, y):
         self.load(['food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
