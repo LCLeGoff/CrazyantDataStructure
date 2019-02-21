@@ -162,8 +162,43 @@ class AnalyseBaseFood:
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
             category='BaseFood', label='Food distance next to food',
-            description='Distance the food and the ants next to the food'
+            description='Distance between the food and the ants next to the food'
         )
+
+        self.exp.write(res_name)
+
+    def compute_distance_to_food_next_to_food_differential(self):
+        name = 'distance_to_food_next_to_food'
+        res_name = 'distance_to_food_next_to_food_differential'
+
+        self.exp.load([name, 'fps'])
+        self.exp.load_timeseries_exp_ant_frame_index()
+
+        self.exp.add_copy1d(
+            name_to_copy=name, copy_name=res_name, category='BaseFood', label='Food distance differential',
+            description='Differential of the distance between the food and the ants'
+        )
+
+        idx_array = self.exp.get_array_id_exp_ant(name)
+
+        for (id_exp, id_ant) in idx_array:
+            print(id_exp, id_ant)
+
+            df_d = self.exp.distance_to_food_next_to_food.df.loc[id_exp, id_ant, :]
+            d = np.array(df_d)
+            if len(d) > 1:
+                d[1:-1] = (d[2:] - d[:-2]) / 2.
+                d[0] = d[1] - d[0]
+                d[-1] = d[-1] - d[-2]
+
+                dt = np.array(df_d.index.get_level_values('frame'), dtype=float)
+                dt[0] = 1
+                dt[-1] = 1
+                dt[1:-1] = dt[2:] - dt[:-2]
+                d[dt > 2] = np.nan
+
+            self.exp.distance_to_food_next_to_food_differential.df.loc[id_exp, id_ant, :] \
+                = d * self.exp.fps.df.loc[id_exp].fps
 
         self.exp.write(res_name)
 
