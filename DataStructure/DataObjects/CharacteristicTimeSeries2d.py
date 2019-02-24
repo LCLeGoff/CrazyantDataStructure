@@ -2,14 +2,14 @@ import pandas as pd
 
 from DataStructure.DataObjectBuilders.BuilderExpFrameIndexed2dDataObject import BuilderExpFrameIndexed2dDataObject
 from DataStructure.DataObjects.Definitions import DefinitionBuilder
-from Tools.Plotter.Plotter2d import Plotter2d
+from Tools.Plotter.SetupPlotter import SetupPlotter
 
 
 class CharacteristicTimeSeries2d(BuilderExpFrameIndexed2dDataObject):
     def __init__(self, df, definition):
         BuilderExpFrameIndexed2dDataObject.__init__(self, df)
         DefinitionBuilder.add_definition_to_class(self, definition)
-        self.plotter = Plotter2d(self)
+        self.plotter = SetupPlotter(self)
 
     def rename(
             self, name, xname=None, yname=None, category=None, label=None, xlabel=None, ylabel=None, description=None):

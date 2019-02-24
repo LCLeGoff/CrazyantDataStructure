@@ -4,7 +4,7 @@ import scipy.stats as scs
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.ColorObject import ColorObject
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments
-from Tools.Plotter.Plotter2d import Plotter2d
+from Tools.Plotter.SetupPlotter import SetupPlotter
 
 
 class Plotter1d(BasePlotters):
@@ -13,7 +13,7 @@ class Plotter1d(BasePlotters):
         self.arg_tools = ArgumentsTools(self)
         self.arg_tools.add_arguments('line', LineFeatureArguments())
         self.arg_tools.change_arg_value('line', kwargs)
-        self.plotter2d = Plotter2d(self.obj)
+        self.plotter2d = SetupPlotter(self.obj)
 
     def hist1d(
             self, bins='fd', normed=False, label=None, xscale=None, yscale=None, multi_plot=None, title_prefix=None,

@@ -7,7 +7,7 @@ from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments,
     FoodFeatureArguments, GateFeatureArguments
 
 
-class Plotter2d(BasePlotters):
+class SetupPlotter(BasePlotters):
     def __init__(
             self, obj, arena_length=420., arena_width=297, circular_arena_radius=200., gate_length=90.,
             food_radius=5., food_location=None, **kwargs):

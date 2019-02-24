@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn import svm
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2
@@ -247,3 +248,43 @@ class AnalyseBaseFood:
         self.exp.operation('orientation_to_food', lambda x: norm_angle_tab2(x))
 
         self.exp.write(name)
+
+    def compute_is_carrying(self):
+        name_result = 'is_carrying'
+        self.exp.load(['carrying_training_set', 'distance_to_food_next_to_food', 'orientation_to_food'])
+
+        features, labels = self.__get_training_features_and_labels4carrying()
+
+        distances = self.exp.distance_to_food_next_to_food.get_array()
+        orientations = np.abs(self.exp.orientation_to_food.get_array())
+        to_predict = np.array(list(zip(distances, orientations)))
+
+        clf = svm.SVC(kernel='rbf')
+        clf.fit(features, labels)
+        prediction = clf.predict(to_predict)
+
+        self.exp.add_copy(
+            old_name='orientation_to_food', new_name=name_result,
+            category='BaseFood', label='Is ant carrying?',
+            description='Boolean giving if ants are carrying or not'
+        )
+
+        self.exp.get_data_object(name_result).change_values(prediction)
+        self.exp.write(name_result)
+
+    def __get_training_features_and_labels4carrying(self):
+        self.exp.filter_with_time_occurrences(
+            name_to_filter='distance_to_food_next_to_food', filter_name='carrying_training_set',
+            result_name='training_set_distance', replace=True)
+        self.exp.filter_with_time_occurrences(
+            name_to_filter='orientation_to_food', filter_name='carrying_training_set',
+            result_name='training_set_orientation', replace=True)
+        distances = self.exp.training_set_distance.get_array()
+        orientations = np.abs(self.exp.training_set_orientation.get_array())
+        labels = np.array(self.exp.carrying_training_set.get_values())
+        mask = np.where(~(np.isnan(distances)) * ~(np.isnan(orientations)))[0]
+        distances = distances[mask]
+        orientations = orientations[mask]
+        labels = labels[mask]
+        features = np.array(list(zip(distances, orientations)))
+        return features, labels
