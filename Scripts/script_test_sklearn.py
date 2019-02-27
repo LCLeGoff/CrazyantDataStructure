@@ -98,8 +98,8 @@ def index_random_training_set(features, nbr, lg):
 
 features2 = MinMaxScaler().fit_transform(np.array(list(zip(distances, orientations))))
 
-c_range = [10**i for i in range(-2, 11, 4)]
-gamma_range = [10**i for i in range(-3, 11, 4)]
+c_range = [10**i for i in [-4, -3, -2, 0, 1, 2]]
+gamma_range = [10**i for i in [-4, -2, 0, 6, 12]]
 idx_trained, idx2predict = index_random_training_set(features2, 1, int(len(features2)/2))
 res = np.zeros((len(c_range), len(gamma_range)))
 
@@ -110,3 +110,7 @@ for i, c in enumerate(c_range):
         clf.fit(features2[idx_trained[0]], labels[idx_trained[0]])
         prediction = clf.predict(features2[idx2predict[0]])
         res[i, j] = np.around(np.mean(prediction == labels[idx2predict[0]]), 3)
+
+plt.imshow(res, aspect='auto', extent=[c_range[0], c_range[-1], gamma_range[-1], gamma_range[0]])
+plt.colorbar()
+plt.show()

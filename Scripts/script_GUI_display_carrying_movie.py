@@ -207,7 +207,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Experiment"+str(self.movie_canvas.id_exp))
         self.addToolBar(QtCore.Qt.BottomToolBarArea, NavigationToolbar(self.movie_canvas, self))
 
-        self.create_button(0, 0, "Save", self.save)
         self.create_button(1, 0, "Quit", self.quit)
 
         self.create_button(1, 2, "Play", self.resume_play)
@@ -225,8 +224,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         if key == Qt.Key_Space:
             self.replay()
-        elif key == Qt.Key_S:
-            self.save()
         elif key == Qt.Key_Right:
             self.next()
         elif key == Qt.Key_Left:
@@ -261,12 +258,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # self.movie_canvas.set_to_play()
         self.movie_canvas.next_ant()
 
-    def save(self):
-        self.data_manager.write_data()
-        print('save')
-
     def quit(self):
-        self.save()
         self.close()
 
 
