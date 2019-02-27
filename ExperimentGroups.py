@@ -256,13 +256,15 @@ class ExperimentGroups:
     def rename(
             self, old_name, new_name, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
-
+        self.load(old_name)
         if self.__is_1d(old_name):
             self.rename1d(old_name=old_name, new_name=new_name, category=category, label=label, description=description)
         else:
             self.rename2d(
                 old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
                 label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+        self.add_object(new_name, self.get_data_object(old_name))
+        self.remove_object(old_name)
 
     def rename1d(self, old_name, new_name, category=None, label=None, description=None):
         self.__dict__[old_name].rename(name=new_name, category=category, label=label, description=description)
@@ -792,7 +794,7 @@ class ExperimentGroups:
                     else:
                         return df_fit
 
-    def moving_mean(
+    def moving_mean4frame_indexed_1d(
             self, name_to_average, time_window, result_name=None,
             category=None, label=None, description=None, replace=False):
 
@@ -807,6 +809,9 @@ class ExperimentGroups:
             if result_name is None:
                 result_name = 'mm'+str(time_window)+'_of_'+name_to_average
 
+            if category is None:
+                category = self.get_category(name_to_average)
+
             if label is None:
                 label = 'MM of '+name_to_average+' on '+str(time_window)+' frames'
 
@@ -817,20 +822,50 @@ class ExperimentGroups:
                 old_name=name_to_average, new_name=result_name, category=category,
                 label=label, description=description, replace=replace
             )
+            self.get_df(result_name).dropna(inplace=True)
 
-            idx_list = self.get_array_all_indexes(name_to_average)
-            if self.__is_indexed_by_exp_ant_frame(name_to_average):
+            time_window = int(np.floor(time_window/2)*2 + 1)
 
-                for id_exp, id_ant, frame in idx_list:
-                    print(id_exp, id_ant, frame)
-                    self.get_df(result_name).loc[id_exp, id_ant, frame] \
-                        = self.get_df(name_to_average).loc[id_exp, id_ant, frame-time_window/2:frame+time_window/2].mean()
+            def running_mean(x, n):
+                x2 = np.insert(x, 0, np.zeros(n+1))
+                s = np.cumsum(x2)
+                s = np.array(list(s)+list(np.full(n, s[-1])))
+                res = s[n:] - s[:-n]
+                n2 = int(np.floor(n/2) + 1)
+                res = res[n2:-n2]
+                return res
 
-            elif self.__is_indexed_by_exp_frame(name_to_average):
-                for id_exp, frame in idx_list:
-                    print(id_exp, frame)
-                    self.get_df(result_name).loc[id_exp, frame] \
-                        = self.get_df(name_to_average).loc[id_exp, frame-time_window/2:frame+time_window/2]
+            def mm4each_group(df: pd.DataFrame):
+                name = df.columns[0]
+                df.dropna(inplace=True)
+
+                if len(df) > 0:
+                    id_exp = df.index.get_level_values('id_exp')[0]
+                    id_ant = df.index.get_level_values('id_ant')[0]
+                    frame0 = df.index.get_level_values('frame')[0]
+                    frame1 = df.index.get_level_values('frame')[-1]
+
+                    rg = range(frame0, frame1+1)
+                    lg = frame1-frame0+1
+
+                    idx = pd.MultiIndex.from_tuples(
+                        list(zip(np.full(lg, id_exp), np.full(lg, id_ant), rg)), names=['id_exp', 'id_ant', 'frame'])
+
+                    df2 = df.loc[idx]
+                    time_array = np.array((1-df2.isna()).astype(float))
+                    mask0 = np.where(time_array == 0)[0]
+                    mask1 = np.where(time_array == 1)[0]
+                    values_array = np.array(df2[name])
+                    values_array[mask0] = 0
+                    mm_val = running_mean(values_array, time_window)[mask1]
+                    mm_time = running_mean(time_array, time_window)[mask1]
+
+                    df[name] = np.around(mm_val/mm_time, 3)
+
+                return df
+
+            df_apply = self.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+            self.__dict__[result_name].df = df_apply
 
         return result_name
 
