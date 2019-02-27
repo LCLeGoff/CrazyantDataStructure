@@ -184,25 +184,44 @@ class AnalyseTrajectory:
                 print(id_exp, id_ant)
 
                 dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
+                dx1 = dx[1, :].copy()
+                dx2 = dx[-2, :].copy()
                 dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
-                dx[0, :] = dx[1, :]-dx[0, :]
-                dx[-1, :] = dx[-1, :]-dx[-2, :]
+                dx[0, :] = dx1-dx[0, :]
+                dx[-1, :] = dx[-1, :]-dx2
 
                 dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
+                dy1 = dy[1, :].copy()
+                dy2 = dy[-2, :].copy()
                 dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
-                dy[0, :] = dy[1, :]-dy[0, :]
-                dy[-1, :] = dy[-1, :]-dy[-2, :]
+                dy[0, :] = dy1-dy[0, :]
+                dy[-1, :] = dy[-1, :]-dy2
 
                 dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
                 dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
                 dt[0] = 1
                 dt[-1] = 1
-                dt[1:-1] = dt[2:]-dt[:-2]
                 dx[dt > 2] = np.nan
                 dy[dt > 2] = np.nan
 
                 self.exp.speed_x.df.loc[id_exp, id_ant, :] = dx*self.exp.fps.df.loc[id_exp].fps
                 self.exp.speed_y.df.loc[id_exp, id_ant, :] = dy*self.exp.fps.df.loc[id_exp].fps
-                self.exp.speed.df.loc[id_exp, id_ant, :] = np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps
+                self.exp.speed.df.loc[id_exp, id_ant, :] =\
+                    np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
 
         self.exp.write([name, name+'_x', name+'_y'])
+
+    def compute_mm1s_speed(self):
+        name = 'speed'
+        result_name = 'mm1s_'+name
+
+        self.exp.load(name)
+        time_window = 100.
+        self.exp.moving_mean4frame_indexed_1d(
+            name_to_average=name, time_window=time_window, result_name=result_name,
+            label='MM of '+name+' on 1 s('+str(time_window)+' frames)',
+            description='Moving mean of ' + name + ' on a time window of 1s (' + str(time_window) + ' frames)'
+        )
+
+        self.exp.write(result_name)
