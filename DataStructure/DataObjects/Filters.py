@@ -9,7 +9,7 @@ class Filters:
     @staticmethod
     def filter(obj, filter_obj, name, label=None, category=None, description=None):
         index = filter_obj.df.index
-        df = obj.df.loc[index, :]
+        df = obj.df.reindex(index)
         return Events1dBuilder.build(
             df=df, name=name, category=category, label=label, description=description)
 
@@ -24,7 +24,7 @@ class Filters:
             df_filter *= filter_obj.df == filter_val
         df_filter = df_filter[df_filter].dropna()
         idx_filter = df_filter.index
-        df = obj.df.loc[idx_filter, :]
+        df = obj.df.reindex(idx_filter)
         df.dropna(inplace=True)
 
         n_dim = len(obj.df.columns)

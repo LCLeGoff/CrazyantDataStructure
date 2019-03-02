@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import svm
-import time
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -12,20 +11,20 @@ group = 'UO'
 
 Exps = ExperimentGroupBuilder(root).build(group)
 Exps.load(
-    ['carrying_training_set', 'distance_to_food_next_to_food',
-     'distance_to_food_next_to_food_differential', 'speed_next_to_food', 'orientation_to_food'])
+    ['carrying_training_set', 'distance2food_next2food',
+     'distance2food_next2food_diff', 'speed_next2food', 'angle_body_food'])
 
 Exps.filter_with_time_occurrences(
-    name_to_filter='distance_to_food_next_to_food', filter_name='carrying_training_set',
+    name_to_filter='distance2food_next2food', filter_name='carrying_training_set',
     result_name='training_set_distance', replace=True)
 Exps.filter_with_time_occurrences(
-    name_to_filter='distance_to_food_next_to_food_differential', filter_name='carrying_training_set',
+    name_to_filter='distance2food_next2food_differential', filter_name='carrying_training_set',
     result_name='training_set_distance_differential', replace=True)
 Exps.filter_with_time_occurrences(
-    name_to_filter='speed_next_to_food', filter_name='carrying_training_set',
+    name_to_filter='speed_next2food', filter_name='carrying_training_set',
     result_name='training_set_speed', replace=True)
 Exps.filter_with_time_occurrences(
-    name_to_filter='orientation_to_food', filter_name='carrying_training_set',
+    name_to_filter='angle_body_food', filter_name='carrying_training_set',
     result_name='training_set_orientation', replace=True)
 
 

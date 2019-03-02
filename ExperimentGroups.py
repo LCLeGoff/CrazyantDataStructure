@@ -10,6 +10,7 @@ from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
 from Movies.Movies import Movies
 from Scripts.root import root_movie
+from Tools.MiscellaneousTools.ArrayManipulation import running_mean
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -120,14 +121,14 @@ class ExperimentGroups:
         else:
             return self.pandas_index_manager.get_dict_id_exp_ant_frame(self.get_df(name))
 
-    def plot_traj_on_movie(self, trajs_names, id_exp, frame, id_ants=None):
+    def plot_traj_on_movie(self, traj_names, id_exp, frame, id_ants=None):
         self.load_timeseries_exp_frame_ant_index()
         if id_ants is None:
             id_ants = self.timeseries_exp_frame_ant_index[id_exp][frame]
         elif len(np.array(id_ants)) == 1:
             id_ants = [id_ants]
 
-        self.load(trajs_names)
+        self.load(traj_names)
 
         mov = self.get_movie(id_exp)
         img_frame = mov.get_frame(frame)
@@ -136,9 +137,9 @@ class ExperimentGroups:
         plt.imshow(img_frame, cmap='gray')
         for id_ant in id_ants:
 
-            if (id_exp, id_ant, frame) in self.__dict__[trajs_names[0]].df.index:
-                x, y = np.array(self.__dict__[trajs_names[0]].df.loc[id_exp, id_ant, frame])
-                orientation = np.array(self.__dict__[trajs_names[1]].df.loc[id_exp, id_ant, frame])
+            if (id_exp, id_ant, frame) in self.__dict__[traj_names[0]].df.index:
+                x, y = np.array(self.__dict__[traj_names[0]].df.loc[id_exp, id_ant, frame])
+                orientation = np.array(self.__dict__[traj_names[1]].df.loc[id_exp, id_ant, frame])
                 x, y = self.convert_xy_to_movie_system(id_exp, x, y)
                 orientation = self.convert_orientation_to_movie_system(id_exp, orientation)
 
@@ -278,7 +279,7 @@ class ExperimentGroups:
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
     def add_copy(
-            self, old_name, new_name, copy_definition=True,
+            self, old_name, new_name, copy_definition=False,
             category=None, label=None, xlabel=None, ylabel=None, description=None,
             replace=False):
 
@@ -794,20 +795,36 @@ class ExperimentGroups:
                     else:
                         return df_fit
 
-    def moving_mean4frame_indexed_1d(
+    def moving_mean(
             self, name_to_average, time_window, result_name=None,
-            category=None, label=None, description=None, replace=False):
+            category=None, label=None, description=None, replace=False, segmented_computation=False):
+
+        if not self.__is_1d(name_to_average):
+            raise TypeError('moving mean not implemented for 2d')
+
+        elif not self.__is_indexed_by_exp_ant_frame(name_to_average):
+            raise TypeError('moving mean not implemented for if not indexed by (exp, ant, frame)')
+
+        else:
+            return self.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average, time_window,
+                result_name=result_name, category=category, label=label, description=description,
+                replace=replace, segmented_computation=segmented_computation)
+
+    def moving_mean4exp_ant_frame_indexed_1d(
+            self, name_to_average, time_window, result_name=None,
+            category=None, label=None, description=None, replace=False, segmented_computation=False):
 
         if not self.__is_1d(name_to_average):
             raise TypeError(name_to_average + ' is not 1d')
 
-        elif not self.__is_frame_in_indexes(name_to_average):
-            raise TypeError(name_to_average+' is not indexed by frame')
+        elif not self.__is_indexed_by_exp_ant_frame(name_to_average):
+            raise TypeError(name_to_average+' is not indexed by (exp, ant, frame)')
 
         else:
 
             if result_name is None:
-                result_name = 'mm'+str(time_window)+'_of_'+name_to_average
+                result_name = 'mm'+str(time_window)+'_'+name_to_average
 
             if category is None:
                 category = self.get_category(name_to_average)
@@ -826,18 +843,8 @@ class ExperimentGroups:
 
             time_window = int(np.floor(time_window/2)*2 + 1)
 
-            def running_mean(x, n):
-                x2 = np.insert(x, 0, np.zeros(n+1))
-                s = np.cumsum(x2)
-                s = np.array(list(s)+list(np.full(n, s[-1])))
-                res = s[n:] - s[:-n]
-                n2 = int(np.floor(n/2) + 1)
-                res = res[n2:-n2]
-                return res
-
             def mm4each_group(df: pd.DataFrame):
                 name = df.columns[0]
-                df.dropna(inplace=True)
 
                 if len(df) > 0:
                     id_exp = df.index.get_level_values('id_exp')[0]
@@ -846,12 +853,13 @@ class ExperimentGroups:
                     frame1 = df.index.get_level_values('frame')[-1]
 
                     rg = range(frame0, frame1+1)
-                    lg = frame1-frame0+1
+                    time_lg = frame1-frame0+1
 
                     idx = pd.MultiIndex.from_tuples(
-                        list(zip(np.full(lg, id_exp), np.full(lg, id_ant), rg)), names=['id_exp', 'id_ant', 'frame'])
+                        list(zip(np.full(time_lg, id_exp), np.full(time_lg, id_ant), rg)),
+                        names=['id_exp', 'id_ant', 'frame'])
 
-                    df2 = df.loc[idx]
+                    df2 = df.reindex(idx)
                     time_array = np.array((1-df2.isna()).astype(float))
                     mask0 = np.where(time_array == 0)[0]
                     mask1 = np.where(time_array == 1)[0]
@@ -864,8 +872,21 @@ class ExperimentGroups:
 
                 return df
 
-            df_apply = self.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(mm4each_group)
-            self.__dict__[result_name].df = df_apply
+            if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
+                lg = len(set(self.get_df(result_name).index.get_level_values('id_exp')))
+                lg = int(np.floor(lg/5)*5)
+                for i in range(5, lg, 5):
+                    idx_sl = pd.IndexSlice[i-5:i, :, :]
+                    self.__dict__[result_name].df.loc[idx_sl, :] = \
+                        self.get_df(result_name).loc[idx_sl, :].groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+
+                idx_sl = pd.IndexSlice[lg:, :, :]
+                self.__dict__[result_name].df.loc[idx_sl, :] = \
+                    self.get_df(result_name).loc[idx_sl, :].groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+
+            else:
+                self.__dict__[result_name].df \
+                    = self.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(mm4each_group)
 
         return result_name
 

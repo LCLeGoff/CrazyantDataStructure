@@ -10,8 +10,8 @@ class AnalyseFoodBase:
     def __init__(self, root, group):
         self.exp = ExperimentGroupBuilder(root).build(group)
 
-    def compute_distance_to_food(self):
-        name = 'distance_to_food'
+    def compute_distance2food(self):
+        name = 'distance2food'
         print(name)
         self.exp.load(['food_x', 'food_y', 'x', 'y'])
 
@@ -36,7 +36,7 @@ class AnalyseFoodBase:
 
     def __reindexing_food_xy(self, id_ants, idxs):
         df_d = self.exp.food_xy.df.copy()
-        df_d = df_d.loc[idxs]
+        df_d = df_d.reindex(idxs)
         df_d['id_ant'] = id_ants
         df_d.reset_index(inplace=True)
         df_d.columns = ['id_exp', 'frame', 'x', 'y', 'id_ant']
@@ -47,6 +47,42 @@ class AnalyseFoodBase:
         df_d = np.around(np.sqrt((df_f.x - self.exp.x.df.x) ** 2 + (df_f.y - self.exp.y.df.y) ** 2), 3)
         df_d = pd.DataFrame(df_d)
         return df_d
+
+    def compute_mm5_distance2food(self):
+        name = 'distance2food'
+        category = 'Distance2foodMM'
+        time_window = 5
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_mm10_distance2food(self):
+        name = 'distance2food'
+        category = 'Distance2foodMM'
+        time_window = 10
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_mm20_distance2food(self):
+        name = 'distance2food'
+        category = 'Distance2foodMM'
+        time_window = 20
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
 
     def compute_speed_food(self):
         name = 'food_speed'
@@ -94,10 +130,10 @@ class AnalyseFoodBase:
 
         self.exp.write([name])
 
-    def compute_is_xy_next_to_food(self):
-        name = 'is_xy_next_to_food'
+    def compute_is_xy_next2food(self):
+        name = 'is_xy_next2food'
 
-        name_distance = 'distance_to_food'
+        name_distance = 'distance2food'
         self.exp.load(name_distance)
         self.exp.add_copy1d(
             name_to_copy=name_distance, copy_name=name, category='FoodBase',
@@ -107,243 +143,171 @@ class AnalyseFoodBase:
         neighbor_distance = 15.
         neighbor_distance2 = 5.
         self.exp.operation(name, lambda x: (x < neighbor_distance)*(x > neighbor_distance2))
-        self.exp.is_xy_next_to_food.df = self.exp.is_xy_next_to_food.df.astype(int)
+        self.exp.is_xy_next2food.df = self.exp.is_xy_next2food.df.astype(int)
         self.exp.write(name)
 
-    def compute_xy_next_to_food(self):
-        name = 'xy_next_to_food'
+    def compute_xy_next2food(self):
+        name = 'xy_next2food'
 
-        self.exp.load(['x', 'y', 'is_xy_next_to_food'])
+        self.exp.load(['x', 'y', 'is_xy_next2food'])
 
         self.exp.add_2d_from_1ds(
             name1='x', name2='y', result_name='xy'
         )
 
         self.exp.filter_with_values(
-            name_to_filter='xy', filter_name='is_xy_next_to_food', result_name=name,
+            name_to_filter='xy', filter_name='is_xy_next2food', result_name=name,
             xname='x', yname='y', category='FoodBase',
             label='XY next to food', xlabel='x', ylabel='y', description='Trajectory of ant next to food'
         )
 
         self.exp.write(name)
 
-    def compute_speed_xy_next_to_food(self):
-        name = 'speed_xy_next_to_food'
+    def compute_speed_xy_next2food(self):
+        name = 'speed_xy_next2food'
 
-        self.exp.load(['speed_x', 'speed_y', 'is_xy_next_to_food'])
+        self.exp.load(['speed_x', 'speed_y', 'is_xy_next2food'])
 
         self.exp.add_2d_from_1ds(
             name1='speed_x', name2='speed_y', result_name='dxy'
         )
 
         self.exp.filter_with_values(
-            name_to_filter='dxy', filter_name='is_xy_next_to_food', result_name=name,
+            name_to_filter='dxy', filter_name='is_xy_next2food', result_name=name,
             xname='x', yname='y', category='FoodBase',
             label='speed vector next to food', xlabel='x', ylabel='y', description='Speed vector of ants next to food'
         )
 
         self.exp.write(name)
 
-    def compute_speed_next_to_food(self):
+    def compute_speed_next2food(self):
         name = 'speed'
-        res_name = name+'_next_to_food'
+        res_name = name+'_next2food'
 
-        self.exp.load([name, 'is_xy_next_to_food'])
+        self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
             category='FoodBase', label='speed next to food', description='Instantaneous speed of ant next to food'
         )
 
         self.exp.write(res_name)
 
-    def compute_mm5min_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm5min_speed_next2food'
-
-        self.exp.load(name)
-        time_window = 5*60*100
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of speed on 5min (' + str(time_window) + ' frames)',
-            description='Moving mean of the instantaneous speed on a time window of 5min'
-                        ' ('+str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm60s_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm60s_speed_next2food'
-
-        self.exp.load(name)
-        time_window = 6000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of speed on 1min (' + str(time_window) + ' frames)',
-            description='Moving mean of the instantaneous speed on a time window of 1min'
-                        ' ('+str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10s_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm10s_speed_next2food'
-
-        self.exp.load(name)
-        time_window = 1000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of speed on 10s (' + str(time_window) + ' frames)',
-            description='Moving mean of the instantaneous speed on a time window of 10s ('+str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm2s_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm2s_speed_next2food'
-
-        self.exp.load(name)
-        time_window = 200.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of speed on 2s (' + str(time_window) + ' frames)',
-            description='Moving mean of the instantaneous speed on a time window of 2s ('+str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm1s_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm1s_speed_next2food'
-
-        self.exp.load(name)
-        time_window = 100.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of speed on 1s (' + str(time_window) + ' frames)',
-            description='Moving mean of the instantaneous speed on a time window of 1s ('+str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
     def compute_mm10_speed_next2food(self):
-        name = 'speed_next_to_food'
-        result_name = 'mm10_speed_next2food'
+        name = 'mm10_speed'
+        res_name = name+'_next2food'
 
-        self.exp.load(name)
-        time_window = 10.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name
-        )
-
-        self.exp.write(result_name)
-
-    def compute_distance_to_food_next_to_food(self):
-        name = 'distance_to_food'
-        res_name = name+'_next_to_food'
-
-        self.exp.load([name, 'is_xy_next_to_food'])
+        self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='speed next to food',
+            description='Moving mean (time window of 10 frames) of the instantaneous speed of ant close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_mm20_speed_next2food(self):
+        name = 'mm20_speed'
+        res_name = name+'_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='speed next to food',
+            description='Moving mean (time window of 20 frames) of the instantaneous speed of ant close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_distance2food_next2food(self):
+        name = 'distance2food'
+        res_name = name+'_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
             category='FoodBase', label='Food distance next to food',
             description='Distance between the food and the ants next to the food'
         )
 
         self.exp.write(res_name)
 
-    def compute_mm5min_distance2food_next2food(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'mm5min_distance2food_next2food'
+    def compute_mm5_distance2food_next2food(self):
+        name = 'mm5_distance2food'
+        res_name = name+'_next2food'
 
-        self.exp.load(name)
-        time_window = 100*60*5
+        self.exp.load([name, 'is_xy_next2food'])
 
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of distance to food on 5min ('+str(time_window)+' frames)',
-            description='Moving mean of the distance of the ants next to the food on a time window of 5min ('
-                        + str(time_window) + ' frames)'
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='Food distance next to food',
+            description='Moving mean (time window of 5 frames) '
+                        'of the distance between the food and the ants next to the food'
         )
 
-        self.exp.write(result_name)
-
-    def compute_mm60s_distance2food_next2food(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'mm60s_distance2food_next2food'
-
-        self.exp.load(name)
-        time_window = 6000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of distance to food on 60s ('+str(time_window)+' frames)',
-            description='Moving mean of the distance of the ants next to the food on a time window of 60s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10s_distance2food_next2food(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'mm10s_distance2food_next2food'
-
-        self.exp.load(name)
-        time_window = 1000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of distance to food on 10s ('+str(time_window)+' frames)',
-            description='Moving mean of the distance of the ants next to the food on a time window of 10s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm1s_distance2food_next2food(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'mm1s_distance2food_next2food'
-
-        self.exp.load(name)
-        time_window = 100.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of distance to food on 1 s('+str(time_window)+' frames)',
-            description='Moving mean of the distance of the ants next to the food on a time window of 1s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
+        self.exp.write(res_name)
 
     def compute_mm10_distance2food_next2food(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'mm10_distance2food_next2food'
+        name = 'mm10_distance2food'
+        res_name = name+'_next2food'
 
-        self.exp.load(name)
-        time_window = 10
+        self.exp.load([name, 'is_xy_next2food'])
 
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of distance to food on 10 '+str(time_window)+' frames',
-            description='Moving mean of the distance of the ants next to the food on a time window of 10 '
-                        + str(time_window) + ' frames'
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='Food distance next to food',
+            description='Moving mean (time window of 10 frames) '
+                        'of the distance between the food and the ants next to the food'
         )
 
-        self.exp.write(result_name)
+        self.exp.write(res_name)
 
-    def compute_distance_to_food_next_to_food_differential(self):
-        name = 'distance_to_food_next_to_food'
-        result_name = 'distance_to_food_next_to_food_differential'
+    def compute_mm20_distance2food_next2food(self):
+        name = 'mm20_distance2food'
+        res_name = name+'_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='Food distance next to food',
+            description='Moving mean (time window of 20 frames) '
+                        'of the distance between the food and the ants next to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def __diff4each_group(self, df: pd.DataFrame):
+        name0 = df.columns[0]
+        df.dropna(inplace=True)
+        id_exp = df.index.get_level_values('id_exp')[0]
+        d = np.array(df)
+        if len(d) > 1:
+
+            d1 = d[1].copy()
+            d2 = d[-2].copy()
+            d[1:-1] = (d[2:] - d[:-2]) / 2.
+            d[0] = d1-d[0]
+            d[-1] = d[-1]-d2
+
+            dt = np.array(df.index.get_level_values('frame'), dtype=float)
+            dt[1:-1] = dt[2:] - dt[:-2]
+            dt[0] = 1
+            dt[-1] = 1
+            d[dt > 2] = np.nan
+
+            df[name0] = d * self.exp.fps.df.loc[id_exp].fps
+        else:
+            df[name0] = np.nan
+
+        return df
+
+    def compute_distance2food_next2food_differential(self):
+        name = 'distance2food_next2food'
+        result_name = 'distance2food_next2food_diff'
 
         self.exp.load([name, 'fps'])
 
@@ -352,174 +316,96 @@ class AnalyseFoodBase:
             description='Differential of the distance between the food and the ants', replace=True
         )
 
-        def diff4each_group(df: pd.DataFrame):
-            name0 = df.columns[0]
-            df.dropna(inplace=True)
-            id_exp = df.index.get_level_values('id_exp')[0]
-            d = np.array(df)
-            if len(d) > 1:
-
-                d1 = d[1].copy()
-                d2 = d[-2].copy()
-                d[1:-1] = (d[2:] - d[:-2]) / 2.
-                d[0] = d1-d[0]
-                d[-1] = d[-1]-d2
-
-                dt = np.array(df.index.get_level_values('frame'), dtype=float)
-                dt[1:-1] = dt[2:] - dt[:-2]
-                dt[0] = 1
-                dt[-1] = 1
-                d[dt > 2] = np.nan
-
-                df[name0] = d * self.exp.fps.df.loc[id_exp].fps
-            else:
-                df[name0] = np.nan
-
-            return df
-
-        self.exp.distance_to_food_next_to_food_differential.df = \
-            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(diff4each_group)
+        self.exp.distance2food_next2food_differential.df = \
+            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group)
 
         self.exp.write(result_name)
 
-    def compute_mm5min_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        result_name = 'mm5min_distance2food_next2food_diff'
-
-        self.exp.load(name)
-        time_window = 100*60*5
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 5min ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 5min ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm60s_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        result_name = 'mm60s_distance2food_next2food_diff'
-
-        self.exp.load(name)
-        time_window = 6000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 1min ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 1min ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10s_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        result_name = 'mm10s_distance2food_next2food_diff'
-
-        self.exp.load(name)
-        time_window = 1000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 10s ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 10s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm2s_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        result_name = 'mm2s_distance2food_next2food_diff'
-
-        self.exp.load(name)
-        time_window = 200.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 2 s('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 2s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm1s_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        result_name = 'mm1s_distance2food_next2food_diff'
-
-        self.exp.load(name)
-        time_window = 100.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 1s ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 1s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
+    def compute_mm10_distance2food_next2food_differential(self):
+        name = 'mm10_distance2food_next2food'
         result_name = 'mm10_distance2food_next2food_diff'
 
-        self.exp.load(name)
-        time_window = 10.
+        self.exp.load([name, 'fps'])
 
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on '+str(time_window)+' frames',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of ' + str(time_window) + ' frames'
+        self.exp.add_copy(
+            old_name=name, new_name=result_name, category='FoodBase', label='Food distance differential',
+            description='Differential of the distance between the food and the ants', replace=True
         )
+
+        self.exp.get_data_object(result_name).change_values(
+            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
-    def compute_mm3_distance2food_next2food_diff(self):
-        name = 'distance_to_food_next_to_food_differential'
-        time_window = 3
-        result_name = 'mm'+str(int(time_window))+'_distance2food_next2food_diff'
+    def compute_mm20_distance2food_next2food_differential(self):
+        name = 'mm20_distance2food_next2food'
+        result_name = 'mm20_distance2food_next2food_diff'
 
-        self.exp.load(name)
+        self.exp.load([name, 'fps'])
 
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on '+str(time_window)+' frames',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of ' + str(time_window) + ' frames'
+        self.exp.add_copy(
+            old_name=name, new_name=result_name, category='FoodBase', label='Food distance differential',
+            description='Differential of the distance between the food and the ants', replace=True
         )
+
+        self.exp.get_data_object(result_name).change_values(
+            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
-    def compute_orientation_next_to_food(self):
+    def compute_orientation_next2food(self):
         name = 'orientation'
-        res_name = name + '_next_to_food'
+        res_name = name + '_next2food'
 
-        self.exp.load([name, 'is_xy_next_to_food'])
+        self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next_to_food', result_name=res_name,
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
             category='FoodBase', label='orientation next to food', description='Body orientation of ant next to food'
         )
 
         self.exp.write(res_name)
 
-    def compute_orientation_to_food(self):
-        name = 'orientation_to_food'
+    def compute_mm10_orientation_next2food(self):
+        name = 'mm10_orientation'
+        res_name = name + '_next2food'
 
-        self.exp.load(['food_x', 'food_y', 'xy_next_to_food', 'orientation_next_to_food'])
+        self.exp.load([name, 'is_xy_next2food'])
 
-        id_exps = self.exp.xy_next_to_food.df.index.get_level_values('id_exp')
-        id_ants = self.exp.xy_next_to_food.df.index.get_level_values('id_ant')
-        frames = self.exp.xy_next_to_food.df.index.get_level_values('frame')
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Moving mean (time window of 10 frames) of the body orientation of ant next to food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_mm20_orientation_next2food(self):
+        name = 'mm20_orientation'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Moving mean (time window of 20 frames) of the body orientation of ant next to food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_angle_body_food(self):
+        name = 'angle_body_food'
+
+        self.exp.load(['food_x', 'food_y', 'x', 'y', 'orientation'])
+
+        self.exp.add_2d_from_1ds(
+            name1='x', name2='y', result_name='xy',
+            xname='x', yname='y', replace=True
+        )
+        id_exps = self.exp.xy.df.index.get_level_values('id_exp')
+        id_ants = self.exp.xy.df.index.get_level_values('id_ant')
+        frames = self.exp.xy.df.index.get_level_values('frame')
         idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frames'])
         self.exp.add_2d_from_1ds(
             name1='food_x', name2='food_y', result_name='food_xy',
@@ -528,163 +414,180 @@ class AnalyseFoodBase:
         df_food = self.__reindexing_food_xy(id_ants, idxs)
 
         df_ant_vector = df_food.copy()
-        df_ant_vector.x = df_food.x - self.exp.xy_next_to_food.df.x
-        df_ant_vector.y = df_food.y - self.exp.xy_next_to_food.df.y
-        self.exp.add_copy('orientation_next_to_food', 'ant_food_orientation')
+        df_ant_vector.x = df_food.x - self.exp.xy.df.x
+        df_ant_vector.y = df_food.y - self.exp.xy.df.y
+        self.exp.add_copy('orientation', 'ant_food_orientation')
         self.exp.ant_food_orientation.change_values(angle_df(df_ant_vector))
 
-        self.exp.add_copy('orientation_next_to_food', name)
-        self.exp.rename(
-            old_name=name, new_name=name, category='FoodBase', label='Body theta_res to food',
-            description='Angle between the ant-food vector and the body theta_res vector'
+        self.exp.add_copy(
+            old_name='orientation', new_name=name, category='FoodBase', label='Body theta_res to food',
+            description='Angle between the ant-food vector and the body vector', replace=True
         )
-        self.exp.orientation_to_food.change_values(norm_angle_tab(
+        self.exp.get_data_object(name).change_values(norm_angle_tab(
             self.exp.ant_food_orientation.df.ant_food_orientation
-            - self.exp.orientation_next_to_food.df.orientation_next_to_food))
-        self.exp.operation('orientation_to_food', lambda x: norm_angle_tab2(x))
+            - self.exp.orientation.df.orientation))
+        self.exp.operation(name, lambda x: norm_angle_tab2(x))
 
         self.exp.write(name)
 
-    def compute_mm5min_orientation2food(self):
-        name = 'orientation_to_food'
-        result_name = 'mm5min_orientation2food'
+    def compute_mm5_angle_body_food(self):
+        name = 'angle_body_food'
+        category = 'Distance2foodMM'
+        time_window = 5
 
         self.exp.load(name)
-        time_window = 5*60*100
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 5min ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 5min ('
-                        + str(time_window) + ' frames)'
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
         )
 
         self.exp.write(result_name)
 
-    def compute_mm60s_orientation2food(self):
-        name = 'orientation_to_food'
-        result_name = 'mm60s_orientation2food'
-
-        self.exp.load(name)
-        time_window = 6000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 60s ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 60s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10s_orientation2food(self):
-        name = 'orientation_to_food'
-        result_name = 'mm10s_orientation2food'
-
-        self.exp.load(name)
-        time_window = 1000.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 10s ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 10s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm1s_orientation2food(self):
-        name = 'orientation_to_food'
-        result_name = 'mm1s_orientation2food'
-
-        self.exp.load(name)
-        time_window = 100.
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on 1s ('+str(time_window)+' frames)',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of 1s ('
-                        + str(time_window) + ' frames)'
-        )
-
-        self.exp.write(result_name)
-
-    def compute_mm10_orientation2food(self):
-        name = 'orientation_to_food'
+    def compute_mm10_angle_body_food(self):
+        name = 'angle_body_food'
+        category = 'Distance2foodMM'
         time_window = 10
-        result_name = 'mm'+str(int(time_window))+'_orientation2food'
 
         self.exp.load(name)
-
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of diff of distance to food on '+str(time_window)+' frames',
-            description='Moving mean of the differential of the the distance of the ants'
-                        ' close to the food on a time window of ' + str(time_window) + ' frames'
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
         )
 
         self.exp.write(result_name)
+
+    def compute_mm20_angle_body_food(self):
+        name = 'angle_body_food'
+        category = 'Distance2foodMM'
+        time_window = 20
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_angle_body_food_next2food(self):
+        name = 'angle_body_food'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Angle between the ant-food vector and the body vector for the ants close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_mm5_angle_body_food_next2food(self):
+        name = 'mm5_angle_body_food'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Moving mean (time window of 5 frames)  of the angle'
+                        ' between the ant-food vector and the body vector for the ants close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_mm10_angle_body_food_next2food(self):
+        name = 'mm10_angle_body_food'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Moving mean (time window of 10 frames)  of the angle'
+                        ' between the ant-food vector and the body vector for the ants close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def compute_mm20_angle_body_food_next2food(self):
+        name = 'mm20_angle_body_food'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category='FoodBase', label='orientation next to food',
+            description='Moving mean (time window of 20 frames)  of the angle'
+                        ' between the ant-food vector and the body vector for the ants close to the food'
+        )
+
+        self.exp.write(res_name)
 
     def compute_is_carrying(self):
         name_result = 'is_carrying'
-        speed_name = 'mm1s_speed_next2food'
-        distance_name = 'distance_to_food_next_to_food'
-        distance_diff_name = 'mm1s_distance2food_next2food_diff'
+        speed_name = 'mm20_speed_next2food'
+        orientation_name = 'mm20_angle_body_food_next2food'
+        distance_name = 'mm20_distance2food_next2food'
+        distance_diff_name = 'mm20_distance2food_next2food_diff'
         training_set_name = 'carrying_training_set'
-        self.exp.load([training_set_name, speed_name, distance_name, distance_diff_name])
+        self.exp.load([training_set_name, speed_name, orientation_name, distance_name, distance_diff_name])
 
-        features, labels = self.__get_training_features_and_labels4carrying(
-            speed_name, distance_name, distance_diff_name, training_set_name)
+        df_features, df_labels = self.__get_training_features_and_labels4carrying(
+            speed_name, orientation_name, distance_name, distance_diff_name, training_set_name)
 
-        mask = self.exp.get_df(distance_name).isna()[distance_name]\
-            | self.exp.get_df(distance_diff_name).isna()[distance_diff_name]\
-            | self.exp.get_df(speed_name).isna()[speed_name]
+        df_to_predict = self.exp.get_df(speed_name).join(self.exp.get_df(orientation_name), how='inner')
+        self.exp.remove_object(orientation_name)
+        df_to_predict = df_to_predict.join(self.exp.get_df(distance_name), how='inner')
+        self.exp.remove_object(distance_name)
+        df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
+        self.exp.remove_object(distance_diff_name)
+        df_to_predict.dropna(inplace=True)
 
-        speeds = np.array(self.exp.get_df(speed_name).mask(mask).dropna()[speed_name])
-        distances = np.array(self.exp.get_df(distance_name).mask(mask).dropna()[distance_name])
-        distance_diff = np.array(self.exp.get_df(distance_diff_name).mask(mask).dropna()[distance_diff_name])
-
-        to_predict = np.array(list(zip(speeds, distances, distance_diff)))
-        clf = svm.SVC(kernel='rbf')
-        clf.fit(features, labels)
-        prediction = clf.predict(to_predict)
+        clf = svm.SVC(kernel='rbf', gamma='auto')
+        clf.fit(df_features, df_labels)
+        prediction = clf.predict(df_to_predict)
 
         self.exp.add_copy(
             old_name=speed_name, new_name=name_result,
             category='FoodBase', label='Is ant carrying?',
             description='Boolean giving if ants are carrying or not'
         )
-        self.exp.get_df(name_result).mask(mask).dropna()
+        self.exp.__dict__[name_result].df = self.exp.get_df(name_result).reindex(df_to_predict.index)
         self.exp.get_data_object(name_result).change_values(prediction)
         self.exp.write(name_result)
 
     def __get_training_features_and_labels4carrying(
-            self, speed_name, distance_name, distance_diff_name, training_set_name):
+            self, speed_name, orientation_name, distance_name, distance_diff_name, training_set_name):
 
         self.exp.filter_with_time_occurrences(
             name_to_filter=speed_name, filter_name=training_set_name,
             result_name='training_set_speed', replace=True)
+
+        self.exp.filter_with_time_occurrences(
+            name_to_filter=orientation_name, filter_name=training_set_name,
+            result_name='training_set_orientation', replace=True)
+        self.exp.get_data_object(orientation_name).change_values(
+            self.exp.get_df(orientation_name).abs())
+
         self.exp.filter_with_time_occurrences(
             name_to_filter=distance_name, filter_name=training_set_name,
             result_name='training_set_distance', replace=True)
+
         self.exp.filter_with_time_occurrences(
             name_to_filter=distance_diff_name, filter_name=training_set_name,
             result_name='training_set_distance_diff', replace=True)
 
-        speeds = np.abs(self.exp.training_set_speed.get_array())
-        distances = self.exp.training_set_distance.get_array()
-        distance_diff = self.exp.training_set_distance_diff.get_array()
-        labels = np.array(self.exp.carrying_training_set.get_values())
+        df_features = self.exp.training_set_speed.df.join(self.exp.training_set_orientation.df, how='inner')
+        df_features = df_features.join(self.exp.training_set_distance.df, how='inner')
+        df_features = df_features.join(self.exp.training_set_distance_diff.df, how='inner')
+        df_features.dropna(inplace=True)
+        self.exp.remove_object('training_set_speed')
+        self.exp.remove_object('training_set_orientation')
+        self.exp.remove_object('training_set_distance')
+        self.exp.remove_object('training_set_distance_diff')
 
-        mask = np.where(~(np.isnan(distances))*~(np.isnan(distance_diff))*~(np.isnan(speeds)))[0]
-        distance_diff = distance_diff[mask]
-        distances = distances[mask]
-        speeds = speeds[mask]
-        labels = labels[mask]
+        df_labels = self.exp.get_df(training_set_name).reindex(df_features.index)
 
-        features = np.array(list(zip(speeds, distances, distance_diff)))
-        return features, labels
+        return df_features, df_labels

@@ -41,6 +41,7 @@ class AnalyseTrajectory:
             name_to_copy='absoluteOrientation', copy_name='orientation', category='Trajectory',
             label='orientation (rad)', description='ant orientation (in the initial food system)'
         )
+        self.exp.operation('orientation', lambda z: round(z, 3))
         if dynamic_food is True:
             self.exp.add_copy1d(
                 name_to_copy='food_x0', copy_name='food_x', category='FoodBase',
@@ -69,11 +70,11 @@ class AnalyseTrajectory:
 
     def __convert_xy_to_mm(self, dynamic_food):
         print('converting to mm')
-        self.exp.operation_between_2names('x', 'mm2px', lambda x, y: round(x / y, 2))
-        self.exp.operation_between_2names('y', 'mm2px', lambda x, y: round(x / y, 2))
+        self.exp.operation_between_2names('x', 'mm2px', lambda x, y: round(x / y, 3))
+        self.exp.operation_between_2names('y', 'mm2px', lambda x, y: round(x / y, 3))
         if dynamic_food is True:
-            self.exp.operation_between_2names('food_x', 'mm2px', lambda x, y: round(x / y, 2))
-            self.exp.operation_between_2names('food_y', 'mm2px', lambda x, y: round(x / y, 2))
+            self.exp.operation_between_2names('food_x', 'mm2px', lambda x, y: round(x / y, 3))
+            self.exp.operation_between_2names('food_y', 'mm2px', lambda x, y: round(x / y, 3))
 
     def __orient_all_in_same_direction(self, id_exp_list, dynamic_food):
         print('orientation in same direction')
@@ -205,23 +206,57 @@ class AnalyseTrajectory:
                 dx[dt > 2] = np.nan
                 dy[dt > 2] = np.nan
 
-                self.exp.speed_x.df.loc[id_exp, id_ant, :] = dx*self.exp.fps.df.loc[id_exp].fps
-                self.exp.speed_y.df.loc[id_exp, id_ant, :] = dy*self.exp.fps.df.loc[id_exp].fps
+                self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.around(dx*self.exp.fps.df.loc[id_exp].fps)
+                self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.around(dy*self.exp.fps.df.loc[id_exp].fps)
                 self.exp.speed.df.loc[id_exp, id_ant, :] =\
                     np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
 
         self.exp.write([name, name+'_x', name+'_y'])
 
-    def compute_mm1s_speed(self):
+    def compute_mm10_speed(self):
         name = 'speed'
-        result_name = 'mm1s_'+name
+        category = 'SpeedMM'
+        time_window = 10
 
         self.exp.load(name)
-        time_window = 100.
-        self.exp.moving_mean4frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name=result_name,
-            label='MM of '+name+' on 1 s('+str(time_window)+' frames)',
-            description='Moving mean of ' + name + ' on a time window of 1s (' + str(time_window) + ' frames)'
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_mm20_speed(self):
+        name = 'speed'
+        category = 'SpeedMM'
+        time_window = 20
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_mm10_orientation(self):
+        name = 'orientation'
+        category = 'OrientationMM'
+        time_window = 10
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_mm20_orientation(self):
+        name = 'orientation'
+        category = 'OrientationMM'
+        time_window = 20
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=category
         )
 
         self.exp.write(result_name)

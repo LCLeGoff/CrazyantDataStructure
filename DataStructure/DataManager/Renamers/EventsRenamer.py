@@ -24,12 +24,12 @@ class Events2dRenamer:
             self, event2d, name, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
 
+        old_address = self.root + event2d.category + '/' + event2d.name + '.csv'
+        os.remove(old_address)
+
         event2d.rename(
             name=name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-
-        old_address = self.root + event2d.category + '/' + event2d.name + '.csv'
-        os.remove(old_address)
 
         new_address = self.root + event2d.category + '/' + name + '.csv'
         event2d.df.to_csv(new_address)

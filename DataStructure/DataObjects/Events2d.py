@@ -14,9 +14,9 @@ class Events2d(BuilderExpAntFrameIndexed2dDataObject):
     def rename(
             self, name, xname=None, yname=None, category=None, label=None, xlabel=None, ylabel=None, description=None):
         if xname is None:
-            xname = self.xname
+            xname = self.df.columns[0]
         if yname is None:
-            yname = self.yname
+            yname = self.df.columns[1]
         if category is None:
             category = self.category
         if label is None:

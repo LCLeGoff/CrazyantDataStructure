@@ -55,8 +55,8 @@ class MovieCanvas(FigureCanvas):
 
     def get_traj_and_movie(self, id_exp):
         self.exp.load('carrying_training_set')
-        self.exp.load('xy_next_to_food')
-        xy_df = self.exp.xy_next_to_food.df.loc[id_exp, :, :]
+        self.exp.load('xy_next2food')
+        xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
         movie = self.exp.get_movie(id_exp)
         return xy_df, movie
@@ -216,7 +216,7 @@ class DataManager:
         self.exp = exp
 
         self.name = 'carrying_training_set'
-        self.exp.load('xy_next_to_food')
+        self.exp.load('xy_next2food')
         if self.exp.is_name_in_data(self.name):
             self.exp.load(self.name)
         else:
