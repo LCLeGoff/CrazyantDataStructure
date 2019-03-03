@@ -426,7 +426,7 @@ class AnalyseFoodBase:
         self.exp.get_data_object(name).change_values(norm_angle_tab(
             self.exp.ant_food_orientation.df.ant_food_orientation
             - self.exp.orientation.df.orientation))
-        self.exp.operation(name, lambda x: norm_angle_tab2(x))
+        self.exp.operation(name, lambda x: np.around(norm_angle_tab2(x), 3))
 
         self.exp.write(name)
 
@@ -528,14 +528,20 @@ class AnalyseFoodBase:
     def compute_is_carrying(self):
         name_result = 'is_carrying'
         speed_name = 'mm20_speed_next2food'
-        orientation_name = 'mm20_angle_body_food_next2food'
-        distance_name = 'mm20_distance2food_next2food'
+        orientation_name = 'mm10_angle_body_food_next2food'
+        distance_name = 'mm10_distance2food_next2food'
         distance_diff_name = 'mm20_distance2food_next2food_diff'
+        id_exp_name = 'id_exp_df'
         training_set_name = 'carrying_training_set'
         self.exp.load([training_set_name, speed_name, orientation_name, distance_name, distance_diff_name])
 
+        self.exp.get_data_object(orientation_name).change_values(self.exp.get_df(orientation_name).abs())
+
+        self.exp.add_copy1d(name_to_copy=orientation_name, copy_name=id_exp_name, replace=True)
+        self.exp.get_df(id_exp_name)[id_exp_name] = self.exp.get_index(id_exp_name).get_level_values('id_exp')
+
         df_features, df_labels = self.__get_training_features_and_labels4carrying(
-            speed_name, orientation_name, distance_name, distance_diff_name, training_set_name)
+            speed_name, orientation_name, distance_name, distance_diff_name, id_exp_name, training_set_name)
 
         df_to_predict = self.exp.get_df(speed_name).join(self.exp.get_df(orientation_name), how='inner')
         self.exp.remove_object(orientation_name)
@@ -543,6 +549,8 @@ class AnalyseFoodBase:
         self.exp.remove_object(distance_name)
         df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
         self.exp.remove_object(distance_diff_name)
+        df_to_predict = df_to_predict.join(self.exp.get_df(id_exp_name), how='inner')
+        self.exp.remove_object(id_exp_name)
         df_to_predict.dropna(inplace=True)
 
         clf = svm.SVC(kernel='rbf', gamma='auto')
@@ -559,7 +567,7 @@ class AnalyseFoodBase:
         self.exp.write(name_result)
 
     def __get_training_features_and_labels4carrying(
-            self, speed_name, orientation_name, distance_name, distance_diff_name, training_set_name):
+            self, speed_name, orientation_name, distance_name, distance_diff_name, id_exp_name, training_set_name):
 
         self.exp.filter_with_time_occurrences(
             name_to_filter=speed_name, filter_name=training_set_name,
@@ -568,8 +576,6 @@ class AnalyseFoodBase:
         self.exp.filter_with_time_occurrences(
             name_to_filter=orientation_name, filter_name=training_set_name,
             result_name='training_set_orientation', replace=True)
-        self.exp.get_data_object(orientation_name).change_values(
-            self.exp.get_df(orientation_name).abs())
 
         self.exp.filter_with_time_occurrences(
             name_to_filter=distance_name, filter_name=training_set_name,
@@ -579,14 +585,21 @@ class AnalyseFoodBase:
             name_to_filter=distance_diff_name, filter_name=training_set_name,
             result_name='training_set_distance_diff', replace=True)
 
+        self.exp.filter_with_time_occurrences(
+            name_to_filter=id_exp_name, filter_name='carrying_training_set',
+            result_name='training_set_id_exp', replace=True)
+
         df_features = self.exp.training_set_speed.df.join(self.exp.training_set_orientation.df, how='inner')
         df_features = df_features.join(self.exp.training_set_distance.df, how='inner')
         df_features = df_features.join(self.exp.training_set_distance_diff.df, how='inner')
+        df_features = df_features.join(self.exp.training_set_id_exp.df, how='inner')
         df_features.dropna(inplace=True)
+
         self.exp.remove_object('training_set_speed')
         self.exp.remove_object('training_set_orientation')
         self.exp.remove_object('training_set_distance')
         self.exp.remove_object('training_set_distance_diff')
+        self.exp.remove_object('training_set_id_exp')
 
         df_labels = self.exp.get_df(training_set_name).reindex(df_features.index)
 

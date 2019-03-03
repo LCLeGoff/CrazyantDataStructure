@@ -20,8 +20,11 @@ from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 class MovieCanvas(FigureCanvas):
 
-    def __init__(self, exp, parent=None, id_exp=1, width=1920, height=1080*1.15, zoom=4):
+    def __init__(
+            self, exp, id_exp, parent=None, training_set_name='carrying_training_set',
+            width=1920, height=1080*1.15, zoom=3):
 
+        self.training_set_name = training_set_name
         self.exp = exp
         self.zoom = zoom
         self.id_exp = id_exp
@@ -33,8 +36,8 @@ class MovieCanvas(FigureCanvas):
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
-        self.xy_df0, self.movie = self.get_traj_and_movie(id_exp)
-        self.idx_dict, self.id_ant_list = self.get_idx_list(id_exp)
+        self.xy_df0, self.movie = self.get_traj_and_movie()
+        self.idx_dict, self.id_ant_list = self.get_idx_list()
         self.last_treated_ant_iter = self.get_last_treated_ant()
 
         self.iter_ant = self.last_treated_ant_iter
@@ -53,12 +56,12 @@ class MovieCanvas(FigureCanvas):
         self.set_canvas_size()
         self.time_loop()
 
-    def get_traj_and_movie(self, id_exp):
-        self.exp.load('carrying_training_set')
+    def get_traj_and_movie(self):
+        self.exp.load(self.training_set_name)
         self.exp.load('xy_next2food')
-        xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
+        xy_df = self.exp.xy_next2food.df.loc[self.id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
-        movie = self.exp.get_movie(id_exp)
+        movie = self.exp.get_movie(self.id_exp)
         return xy_df, movie
 
     def get_last_treated_ant(self):
@@ -73,7 +76,9 @@ class MovieCanvas(FigureCanvas):
                 return -1
 
     def get_treated_ant_list(self):
-        return list(self.exp.carrying_training_set.df.index.get_level_values('id_ant'))
+        id_exp_ant_array = self.exp.get_array_id_exp_ant(self.training_set_name)
+        id_ant_list = set(id_exp_ant_array[id_exp_ant_array[:, 0] == self.id_exp, 1])
+        return list(id_ant_list)
 
     def get_treated_ant_category(self):
         return int(self.exp.carrying_training_set.df.loc[self.id_exp, self.id_ant, self.frame_list[0]])
@@ -101,9 +106,7 @@ class MovieCanvas(FigureCanvas):
         else:
             self.iter_frame = 0
             self.iter_ant += 1
-            if self.iter_ant < len(self.id_ant_list):
-                self.id_ant = self.id_ant_list[self.iter_ant]
-            else:
+            if self.iter_ant >= len(self.id_ant_list):
                 self.iter_ant = 0
 
             self.id_ant, self.frame_list = self.get_id_ant_and_frame_list()
@@ -116,8 +119,8 @@ class MovieCanvas(FigureCanvas):
         fig.subplots_adjust(0, 0.1, 1, 1)
         return fig, ax
 
-    def get_idx_list(self, id_exp):
-        idx_dict = PandasIndexManager().get_dict_id_ant_frame_index(self.xy_df0, id_exp)
+    def get_idx_list(self):
+        idx_dict = PandasIndexManager().get_dict_id_ant_frame_index(self.xy_df0, self.id_exp)
         list_id_ant = sorted(idx_dict.keys())
         return idx_dict, list_id_ant
 
@@ -149,11 +152,10 @@ class MovieCanvas(FigureCanvas):
 
         frame = self.frame_list[self.iter_frame]
         frame_img = self.crop_frame_img(self.movie.get_frame(frame))
-        xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, :], :]
 
         self.ax.cla()
         self.frame_graph = self.ax.imshow(frame_img, cmap='gray')
-        self.xy_graph, = self.ax.plot(xy.x, xy.y, '.-', lw=0.5, mew=0.5)
+        self.xy_graph, = self.ax.plot(self.xy_df.x, self.xy_df.y, '.-', lw=0.5, mew=0.5)
         self.ant_text = self.ax.text(
             self.dx, 0, 'Ant: '+str(self.id_ant), color='black', weight='bold', size='xx-large',
             horizontalalignment='center', verticalalignment='top')
@@ -212,23 +214,26 @@ class MovieCanvas(FigureCanvas):
 
 class DataManager:
 
-    def __init__(self, exp: ExperimentGroups):
+    def __init__(self, exp: ExperimentGroups, id_exp, training_set_name):
         self.exp = exp
+        self.id_exp = id_exp
 
-        self.name = 'carrying_training_set'
+        self.name = training_set_name
         self.exp.load('xy_next2food')
         if self.exp.is_name_in_data(self.name):
             self.exp.load(self.name)
         else:
             self.exp.add_new1d_empty(
                 name=self.name, object_type='Events1d', category='BaseFood',
-                label='Carrying training set',
+                label=self.name,
                 description='Training set to decide if ant are carrying or not using machine learning'
             )
 
     def add_new_entry(self, index: pd.Index, is_carrying):
+        id_exp_ant_tuples = self.exp.get_array_id_exp_ant(self.name)
+        id_exp_ant_tuples = list(zip(id_exp_ant_tuples[:, 0], id_exp_ant_tuples[:, 1]))
         id_ant = index.get_level_values('id_ant')[0]
-        if id_ant in self.exp.carrying_training_set.df.index.get_level_values('id_ant'):
+        if (self.exp, id_ant) in id_exp_ant_tuples:
             for id_exp, id_ant, frame in index:
                 self.exp.carrying_training_set.df.loc[id_exp, id_ant, frame] = is_carrying
         else:
@@ -236,8 +241,10 @@ class DataManager:
             self.exp.carrying_training_set.df = self.exp.carrying_training_set.df.append(df)
 
     def remove_entry(self, id_ant):
-        if id_ant in self.exp.carrying_training_set.df.index.get_level_values('id_ant'):
-            self.exp.carrying_training_set.df.loc[:, id_ant, :] = None
+        id_exp_ant_tuples = self.exp.get_array_id_exp_ant(self.name)
+        id_exp_ant_tuples = list(zip(id_exp_ant_tuples[:, 0], id_exp_ant_tuples[:, 1]))
+        if (self.id_exp, id_ant) in id_exp_ant_tuples:
+            self.exp.carrying_training_set.df.loc[self.id_exp, id_ant, :] = None
             self.exp.carrying_training_set.df.dropna(inplace=True)
 
     def write_data(self):
@@ -248,20 +255,21 @@ class DataManager:
 
 
 class ApplicationWindow(QtWidgets.QMainWindow):
-    def __init__(self, group):
+    def __init__(self, group, id_exp=1, training_set_name='carrying_training_set'):
 
         self.bt_height = 30
         self.bt_length = 80
         self.dl = 5
 
         self.exp = ExperimentGroupBuilder(root).build(group)
-        self.data_manager = DataManager(self.exp)
+        self.data_manager = DataManager(exp=self.exp, id_exp=id_exp, training_set_name=training_set_name)
 
         QtWidgets.QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.main_widget = QtWidgets.QWidget(self)
-        self.movie_canvas = MovieCanvas(self.exp, self.main_widget)
+        self.movie_canvas = MovieCanvas(
+            exp=self.exp, id_exp=id_exp, parent=self.main_widget, training_set_name=training_set_name)
 
         self.label_text = QLabel(str(self.data_manager.get_quantity_of_each_label()))
 
@@ -364,6 +372,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
-aw = ApplicationWindow(group0)
+aw = ApplicationWindow(group0, id_exp=55)
 aw.show()
 sys.exit(qApp.exec_())

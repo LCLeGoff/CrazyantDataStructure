@@ -32,7 +32,7 @@ class MovieCanvas(FigureCanvas):
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
-        self.xy_df0, self.carrying_df, self.movie = self.get_traj_and_movie(id_exp)
+        self.xy_df0, self.carrying_df0, self.movie = self.get_traj_and_movie(id_exp)
         self.idx_dict, self.id_ant_list = self.get_idx_list(id_exp)
 
         self.iter_ant = 0
@@ -44,7 +44,7 @@ class MovieCanvas(FigureCanvas):
         self.ant_text = None
         self.clock_text = None
         self.id_ant, self.frame_list = self.get_id_ant_and_frame_list()
-        self.xy_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+        self.xy_df, self.carrying_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
         self.reset_play()
 
         self.set_canvas_size()
@@ -52,8 +52,8 @@ class MovieCanvas(FigureCanvas):
 
     def get_traj_and_movie(self, id_exp):
         self.exp.load('is_carrying')
-        self.exp.load('xy_next_to_food')
-        xy_df = self.exp.xy_next_to_food.df.loc[id_exp, :, :]
+        self.exp.load('xy_next2food')
+        xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
         carrying_df = self.exp.is_carrying.df
         movie = self.exp.get_movie(id_exp)
@@ -72,7 +72,7 @@ class MovieCanvas(FigureCanvas):
                 self.iter_ant = len(self.id_ant_list)-1
 
             self.id_ant, self.frame_list = self.get_id_ant_and_frame_list()
-            self.xy_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+            self.xy_df, self.carrying_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
             self.reset_play()
 
     def next_ant(self):
@@ -88,7 +88,7 @@ class MovieCanvas(FigureCanvas):
                 self.iter_ant = 0
 
             self.id_ant, self.frame_list = self.get_id_ant_and_frame_list()
-            self.xy_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+            self.xy_df, self.carrying_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
             self.reset_play()
 
     def init_figure(self):
@@ -118,12 +118,14 @@ class MovieCanvas(FigureCanvas):
 
     def cropping_xy(self):
         xy_df = self.xy_df0.loc[pd.IndexSlice[self.id_exp, self.id_ant, :], :]
+        carrying_df = self.carrying_df0.loc[pd.IndexSlice[self.id_exp, self.id_ant, :], :]
+        xy_df = xy_df.reindex(carrying_df.index)
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
         dx = int(1920 / self.zoom / 2)
         dy = int(1080 / self.zoom / 2)
         xy_df.x -= x0 - dx
         xy_df.y -= y0 - dy
-        return xy_df, x0, y0, dx, dy
+        return xy_df, carrying_df, x0, y0, dx, dy
 
     def reset_play(self):
         self.iter_frame = 0
@@ -135,7 +137,7 @@ class MovieCanvas(FigureCanvas):
 
         self.ax.cla()
         self.frame_graph = self.ax.imshow(frame_img, cmap='gray')
-        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=carr)
+        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=carr, alpha=0.2)
         self.ant_text = self.ax.text(
             self.dx, 0, 'Ant: '+str(self.id_ant), color='black', weight='bold', size='xx-large',
             horizontalalignment='center', verticalalignment='top')
@@ -162,10 +164,10 @@ class MovieCanvas(FigureCanvas):
                 frame_img = self.crop_frame_img(self.movie.get_next_frame())
                 for i in range(self.frame_list[self.iter_frame - 1] + 1, frame):
                     frame_img = self.crop_frame_img(self.movie.get_next_frame())
-                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, frame-100:frame+1], :]
+                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, frame-20:frame+1], :]
                 carr = np.array(
                     self.carrying_df.loc[
-                        pd.IndexSlice[pd.IndexSlice[self.id_exp, self.id_ant, frame-100:frame+1]]])[:, 0]
+                        pd.IndexSlice[pd.IndexSlice[self.id_exp, self.id_ant, frame-20:frame+1]]])[:, 0]
 
                 self.frame_graph.set_data(frame_img)
                 self.xy_graph.set_offsets(np.c_[xy.x, xy.y])
@@ -187,7 +189,7 @@ class MovieCanvas(FigureCanvas):
 
 
 class ApplicationWindow(QtWidgets.QMainWindow):
-    def __init__(self, group):
+    def __init__(self, group, id_exp):
 
         self.bt_height = 30
         self.bt_length = 80
@@ -199,7 +201,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.main_widget = QtWidgets.QWidget(self)
-        self.movie_canvas = MovieCanvas(self.exp, self.main_widget)
+        self.movie_canvas = MovieCanvas(self.exp, self.main_widget, id_exp=id_exp)
 
         layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(self.movie_canvas)
@@ -265,6 +267,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
-aw = ApplicationWindow(group0)
+aw = ApplicationWindow(group0, id_exp=55)
 aw.show()
 sys.exit(qApp.exec_())
