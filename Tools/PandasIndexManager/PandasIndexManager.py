@@ -104,9 +104,13 @@ class PandasIndexManager:
         if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names:
             raise IndexError('df does not have id_exp or id_ant as index')
         else:
-            id_exps = df_arg.index.get_level_values('id_exp')
-            id_ants = df_arg.index.get_level_values('id_ant')
-            idx_set = set(list(zip(id_exps, id_ants)))
+            list_names = list(df_arg.index.names)
+            list_names.remove('id_exp')
+            list_names.remove('id_ant')
+            idxs = df_arg.index
+            for names in list_names:
+                idxs = idxs.droplevel(names)
+            idx_set = set(idxs)
             return np.array(sorted(idx_set), dtype=int)
 
     @staticmethod
@@ -114,9 +118,13 @@ class PandasIndexManager:
         if 'id_exp' not in df_arg.index.names or 'frame' not in df_arg.index.names:
             raise IndexError('df_arg does not have id_exp or frame as index')
         else:
-            id_exps = df_arg.index.get_level_values('id_exp')
-            frames = df_arg.index.get_level_values('frame')
-            idx_set = set(list(zip(id_exps, frames)))
+            list_names = list(df_arg.index.names)
+            list_names.remove('id_exp')
+            list_names.remove('frame')
+            idxs = df_arg.index
+            for names in list_names:
+                idxs = idxs.droplevel(names)
+            idx_set = set(idxs)
             return np.array(sorted(idx_set), dtype=int)
 
     @staticmethod

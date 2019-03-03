@@ -89,6 +89,9 @@ class ExperimentGroups:
     def get_df(self, name):
         return self.get_data_object(name).df
 
+    def get_index(self, name):
+        return self.get_data_object(name).df.index
+
     def get_index_names(self, name):
         return self.get_df(name).index.names
 
