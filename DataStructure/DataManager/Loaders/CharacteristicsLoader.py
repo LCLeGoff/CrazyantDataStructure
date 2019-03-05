@@ -17,6 +17,7 @@ class Characteristics1dLoader:
             index=np.array(list(chara_dict.keys()), dtype=int),
             columns=[definition.name])
         res.index.name = 'id_exp'
+        res.sort_index(inplace=True)
         return Characteristics1d(res, definition)
 
 
@@ -31,4 +32,5 @@ class Characteristics2dLoader:
             index=np.array(list(chara_dict.keys()), dtype=int),
             columns=['x', 'y'])
         res.index.name = 'id_exp'
+        res.sort_index(inplace=True)
         return Characteristics2d(res, definition)

@@ -10,7 +10,7 @@ def segment_center(p, q):
 
 
 def convert2vect(u):
-    if isinstance(u, list) or u.ndim == 1:
+    if isinstance(u, list) or isinstance(u, tuple) or u.ndim == 1:
         u2 = np.array(u)[np.newaxis]
     else:
         u2 = u.copy()
