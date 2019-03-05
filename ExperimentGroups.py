@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
+from cv2 import cv2
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
 from DataStructure.DataObjectBuilders.Builder import Builder
@@ -105,6 +106,13 @@ class ExperimentGroups:
     def get_movie(self, id_exp):
         address = self.get_movie_address(id_exp)
         return Movies(address, id_exp)
+
+    def get_bg_img_address(self, id_exp):
+        return self.root + '/I_bg/'+str(id_exp).zfill(3)+'.png'
+
+    def get_bg_img(self, id_exp):
+        address = self.get_bg_img_address(id_exp)
+        return cv2.imread(address, cv2.IMREAD_GRAYSCALE)
 
     def get_array_all_indexes(self, name):
         return self.pandas_index_manager.get_array_all_indexes(self.get_df(name))
@@ -458,6 +466,43 @@ class ExperimentGroups:
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
+
+    def get_reindexed_df(self, name_to_reindex, reindexer_name):
+
+        if self.__is_indexed_by_exp_ant_frame(reindexer_name) is True:
+
+            id_exps = self.get_index(reindexer_name).get_level_values('id_exp')
+            id_ants = self.get_index(reindexer_name).get_level_values('id_ant')
+            frames = self.get_index(reindexer_name).get_level_values('frame')
+
+            if self.__is_indexed_by_exp(name_to_reindex) is True:
+
+                df = self.get_df(name_to_reindex).reindex(id_exps).copy()
+                df['id_ant'] = id_ants
+                df['frame'] = frames
+                df.reset_index(inplace=True)
+                df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                return df
+
+            elif self.__is_indexed_by_exp_ant_frame(reindexer_name) is True:
+
+                idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
+
+                df = self.get_df(name_to_reindex).reindex(idxs)
+                df['id_ant'] = id_ants
+                df.reset_index(inplace=True)
+                df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                return  df
+            else:
+                raise TypeError(
+                    'reindexing a '+str(list(self.get_index(name_to_reindex).get_names))
+                    + ' indexed object by a '+str(list(self.get_index(reindexer_name).get_names))
+                    + ' indexed object is not implemented yet')
+        else:
+            raise TypeError(
+                'reindexing a '+str(list(self.get_index(name_to_reindex).get_names))
+                + ' indexed object by a '+str(list(self.get_index(reindexer_name).get_names))
+                + ' indexed object is not implemented yet')
 
     def filter_with_values(
             self, name_to_filter, filter_name, filter_values=1, result_name=None,
