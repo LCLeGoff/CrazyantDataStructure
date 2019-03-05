@@ -1,13 +1,18 @@
 import os
 
 import pandas as pd
+import numpy as np
 
+from cv2 import cv2
+from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from Scripts.root import root
+from Tools.MiscellaneousTools.Geometry import distance
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_json, write_obj_pickle, write_obj_json
 
 
 class AnalyseStarter:
-    def __init__(self, root, group, init_blobs=True):
-        self.root = root + group + '/'
+    def __init__(self, root0, group, init_blobs=True):
+        self.root = root0 + group + '/'
         self.group = group
         self.init_blobs = init_blobs
         self.characteristics = import_obj_json(self.root + 'Raw/Characteristics.json')
@@ -185,10 +190,10 @@ class AnalyseStarter:
         key = 'food_radius'
         if key in self.characteristics[list(self.characteristics.keys())[0]]:
             definition_dict[key] = dict()
-            definition_dict[key]['label'] = 'Food radius'
+            definition_dict[key]['label'] = 'Food radius (mm)'
             definition_dict[key]['category'] = 'Raw'
             definition_dict[key]['object_type'] = 'Characteristics1d'
-            definition_dict[key]['description'] = 'radius of the food (px)'
+            definition_dict[key]['description'] = 'radius of the food (mm)'
 
     def __fill_details_food_center_features(self, definition_dict):
         key = 'food_center'
@@ -282,3 +287,43 @@ class AnalyseStarter:
             definition_dict[key]['category'] = 'Raw'
             definition_dict[key]['object_type'] = 'CharacteristicTimeSeries1d'
             definition_dict[key]['description'] = 'Y coordinates of the food trajectory'
+
+    def compute_mm2px(self):
+
+        mm2px = 'mm2px'
+        exps = ExperimentGroupBuilder(root).build(self.group)
+        exps.load(mm2px)
+
+        params = cv2.SimpleBlobDetector_Params()
+        params.filterByArea = True
+        params.minArea = 2
+        detector = cv2.SimpleBlobDetector_create(params)
+        for id_exp in exps.get_index(mm2px):
+
+            bg_img = exps.get_bg_img(id_exp)
+            bg_img = np.sqrt(bg_img[400:600, 900:1100]).astype(np.uint8)
+            ret, bg_img = cv2.threshold(bg_img, 9.5, 255, cv2.THRESH_BINARY)
+
+            points = detector.detect(bg_img)
+            nbr_pts = len(points)
+
+            ds = np.zeros((nbr_pts, nbr_pts))
+            for i in range(nbr_pts):
+                for j in range(i + 1, nbr_pts):
+                    ds[i, j] = distance(points[i].pt, points[j].pt)
+
+            h = np.histogram(ds[ds != 0])
+
+            n_max = 4
+            mask = np.where(h[0] > n_max)[0]
+            while len(mask) == 0:
+                n_max -= 1
+                mask = np.where(h[0] > n_max)[0]
+
+            d0 = h[1][mask[0]]
+            d1 = h[1][mask[0] + 1]
+            d = np.max(ds[(ds >= d0) * (ds <= d1)])
+
+            exps.get_df(mm2px).loc[id_exp] = round(d/21., 3)
+
+        exps.write(mm2px)
