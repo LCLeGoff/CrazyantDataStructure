@@ -7,8 +7,11 @@ from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_ang
 
 
 class AnalyseFoodBase:
-    def __init__(self, root, group):
-        self.exp = ExperimentGroupBuilder(root).build(group)
+    def __init__(self, root, group, exp=None):
+        if exp is None:
+            self.exp = ExperimentGroupBuilder(root).build(group)
+        else:
+            self.exp = exp
 
     def compute_distance2food(self):
         name = 'distance2food'
@@ -18,7 +21,7 @@ class AnalyseFoodBase:
         id_exps = self.exp.x.df.index.get_level_values('id_exp')
         id_ants = self.exp.x.df.index.get_level_values('id_ant')
         frames = self.exp.x.df.index.get_level_values('frame')
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frames'])
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
 
         self.exp.add_2d_from_1ds(
             name1='food_x', name2='food_y', result_name='food_xy',
@@ -316,8 +319,8 @@ class AnalyseFoodBase:
             description='Differential of the distance between the food and the ants', replace=True
         )
 
-        self.exp.distance2food_next2food_differential.df = \
-            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group)
+        self.exp.get_data_object(result_name).change_values(
+            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
@@ -406,7 +409,7 @@ class AnalyseFoodBase:
         id_exps = self.exp.xy.df.index.get_level_values('id_exp')
         id_ants = self.exp.xy.df.index.get_level_values('id_ant')
         frames = self.exp.xy.df.index.get_level_values('frame')
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frames'])
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
         self.exp.add_2d_from_1ds(
             name1='food_x', name2='food_y', result_name='food_xy',
             xname='x_ant', yname='y_ant', replace=True
@@ -527,35 +530,35 @@ class AnalyseFoodBase:
 
     def compute_is_carrying(self):
         name_result = 'is_carrying'
+
         speed_name = 'mm20_speed_next2food'
-        orientation_name = 'mm10_angle_body_food_next2food'
-        distance_name = 'mm10_distance2food_next2food'
+        orientation_name = 'mm20_angle_body_food_next2food'
+        distance_name = 'mm20_distance2food_next2food'
         distance_diff_name = 'mm20_distance2food_next2food_diff'
-        id_exp_name = 'id_exp_df'
+        food_radius_name = 'food_radius'
         training_set_name = 'carrying_training_set'
-        self.exp.load([training_set_name, speed_name, orientation_name, distance_name, distance_diff_name])
+
+        self.exp.load(
+            [training_set_name, speed_name, orientation_name,
+             distance_name, distance_diff_name, food_radius_name, 'mm2px'])
 
         self.exp.get_data_object(orientation_name).change_values(self.exp.get_df(orientation_name).abs())
-
-        self.exp.add_copy1d(name_to_copy=orientation_name, copy_name=id_exp_name, replace=True)
-        self.exp.get_df(id_exp_name)[id_exp_name] = self.exp.get_index(id_exp_name).get_level_values('id_exp')
+        food_radius_df = self.exp.get_reindexed_df(name_to_reindex=food_radius_name, reindexer_name=orientation_name)
 
         df_features, df_labels = self.__get_training_features_and_labels4carrying(
-            speed_name, orientation_name, distance_name, distance_diff_name, id_exp_name, training_set_name)
+            speed_name, orientation_name, distance_name, distance_diff_name, food_radius_df, training_set_name)
 
-        df_to_predict = self.exp.get_df(speed_name).join(self.exp.get_df(orientation_name), how='inner')
-        self.exp.remove_object(orientation_name)
-        df_to_predict = df_to_predict.join(self.exp.get_df(distance_name), how='inner')
-        self.exp.remove_object(distance_name)
-        df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
-        self.exp.remove_object(distance_diff_name)
-        df_to_predict = df_to_predict.join(self.exp.get_df(id_exp_name), how='inner')
-        self.exp.remove_object(id_exp_name)
-        df_to_predict.dropna(inplace=True)
+        df_to_predict = self.__get_df_to_predict_carrying(
+            distance_diff_name, distance_name, food_radius_df, orientation_name, speed_name)
 
         clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features, df_labels)
-        prediction = clf.predict(df_to_predict)
+        clf.fit(df_features.loc[pd.IndexSlice[1, :, :], :], df_labels.loc[pd.IndexSlice[1, :, :], :])
+        prediction = clf.predict(df_to_predict.loc[pd.IndexSlice[1, :, :], :])
+
+        clf = svm.SVC(kernel='rbf', gamma='auto')
+        clf.fit(df_features.loc[pd.IndexSlice[2:, :, :], :], df_labels.loc[pd.IndexSlice[2:, :, :], :])
+        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[2:, :, :], :])
+        prediction = np.concatenate(prediction, prediction2)
 
         self.exp.add_copy(
             old_name=speed_name, new_name=name_result,
@@ -566,8 +569,21 @@ class AnalyseFoodBase:
         self.exp.get_data_object(name_result).change_values(prediction)
         self.exp.write(name_result)
 
+    def __get_df_to_predict_carrying(self, distance_diff_name, distance_name, food_radius_df,
+                                     orientation_name, speed_name):
+        df_to_predict = self.exp.get_df(speed_name).join(self.exp.get_df(orientation_name), how='inner')
+        self.exp.remove_object(orientation_name)
+        df_to_predict = df_to_predict.join(self.exp.get_df(distance_name), how='inner')
+        self.exp.remove_object(distance_name)
+        df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
+        self.exp.remove_object(distance_diff_name)
+        # df_to_predict = df_to_predict.join(food_radius_df, how='inner')
+        # self.exp.remove_object(food_radius_name)
+        df_to_predict.dropna(inplace=True)
+        return df_to_predict
+
     def __get_training_features_and_labels4carrying(
-            self, speed_name, orientation_name, distance_name, distance_diff_name, id_exp_name, training_set_name):
+            self, speed_name, orientation_name, distance_name, distance_diff_name, food_radius_df, training_set_name):
 
         self.exp.filter_with_time_occurrences(
             name_to_filter=speed_name, filter_name=training_set_name,
@@ -585,21 +601,16 @@ class AnalyseFoodBase:
             name_to_filter=distance_diff_name, filter_name=training_set_name,
             result_name='training_set_distance_diff', replace=True)
 
-        self.exp.filter_with_time_occurrences(
-            name_to_filter=id_exp_name, filter_name='carrying_training_set',
-            result_name='training_set_id_exp', replace=True)
-
         df_features = self.exp.training_set_speed.df.join(self.exp.training_set_orientation.df, how='inner')
         df_features = df_features.join(self.exp.training_set_distance.df, how='inner')
         df_features = df_features.join(self.exp.training_set_distance_diff.df, how='inner')
-        df_features = df_features.join(self.exp.training_set_id_exp.df, how='inner')
+        # df_features = df_features.join(food_radius_df, how='inner')
         df_features.dropna(inplace=True)
 
         self.exp.remove_object('training_set_speed')
         self.exp.remove_object('training_set_orientation')
         self.exp.remove_object('training_set_distance')
         self.exp.remove_object('training_set_distance_diff')
-        self.exp.remove_object('training_set_id_exp')
 
         df_labels = self.exp.get_df(training_set_name).reindex(df_features.index)
 
