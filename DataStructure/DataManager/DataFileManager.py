@@ -46,20 +46,21 @@ class DataFileManager:
             raise NameError(name + ' does not exist')
 
     def create_new_category(self, category):
-        add = self.root + category + '/'
-        if not (os.path.isdir(add)):
-            try:
-                os.mkdir(add)
-            except FileExistsError:
-                pass
-            chara = dict()
-            for id_exp in self.id_exp_list:
-                chara[str(id_exp)] = dict()
-            write_obj_json(add + 'Characteristics.json', chara)
-            df = pd.DataFrame(index=self.get_exp_ant_frame_index())
-            df.to_csv(add + 'TimeSeries.csv')
-            df = pd.DataFrame(index=self.get_exp_frame_index())
-            df.to_csv(add + 'CharacteristicTimeSeries.csv')
+        if category is not None:
+            add = self.root + category + '/'
+            if not (os.path.isdir(add)):
+                try:
+                    os.mkdir(add)
+                except FileExistsError:
+                    pass
+                chara = dict()
+                for id_exp in self.id_exp_list:
+                    chara[str(id_exp)] = dict()
+                write_obj_json(add + 'Characteristics.json', chara)
+                df = pd.DataFrame(index=self.get_exp_ant_frame_index())
+                df.to_csv(add + 'TimeSeries.csv')
+                df = pd.DataFrame(index=self.get_exp_frame_index())
+                df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
     def write(self, obj):
         if obj.category is None or obj.label is None or obj.description is None:
@@ -67,6 +68,15 @@ class DataFileManager:
         else:
             self.create_new_category(obj.category)
             self.data_writer.write(obj)
+
+    def rename(
+            self, obj, name=None, xname=None, yname=None,
+            category=None, label=None, xlabel=None, ylabel=None, description=None):
+
+        self.create_new_category(category)
+        self.data_renamer.rename(
+            obj, name=name, xname=xname, yname=yname, category=category,
+            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
     def delete(self, obj):
         self.data_deleter.delete(obj)
