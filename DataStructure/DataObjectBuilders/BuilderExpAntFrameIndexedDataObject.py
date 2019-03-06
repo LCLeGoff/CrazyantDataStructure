@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
@@ -33,3 +34,12 @@ class BuilderExpAntFrameIndexedDataObject:
 
     def operation_on_id_exp(self, id_exp, fct):
         self.df.loc[id_exp, :, :] = fct(self.df.loc[id_exp, :, :])
+
+    @staticmethod
+    def __time_delta4each_group(df: pd.DataFrame):
+        df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+        df.iloc[-1, -1] = np.nan
+        return df
+
+    def compute_time_delta(self):
+        return self.df.groupby(['id_exp', 'id_ant']).apply(self.__time_delta4each_group)

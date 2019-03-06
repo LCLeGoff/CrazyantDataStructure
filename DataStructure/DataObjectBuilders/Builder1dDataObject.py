@@ -37,13 +37,3 @@ class Builder1dDataObject(BuilderDataObject):
 
     def operation_with_data2d(self, obj, obj_name_col, fct):
         self.replace_values(fct(self.df[self.name_col], obj.df[obj_name_col]))
-
-    def compute_delta(self, name=None, filter_obj=None):
-        if name is None:
-            name = 'delta_'+self.df.columns[0]
-
-        delta_df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_1d_df(name)
-
-        self.fill_delta_df(delta_df, filter_obj)
-
-        return delta_df

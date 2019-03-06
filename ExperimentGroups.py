@@ -69,7 +69,7 @@ class ExperimentGroups:
 
     def get_object_type_in_1d(self, name):
         object_type = self.get_data_object(name).object_type
-        object_type = object_type[:-2]+'1d'
+        object_type = object_type[:-2] + '1d'
         return object_type
 
     def get_label(self, name):
@@ -101,14 +101,15 @@ class ExperimentGroups:
 
     def get_movie_address(self, id_exp):
         session, trial = self.get_ref_id_exp(id_exp)
-        return root_movie+self.group+'/'+self.group+'_S'+str(session).zfill(2)+'_T'+str(trial).zfill(2)+'.MP4'
+        return root_movie + self.group + '/' + self.group + '_S' + str(session).zfill(2) + '_T' + str(trial).zfill(
+            2) + '.MP4'
 
     def get_movie(self, id_exp):
         address = self.get_movie_address(id_exp)
         return Movies(address, id_exp)
 
     def get_bg_img_address(self, id_exp):
-        return self.root + '/I_bg/'+str(id_exp).zfill(3)+'.png'
+        return self.root + '/I_bg/' + str(id_exp).zfill(3) + '.png'
 
     def get_bg_img(self, id_exp):
         address = self.get_bg_img_address(id_exp)
@@ -156,7 +157,8 @@ class ExperimentGroups:
 
                 lg = 10
                 plt.plot(x, y, '.')
-                plt.plot(x+np.array([-1, 1])*lg*np.cos(orientation)/2., y+np.array([-1, 1])*lg*np.sin(orientation)/2.)
+                plt.plot(x + np.array([-1, 1]) * lg * np.cos(orientation) / 2.,
+                         y + np.array([-1, 1]) * lg * np.sin(orientation) / 2.)
 
         plt.title(frame)
         plt.show()
@@ -168,7 +170,7 @@ class ExperimentGroups:
 
     def add_object(self, name, obj, replace=False):
         if not replace and name in self.names:
-            raise NameError(name+' exists already')
+            raise NameError(name + ' exists already')
         else:
             self.__dict__[name] = obj
             self.names.add(name)
@@ -250,6 +252,10 @@ class ExperimentGroups:
             'Events1d', 'Events2d', 'TimeSeries1d', 'TimeSeries2d',
             'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
 
+    def __is_a_time_series(self, name):
+        object_type = self.get_object_type(name)
+        return object_type in ['TimeSeries1d', 'TimeSeries2d', 'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
+
     def __is_same_index_names(self, name1, name2):
         index_name1 = self.get_index_names(name1)
         index_name2 = self.get_index_names(name2)
@@ -261,7 +267,7 @@ class ExperimentGroups:
         print('renaming ', old_name, 'to', new_name)
 
         self.load(old_name)
-        self.data_manager.data_renamer.rename(
+        self.data_manager.rename(
             self.get_data_object(old_name), name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
@@ -396,8 +402,10 @@ class ExperimentGroups:
         self.add_object(name, obj, replace=replace)
 
     def __create_empty_df(self, name, object_type):
-        if object_type in ['Events1d', 'TimeSeries1d']:
+        if object_type in ['TimeSeries1d']:
             df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_1d_df(name)
+        elif object_type in ['Events1d']:
+            df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
         elif object_type in ['AntCharacteristics1d']:
             df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
         elif object_type in ['Characteristics1d']:
@@ -467,41 +475,47 @@ class ExperimentGroups:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
 
-    def get_reindexed_df(self, name_to_reindex, reindexer_name):
+    def get_reindexed_df(self, name_to_reindex, reindexer_name, fill_value=None):
 
         if self.__is_indexed_by_exp_ant_frame(reindexer_name) is True:
 
-            id_exps = self.get_index(reindexer_name).get_level_values('id_exp')
-            id_ants = self.get_index(reindexer_name).get_level_values('id_ant')
-            frames = self.get_index(reindexer_name).get_level_values('frame')
+            if self.__is_indexed_by_exp_ant_frame(reindexer_name) is True:
 
-            if self.__is_indexed_by_exp(name_to_reindex) is True:
-
-                df = self.get_df(name_to_reindex).reindex(id_exps).copy()
-                df['id_ant'] = id_ants
-                df['frame'] = frames
-                df.reset_index(inplace=True)
-                df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                df = self.get_df(name_to_reindex).reindex(self.get_index(reindexer_name), fill_value=fill_value)
                 return df
-
-            elif self.__is_indexed_by_exp_ant_frame(reindexer_name) is True:
-
-                idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
-
-                df = self.get_df(name_to_reindex).reindex(idxs)
-                df['id_ant'] = id_ants
-                df.reset_index(inplace=True)
-                df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
-                return  df
             else:
-                raise TypeError(
-                    'reindexing a '+str(list(self.get_index(name_to_reindex).get_names))
-                    + ' indexed object by a '+str(list(self.get_index(reindexer_name).get_names))
-                    + ' indexed object is not implemented yet')
+                id_exps = self.get_index(reindexer_name).get_level_values('id_exp')
+                id_ants = self.get_index(reindexer_name).get_level_values('id_ant')
+                frames = self.get_index(reindexer_name).get_level_values('frame')
+
+                if self.__is_indexed_by_exp(name_to_reindex) is True:
+
+                    df = self.get_df(name_to_reindex).reindex(id_exps, fill_value=fill_value)
+                    df['id_ant'] = id_ants
+                    df['frame'] = frames
+                    df.reset_index(inplace=True)
+                    df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                    return df
+
+                elif self.__is_indexed_by_exp_frame(reindexer_name) is True:
+
+                    idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
+
+                    df = self.get_df(name_to_reindex).reindex(idxs, fill_value=fill_value)
+                    df['id_ant'] = id_ants
+                    df.reset_index(inplace=True)
+                    df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                    return df
+
+                else:
+                    raise TypeError(
+                        'reindexing a ' + str(list(self.get_index(name_to_reindex).get_names))
+                        + ' indexed object by a ' + str(list(self.get_index(reindexer_name).get_names))
+                        + ' indexed object is not implemented yet')
         else:
             raise TypeError(
-                'reindexing a '+str(list(self.get_index(name_to_reindex).get_names))
-                + ' indexed object by a '+str(list(self.get_index(reindexer_name).get_names))
+                'reindexing a ' + str(list(self.get_index(name_to_reindex).get_names))
+                + ' indexed object by a ' + str(list(self.get_index(reindexer_name).get_names))
                 + ' indexed object is not implemented yet')
 
     def filter_with_values(
@@ -562,7 +576,7 @@ class ExperimentGroups:
         name_to_filter_can_be_filtered = self.__is_indexed_by_exp_ant_frame(name_to_filter)
         name_interval_can_be_a_filter = self.get_object_type(name_intervals) == 'Events1d'
 
-        interval_index_name = 'interval_idx_'+result_name
+        interval_index_name = 'interval_idx_' + result_name
         if name_to_filter_can_be_filtered and name_interval_can_be_a_filter:
 
             self.__compute_time_interval_filter(
@@ -570,8 +584,8 @@ class ExperimentGroups:
                 category, label, xlabel, ylabel, description, replace)
         else:
             raise TypeError(
-                name_to_filter+' cannot be filtered (not indexed by exp,ant,frame or '
-                + name_intervals+' cannot be used as a filter (not an event)'
+                name_to_filter + ' cannot be filtered (not indexed by exp,ant,frame or '
+                + name_intervals + ' cannot be used as a filter (not an event)'
             )
 
         return result_name, interval_index_name
@@ -621,7 +635,7 @@ class ExperimentGroups:
                 )
 
             self.operation_between_2names(
-                name1=result_name, name2='filter', fct=lambda x, y: x*y
+                name1=result_name, name2='filter', fct=lambda x, y: x * y
             )
 
             self.__dict__[result_name].df = self.__dict__[result_name].df.dropna()
@@ -699,38 +713,84 @@ class ExperimentGroups:
 
             self.add_object(name_extracted_events, event, replace)
 
-    def compute_delta(
-            self, name_to_delta, filter_name=None, result_name=None, xname=None, yname=None,
+    def compute_time_delta(
+            self, name_to_delta, result_name=None, xname=None, yname=None,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False
     ):
-        if filter_name is None:
-            filter_obj = None
+
+        if self.__is_indexed_by_exp_ant_frame(name_to_delta):
+
+            if result_name is None:
+                result_name = 'time_delta_' + name_to_delta
+            if category is None:
+                category = self.get_category(name_to_delta)
+
+            delta_df = self.get_data_object(name_to_delta).compute_time_delta()
+
+            if self.__is_1d(name_to_delta):
+                self.add_new1d_from_df(
+                    df=delta_df, name=result_name, object_type=self.get_object_type(name_to_delta),
+                    category=category, label=label, description=description, replace=replace
+                )
+            else:
+                if xname is None:
+                    xname = self.get_xname(name_to_delta)
+                if yname is None:
+                    yname = self.get_yname(name_to_delta)
+                self.add_new2d_from_df(
+                    df=delta_df, name=result_name, xname=xname, yname=yname,
+                    object_type=self.get_object_type(name_to_delta),
+                    category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
+                    replace=replace
+                )
+
+            return result_name
         else:
-            filter_obj = self.get_data_object(filter_name)
-        if result_name is None:
-            result_name = 'delta_'+self.get_df(name_to_delta).columns[0]
-        if category is None:
-            category = self.get_category(name_to_delta)
+            raise TypeError(name_to_delta+' is not a time series')
 
-        delta_df = self.get_data_object(name_to_delta).compute_delta(name=result_name, filter_obj=filter_obj)
+    def compute_time_intervals(
+            self, name_to_intervals, result_name=None, category=None, label=None, description=None, replace=False):
 
-        if self.__is_1d(name_to_delta):
+        if self.__is_1d(name_to_intervals):
+
+            if result_name is None:
+                result_name = name_to_intervals+'_intervals'
+
+            if category is None:
+                category = self.get_category(name_to_intervals)
+
+            def interval4each_group(df: pd.DataFrame):
+                df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+                df.iloc[-1, -1] = 0
+                frame0 = df.index.get_level_values('frame')[0]
+
+                arr = np.array(df[df != 0].dropna().reset_index())[:, 2:]
+                df[:] = np.nan
+                frame_list = arr[:, 0].copy().astype(int)
+                if len(arr) != 0:
+                    arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
+                    arr[0, 0] -= frame0
+
+                    inters = arr[arr[:, -1] == -1, :]
+                    frame_list = frame_list[arr[:, -1] == -1]
+
+                    df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters[:, 0]
+
+                return df
+
+            df_intervals = self.get_df(name_to_intervals).groupby(['id_exp', 'id_ant']).apply(interval4each_group)
+            df_intervals.dropna(inplace=True)
+            df_intervals.astype(int, inplace=True)
+
             self.add_new1d_from_df(
-                df=delta_df, name=result_name, object_type=self.get_object_type(name_to_delta),
-                category=category, label=label, description=description, replace=replace
+                df=df_intervals, name=result_name, object_type='Events1d',
+                category=category, label=label, description=description
             )
+
+            return result_name
+
         else:
-            if xname is None:
-                xname = self.get_xname(name_to_delta)
-            if yname is None:
-                yname = self.get_yname(name_to_delta)
-            self.add_new2d_from_df(
-                df=delta_df, name=result_name, xname=xname, yname=yname,
-                object_type=self.get_object_type(name_to_delta),
-                category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
-                replace=replace
-            )
-        return result_name
+            raise TypeError(name_to_intervals+' is not 1d time series')
 
     def compute_individual_mean(
             self, name_to_average, result_name=None, xname=None, yname=None,
@@ -798,7 +858,7 @@ class ExperimentGroups:
             label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
         if result_name is None:
-            result_name = name_to_fit+'_fit'
+            result_name = name_to_fit + '_fit'
         if xname is None:
             xname = self.get_xname(name_to_fit)
         if yname is None:
@@ -867,21 +927,22 @@ class ExperimentGroups:
             raise TypeError(name_to_average + ' is not 1d')
 
         elif not self.__is_indexed_by_exp_ant_frame(name_to_average):
-            raise TypeError(name_to_average+' is not indexed by (exp, ant, frame)')
+            raise TypeError(name_to_average + ' is not indexed by (exp, ant, frame)')
 
         else:
 
             if result_name is None:
-                result_name = 'mm'+str(time_window)+'_'+name_to_average
+                result_name = 'mm' + str(time_window) + '_' + name_to_average
 
             if category is None:
                 category = self.get_category(name_to_average)
 
             if label is None:
-                label = 'MM of '+name_to_average+' on '+str(time_window)+' frames'
+                label = 'MM of ' + name_to_average + ' on ' + str(time_window) + ' frames'
 
             if description is None:
-                description = 'Moving mean of '+name_to_average+' on a time window of '+str(time_window)+' frames'
+                description = 'Moving mean of ' + name_to_average + ' on a time window of ' + str(
+                    time_window) + ' frames'
 
             self.add_copy(
                 old_name=name_to_average, new_name=result_name, category=category,
@@ -889,7 +950,7 @@ class ExperimentGroups:
             )
             self.get_df(result_name).dropna(inplace=True)
 
-            time_window = int(np.floor(time_window/2)*2 + 1)
+            time_window = int(np.floor(time_window / 2) * 2 + 1)
 
             def mm4each_group(df: pd.DataFrame):
                 name = df.columns[0]
@@ -900,15 +961,15 @@ class ExperimentGroups:
                     frame0 = df.index.get_level_values('frame')[0]
                     frame1 = df.index.get_level_values('frame')[-1]
 
-                    rg = range(frame0, frame1+1)
-                    time_lg = frame1-frame0+1
+                    rg = range(frame0, frame1 + 1)
+                    time_lg = frame1 - frame0 + 1
 
                     idx = pd.MultiIndex.from_tuples(
                         list(zip(np.full(time_lg, id_exp), np.full(time_lg, id_ant), rg)),
                         names=['id_exp', 'id_ant', 'frame'])
 
                     df2 = df.reindex(idx)
-                    time_array = np.array((1-df2.isna()).astype(float))
+                    time_array = np.array((1 - df2.isna()).astype(float))
                     mask0 = np.where(time_array == 0)[0]
                     mask1 = np.where(time_array == 1)[0]
                     values_array = np.array(df2[name])
@@ -916,15 +977,15 @@ class ExperimentGroups:
                     mm_val = running_mean(values_array, time_window)[mask1]
                     mm_time = running_mean(time_array, time_window)[mask1]
 
-                    df[name] = np.around(mm_val/mm_time, 3)
+                    df[name] = np.around(mm_val / mm_time, 3)
 
                 return df
 
             if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
                 lg = len(set(self.get_df(result_name).index.get_level_values('id_exp')))
-                lg = int(np.floor(lg/5)*5)
+                lg = int(np.floor(lg / 5) * 5)
                 for i in range(5, lg, 5):
-                    idx_sl = pd.IndexSlice[i-5:i, :, :]
+                    idx_sl = pd.IndexSlice[i - 5:i, :, :]
                     self.__dict__[result_name].df.loc[idx_sl, :] = \
                         self.get_df(result_name).loc[idx_sl, :].groupby(['id_exp', 'id_ant']).apply(mm4each_group)
 

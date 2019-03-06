@@ -28,3 +28,12 @@ class BuilderExpFrameIndexedDataObject:
 
     def operation_on_id_exp(self, id_exp, fct):
         self.df.loc[id_exp, :] = np.array(fct(self.df.loc[id_exp, :]))
+
+    @staticmethod
+    def __time_delta4each_group(df: pd.DataFrame):
+        df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+        df.iloc[-1, -1] = np.nan
+        return df
+
+    def compute_time_delta(self):
+        return self.df.groupby(['id_exp']).apply(self.__time_delta4each_group)
