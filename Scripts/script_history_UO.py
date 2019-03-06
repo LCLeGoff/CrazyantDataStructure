@@ -1,5 +1,6 @@
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
+from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
 
@@ -56,4 +57,7 @@ FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 # FoodBase.compute_mm10_angle_body_food_next2food()
 # FoodBase.compute_mm20_angle_body_food_next2food()
 
-FoodBase.compute_is_carrying()
+# FoodBase.compute_is_carrying()
+
+Carrying = AnalyseFoodCarrying(root, group, exp=FoodBase.exp)
+Carrying.compute_carrying_intervals()
