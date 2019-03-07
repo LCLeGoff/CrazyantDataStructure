@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.stats as scs
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.ColorObject import ColorObject
@@ -24,6 +23,9 @@ class Plotter1d(BasePlotters):
         if list_id_exp is None:
             list_id_exp = self.obj.get_index_array_of_id_exp()
 
+        if title_prefix is None:
+            title_prefix = 'Histogram of'
+
         self.obj.df = self.obj.df.loc[list_id_exp]
 
         self.arg_tools.change_arg_value('line', kwargs)
@@ -37,6 +39,13 @@ class Plotter1d(BasePlotters):
             self._plot_hist_for_each_ant(ax, bins, normed)
         else:
             self._plot_hist(ax, self.obj, bins, normed, label=label)
+
+        ax.set_xlabel(self.obj.label)
+        if normed is True:
+            ax.set_ylabel('PDF')
+        else:
+            ax.set_ylabel('Occurrences')
+
         self.display_title(ax, title_prefix)
         return fig, ax
 
@@ -45,20 +54,22 @@ class Plotter1d(BasePlotters):
         col_list = ColorObject('cmap', self.cmap, id_exp_ant_list).colors
         for id_exp, id_ant in id_exp_ant_list:
             sub_obj = self.obj.get_row_of_id_exp_ant(id_exp, id_ant)
-            self._plot_hist(ax, sub_obj, bins, normed, col_list[(id_exp, id_ant)])
+            self._plot_hist(ax, sub_obj, bins, normed, col_list[(id_exp, id_ant)], col_list[(id_exp, id_ant)])
 
     def _plot_hist_for_each_exp(self, ax, bins, normed):
         id_exp_list = self.obj.get_index_array_of_id_exp()
         col_list = ColorObject('cmap', self.cmap, id_exp_list).colors
         for id_exp in id_exp_list:
             sub_obj = self.obj.get_row_of_id_exp(id_exp)
-            self._plot_hist(ax, sub_obj, bins, normed, col_list[id_exp])
+            self._plot_hist(ax, sub_obj, bins, normed, col_list[id_exp], col_list[id_exp])
 
-    def _plot_hist(self, ax, obj, bins, normed, label, color=None):
+    def _plot_hist(self, ax, obj, bins, normed, label, color=None, fc=None):
         x, y = self._compute_histogram(obj, bins, normed)
         if color is not None:
             self.line['c'] = color
-        ax.plot(x, y, '.-', **self.line, label=label)
+        if color is not None:
+            self.line['markeredgecolor'] = fc
+        ax.plot(x, y, **self.line, label=label)
 
     def _compute_histogram(self, sub_obj, bins, normed):
         y, x = np.histogram(sub_obj.df.dropna(), bins, normed=normed)

@@ -13,13 +13,14 @@ class ArgumentsTools:
 
 
 class LineFeatureArguments:
-    def __init__(self, ls='-', lw=3, c='w', alpha=1, marker='', ms=5):
+    def __init__(self, ls='-', lw=3, c='w', alpha=1, marker='', fc='w', ms=5):
         self.ls = ls
         self.lw = lw
         self.c = c
         self.alpha = alpha
         self.ms = ms
         self.marker = marker
+        self.markeredgecolor = fc
 
 
 class ArenaFeatureArguments:

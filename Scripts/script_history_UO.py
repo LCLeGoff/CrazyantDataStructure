@@ -3,6 +3,7 @@ from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
 from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
+import matplotlib.pyplot as plt
 
 group = 'UO'
 
@@ -61,3 +62,6 @@ FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 
 Carrying = AnalyseFoodCarrying(root, group, exp=FoodBase.exp)
 Carrying.compute_carrying_intervals()
+Carrying.compute_not_carrying_intervals()
+plt.show()
+

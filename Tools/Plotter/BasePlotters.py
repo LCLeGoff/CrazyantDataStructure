@@ -53,4 +53,4 @@ class BasePlotters:
             if self.obj.definition.label is None:
                 ax.set_title(title_prefix)
             else:
-                ax.set_title(title_prefix + ': ' + self.obj.definition.label)
+                ax.set_title(title_prefix + ' ' + self.obj.definition.label)
