@@ -1,7 +1,6 @@
 import pandas as pd
 
 import numpy as np
-from sklearn.decomposition import PCA
 
 from DataStructure.DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataStructure.DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject

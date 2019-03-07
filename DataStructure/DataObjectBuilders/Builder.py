@@ -55,9 +55,11 @@ class Builder:
             array, name, xname, yname, object_type, category=None, label=None, xlabel=None, ylabel=None,
             description=None):
         if len(array) == 0:
-            df = Builder().pandas_index_manager.create_empty_exp_ant_frame_indexed_2d_df(xname, yname)
+            df = Builder().pandas_index_manager.create_empty_df(
+                index_names=['id_exp', 'id_ant', 'frame'], column_names=[xname, yname])
         else:
-            df = Builder().pandas_index_manager.convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname)
+            df = Builder().pandas_index_manager.convert_array_to_df(
+                array=array, index_names=['id_exp', 'id_ant', 'frame'], column_names=[xname, yname])
         return Builder.build2d_from_df(
             df=df, object_type=object_type,
             name=name, xname=xname, yname=yname,

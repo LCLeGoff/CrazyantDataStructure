@@ -57,7 +57,7 @@ class Recruitment:
             category='Arena', label='food neighborhood radius',
             description='Radius of the food neighborhood'
         )
-        food_neighborhood_radius_df = self.exp.food_radius.get_values() + 15
+        food_neighborhood_radius_df = self.exp.food_radius.get_column_values() + 15
         self.exp.food_neighborhood_radius.replace_values(food_neighborhood_radius_df)
         self.exp.write('food_neighborhood_radius')
 

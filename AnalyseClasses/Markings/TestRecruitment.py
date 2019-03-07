@@ -17,11 +17,11 @@ class TestRecruitment:
         self.exp.load(['r', 'food_radius', 'mm2px'])
         self.exp.operation_between_2names('food_radius', 'mm2px', lambda x, y: round(x / y, 2))
         self.exp.add_copy1d('food_radius', 'radius_min')
-        self.exp.radius_min.replace_values(self.exp.food_radius.get_values() + 15)
+        self.exp.radius_min.replace_values(self.exp.food_radius.get_column_values() + 15)
         self.exp.add_copy1d('food_radius', 'radius_max')
         self.exp.radius_max.replace_values(120)
         self.exp.add_copy1d('food_radius', 'radius_med')
-        self.exp.radius_med.replace_values((self.exp.radius_min.get_values() + self.exp.radius_max.get_values()) / 2.)
+        self.exp.radius_med.replace_values((self.exp.radius_min.get_column_values() + self.exp.radius_max.get_column_values()) / 2.)
 
         self.exp.add_copy1d('r', 'zones')
         self.exp.operation_between_2names('zones', 'radius_min', lambda x, y: (x - y < 0).astype(int))
@@ -406,7 +406,7 @@ class TestRecruitment:
 
     def compute_first_marking_ant_setup_orientation(self, **kwargs):
         self.exp.load(['xy_first_markings', 'setup_orientation'])
-        orientations = set(self.exp.setup_orientation.get_values())
+        orientations = set(self.exp.setup_orientation.get_column_values())
         orient_coord = dict()
         orient_coord['S'] = [-200, 0]
         orient_coord['W'] = [0, -140]
@@ -431,7 +431,7 @@ class TestRecruitment:
 
     def compute_first_marking_ant_setup_orientation_circle(self):
         self.exp.load(['xy_first_markings', 'setup_orientation', 'food_radius'])
-        orientations = set(self.exp.setup_orientation.get_values())
+        orientations = set(self.exp.setup_orientation.get_column_values())
         orient_coord = dict()
         orient_coord['S'] = [-200, 0]
         orient_coord['W'] = [0, -140]

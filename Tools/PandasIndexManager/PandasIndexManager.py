@@ -1,80 +1,26 @@
 import pandas as pd
 import numpy as np
 
+from Tools.MiscellaneousTools.ArrayManipulation import turn_to_list
+
 
 class PandasIndexManager:
     def __init__(self):
         pass
 
     @staticmethod
-    def create_empty_exp_indexed_1d_df(name):
-        df = pd.DataFrame(columns=['id_exp', name]).set_index(['id_exp'])
-        return df.sort_index()
+    def create_empty_df(index_names, column_names):
+        index_names = turn_to_list(index_names)
+        column_names = turn_to_list(column_names)
+        df = pd.DataFrame(columns=index_names+column_names).set_index(index_names)
+        return df
 
     @staticmethod
-    def create_empty_exp_indexed_2d_df(xname, yname):
-        df = pd.DataFrame(columns=['id_exp', xname, yname]).set_index(['id_exp'])
-        return df.sort_index()
-
-    @staticmethod
-    def create_empty_exp_ant_indexed_df(name):
-        df = pd.DataFrame(columns=['id_exp', 'id_ant', name]).set_index(['id_exp', 'id_ant'])
-        return df.sort_index()
-
-    @staticmethod
-    def create_empty_exp_frame_indexed_1d_df(name):
-        df = pd.DataFrame(columns=['id_exp', 'frame', name]).set_index(['id_exp', 'frame'])
-        return df.sort_index()
-
-    @staticmethod
-    def create_empty_exp_frame_indexed_2d_df(xname, yname):
-        df = pd.DataFrame(columns=['id_exp', 'frame', xname, yname]).set_index(['id_exp', 'frame'])
-        return df.sort_index()
-
-    @staticmethod
-    def create_empty_exp_ant_frame_indexed_1d_df(name):
-        df = pd.DataFrame(columns=['id_exp', 'id_ant', 'frame', name]).set_index(['id_exp', 'id_ant', 'frame'])
-        return df.sort_index()
-
-    @staticmethod
-    def create_empty_exp_ant_frame_indexed_2d_df(xname, yname):
-        df = pd.DataFrame(columns=['id_exp', 'id_ant', 'frame', xname, yname]).set_index(['id_exp', 'id_ant', 'frame'])
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_indexed_df(array, name):
-        df = pd.DataFrame(array, columns=['id_exp', name])
-        df.set_index(['id_exp'], inplace=True)
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_ant_indexed_df(array, name):
-        df = pd.DataFrame(array, columns=['id_exp', 'id_ant', name])
-        df.set_index(['id_exp', 'id_ant'], inplace=True)
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_frame_indexed_1d_df(array, name):
-        df = pd.DataFrame(array, columns=['id_exp', 'frame', name])
-        df.set_index(['id_exp', 'frame'], inplace=True)
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_frame_indexed_2d_df(array, xname, yname):
-        df = pd.DataFrame(array, columns=['id_exp', 'frame', xname, yname])
-        df.set_index(['id_exp', 'frame'], inplace=True)
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_ant_frame_indexed_1d_df(array, name):
-        df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', name])
-        df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
-        return df.sort_index()
-
-    @staticmethod
-    def convert_to_exp_ant_frame_indexed_2d_df(array, xname, yname):
-        df = pd.DataFrame(array, columns=['id_exp', 'id_ant', 'frame', xname, yname])
-        df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+    def convert_array_to_df(array, index_names, column_names):
+        index_names = turn_to_list(index_names)
+        column_names = turn_to_list(column_names)
+        df = pd.DataFrame(array, columns=index_names+column_names)
+        df.set_index(index_names, inplace=True)
         return df.sort_index()
 
     @staticmethod
@@ -92,137 +38,79 @@ class PandasIndexManager:
         return df.loc[list(map(tuple, np.array(idx_array))), :]
 
     @staticmethod
-    def get_array_id_exp(df_arg):
-        if 'id_exp' not in df_arg.index.names:
-            raise IndexError('df does not have id_exp as index')
-        else:
-            idx_set = set(df_arg.index.get_level_values('id_exp'))
-            return np.array(sorted(idx_set), dtype=int)
+    def get_index_location(df, index_name):
+        return np.where(df.index.names == index_name)[0][0]
 
     @staticmethod
-    def get_array_id_exp_ant(df_arg):
-        if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names:
-            raise IndexError('df does not have id_exp or id_ant as index')
+    def get_index_array(df, index_names=None):
+        if index_names is None:
+            idx_set = set(df.index)
+            return np.array(sorted(idx_set), dtype=int)
         else:
-            list_names = list(df_arg.index.names)
-            list_names.remove('id_exp')
-            list_names.remove('id_ant')
-            idxs = df_arg.index
+            index_names = turn_to_list(index_names)
+            list_names = list(df.index.names)
+            for index_name in index_names:
+                list_names.remove(index_name)
+
+            idxs = df.index
             for names in list_names:
                 idxs = idxs.droplevel(names)
             idx_set = set(idxs)
             return np.array(sorted(idx_set), dtype=int)
 
-    @staticmethod
-    def get_array_id_exp_frame(df_arg):
-        if 'id_exp' not in df_arg.index.names or 'frame' not in df_arg.index.names:
-            raise IndexError('df_arg does not have id_exp or frame as index')
+    def get_index_dict(self, df, index_names):
+        if len(index_names) not in [2, 3]:
+            raise IndexError('Only one index name or to many index names')
         else:
-            list_names = list(df_arg.index.names)
-            list_names.remove('id_exp')
-            list_names.remove('frame')
-            idxs = df_arg.index
-            for names in list_names:
-                idxs = idxs.droplevel(names)
-            idx_set = set(idxs)
-            return np.array(sorted(idx_set), dtype=int)
+            index_array = self.get_index_array(df, index_names)
 
-    @staticmethod
-    def get_array_id_exp_ant_frame(df_arg):
-        if 'id_exp' not in df_arg.index.names or 'id_ant' not in df_arg.index.names or 'frame' not in df_arg.index.names:
-            raise IndexError('df does not have id_exp or id_ant or frame as index')
-        else:
-            idx_set = list(df_arg.index)
-            return np.array(idx_set, dtype=int)
+            res = dict()
+            if len(index_names) == 2:
 
-    @staticmethod
-    def get_array_id_ant_frame(df_arg, id_exp):
-        idx_names = frozenset({'id_exp', 'id_ant', 'frame'})
-        if df_arg.index.names == idx_names:
-            raise IndexError('df is not (id_exp, id_ant, frame) indexed')
-        else:
-            idx_set = list(df_arg.index)
-            arr_idx = np.array(idx_set, dtype=int)
-            return arr_idx[arr_idx[:, 0] == id_exp, 1:]
-
-    def get_dict_id_exp_ant(self, df):
-        index_array = self.get_array_id_exp_ant(df)
-        res = dict()
-        for (id_exp, id_ant) in index_array:
-            if id_exp in res:
-                res[id_exp].append(id_ant)
+                for (idx1, idx2) in index_array:
+                    if idx1 in res:
+                        res[idx1].append(idx2)
+                    else:
+                        res[idx1] = [idx2]
+                for idx1 in res:
+                    res[idx1].sort()
             else:
-                res[id_exp] = [id_ant]
-        for id_exp in res:
-            res[id_exp].sort()
-        return res
+                for (idx1, idx2, idx3) in index_array:
+                    if idx1 in res:
+                        if idx2 in res[idx1]:
+                            res[idx1][idx2].append(idx3)
+                        else:
+                            res[idx1][idx2] = [idx3]
+                    else:
+                        res[idx1] = dict()
+                        res[idx1][idx2] = [idx3]
+                for idx1 in res:
+                    for idx2 in res[idx1]:
+                        res[idx1][idx2].sort()
+            return res
 
-    def get_dict_id_exp_frame(self, df):
-        index_array = self.get_array_id_exp_frame(df)
-        res = dict()
-        for (id_exp, frame) in index_array:
-            if id_exp in res:
-                res[id_exp].append(frame)
-            else:
-                res[id_exp] = [frame]
-        for id_exp in res:
-            res[id_exp].sort()
-        return res
+    def get_dict_id_ant_frame_index(self, df, index_names, fixed_index_name, fixed_index_value):
+        if fixed_index_name in index_names:
+            raise ValueError('index to fixed is in index name list')
+        else:
+            loc_list = list(range(len(index_names)+1))
+            idx_loc = self.get_index_location(df, fixed_index_value)
+            loc_list.remove(idx_loc)
 
-    @staticmethod
-    def get_array_all_indexes(df_arg):
-        idx_set = set(df_arg.index)
-        return np.array(sorted(idx_set), dtype=int)
+            index_array = self.get_index_array(df=df, index_names=index_names)
+            index_array = index_array[index_array[:, idx_loc] == fixed_index_value, loc_list]
 
-    def get_dict_id_exp_ant_frame(self, df):
-        index_array = self.get_array_id_exp_ant_frame(df)
-
-        res = dict()
-        for (id_exp, id_ant, frame) in index_array:
-            if id_exp in res:
-                if id_ant in res[id_exp]:
-                    res[id_exp][id_ant].append(frame)
+            res = dict()
+            for (idx1, idx2) in index_array:
+                if idx1 in res:
+                    res[idx1].append(idx2)
                 else:
-                    res[id_exp][id_ant] = [frame]
-            else:
-                res[id_exp] = dict()
-                res[id_exp][id_ant] = [frame]
-        for id_exp in res:
-            for id_ant in res[id_exp]:
-                res[id_exp][id_ant].sort()
-        return res
+                    res[idx1] = [idx2]
 
-    def get_dict_id_ant_frame_index(self, df, id_exp):
-        index_array = self.get_array_id_ant_frame(df, id_exp)
+            for idx1 in res:
+                res[idx1].sort()
 
-        res = dict()
-        for (id_ant, frame) in index_array:
-            if id_ant in res:
-                res[id_ant].append(frame)
-            else:
-                res[id_ant] = [frame]
-
-        for id_ant in res:
-            res[id_ant].sort()
-
-        return res
-
-    def get_dict_id_exp_frame_ant(self, df):
-        index_array = self.get_array_id_exp_ant_frame(df)
-        res = dict()
-        for (id_exp, id_ant, frame) in index_array:
-            if id_exp in res:
-                if frame in res[id_exp]:
-                    res[id_exp][frame].append(id_ant)
-                else:
-                    res[id_exp][frame] = [id_ant]
-            else:
-                res[id_exp] = dict()
-                res[id_exp][frame] = [id_ant]
-        for id_exp in res:
-            for frame in res[id_exp]:
-                res[id_exp][frame].sort()
-        return res
+            return res
 
     @staticmethod
     def concat_dfs(df1, df2):

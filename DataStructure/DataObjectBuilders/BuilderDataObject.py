@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -16,7 +15,7 @@ class BuilderDataObject:
         if self_name_col is None:
             self_name_col = self.df.columns[0]
         if obj_name_col is None:
-            obj_name_col = obj.name_col
+            obj_name_col = obj.column_names
 
         self.df[self_name_col] = fct(self.df[self_name_col], obj.df[obj_name_col])
 
@@ -36,25 +35,25 @@ class BuilderDataObject:
         return self.df.loc[list(map(tuple, np.array(idx_array))), :]
 
     def get_index_array_of_id_exp(self):
-        return PandasIndexManager().get_array_id_exp(self.df)
+        return PandasIndexManager().get_index_array(self.df, 'id_exp')
 
     def get_index_array_of_id_exp_ant(self):
-        return PandasIndexManager().get_array_id_exp_ant(self.df)
+        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'id_ant'])
 
     def get_index_array_of_id_exp_frame(self):
-        return PandasIndexManager().get_array_id_exp_frame(self.df)
+        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'frame'])
 
     def get_index_array_of_id_exp_ant_frame(self):
-        return PandasIndexManager().get_array_id_exp_ant_frame(self.df)
+        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'id_ant', 'frame'])
 
     def get_index_dict_of_id_exp_ant(self):
-        return PandasIndexManager().get_dict_id_exp_ant(self.df)
+        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'id_ant'])
 
     def get_index_dict_of_id_exp_frame(self):
-        return PandasIndexManager().get_dict_id_exp_frame(self.df)
+        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'frame'])
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return PandasIndexManager().get_dict_id_exp_ant_frame(self.df)
+        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'id_ant', 'frame'])
 
     def get_array_of_all_ants_of_exp(self, id_exp):
         id_exp_ant_frame_array = self.get_index_array_of_id_exp_ant_frame()

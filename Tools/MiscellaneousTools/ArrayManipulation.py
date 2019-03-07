@@ -9,3 +9,9 @@ def running_mean(x, n):
     n2 = int(np.floor(n / 2) + 1)
     res = res[n2:-n2]
     return res
+
+
+def turn_to_list(names):
+    if isinstance(names, str):
+        names = [names]
+    return names

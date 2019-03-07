@@ -30,7 +30,7 @@ class BuilderExpAntFrameIndexedDataObject:
             return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return self.pandas_index_manager.get_dict_id_exp_ant_frame(self.df)
+        return self.pandas_index_manager.get_index_dict(df=self.df, index_names=['id_exp', 'id_ant', 'frame'])
 
     def operation_on_id_exp(self, id_exp, fct):
         self.df.loc[id_exp, :, :] = fct(self.df.loc[id_exp, :, :])

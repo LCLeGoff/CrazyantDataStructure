@@ -52,6 +52,9 @@ class ExperimentGroups:
             names = [names]
         return names
 
+    def get_data_object(self, name):
+        return self.__dict__[name]
+
     def get_columns(self, name):
         return self.get_data_object(name).df.columns
 
@@ -84,9 +87,6 @@ class ExperimentGroups:
     def get_description(self, name):
         return self.get_data_object(name).definition.description
 
-    def get_data_object(self, name):
-        return self.__dict__[name]
-
     def get_df(self, name):
         return self.get_data_object(name).df
 
@@ -116,22 +116,23 @@ class ExperimentGroups:
         return cv2.imread(address, cv2.IMREAD_GRAYSCALE)
 
     def get_array_all_indexes(self, name):
-        return self.pandas_index_manager.get_array_all_indexes(self.get_df(name))
+        return self.pandas_index_manager.get_index_array(df=self.get_df(name))
 
     def get_array_id_exp_ant(self, name):
-        return self.pandas_index_manager.get_array_id_exp_ant(self.get_df(name))
+        return self.pandas_index_manager.get_index_array(df=self.get_df(name), index_names=['id_exp', 'id_ant'])
 
     def get_dict_id_exp_ant(self, name):
         if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
             return self.timeseries_exp_ant_index
         else:
-            return self.pandas_index_manager.get_dict_id_exp_ant(self.get_df(name))
+            return self.pandas_index_manager.get_index_dict(df=self.get_df(name), index_names=['id_exp', 'id_ant'])
 
     def get_dict_id_exp_ant_frame(self, name):
         if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
             return self.timeseries_exp_ant_frame_index
         else:
-            return self.pandas_index_manager.get_dict_id_exp_ant_frame(self.get_df(name))
+            return self.pandas_index_manager.get_index_dict(
+                df=self.get_df(name), index_names=['id_exp', 'id_ant', 'frame'])
 
     def plot_traj_on_movie(self, traj_names, id_exp, frame, id_ants=None):
         self.load_timeseries_exp_frame_ant_index()
@@ -254,7 +255,9 @@ class ExperimentGroups:
 
     def __is_a_time_series(self, name):
         object_type = self.get_object_type(name)
-        return object_type in ['TimeSeries1d', 'TimeSeries2d', 'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
+        return object_type in [
+            'TimeSeries1d', 'TimeSeries2d',
+            'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
 
     def __is_same_index_names(self, name1, name2):
         index_name1 = self.get_index_names(name1)
@@ -402,22 +405,14 @@ class ExperimentGroups:
         self.add_object(name, obj, replace=replace)
 
     def __create_empty_df(self, name, object_type):
-        if object_type in ['TimeSeries1d']:
-            df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_1d_df(name)
-        elif object_type in ['Events1d']:
-            df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
+        if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'id_ant', 'frame'])
         elif object_type in ['AntCharacteristics1d']:
-            df = self.pandas_index_manager.create_empty_exp_ant_indexed_df(name)
-        elif object_type in ['Characteristics1d']:
-            df = self.pandas_index_manager.create_empty_exp_indexed_1d_df(name)
-        elif object_type in ['Events2d', 'TimeSeries2d']:
-            df = self.pandas_index_manager.create_empty_exp_ant_frame_indexed_2d_df(name[0], name[1])
-        elif object_type in ['Characteristics2d']:
-            df = self.pandas_index_manager.create_empty_exp_indexed_2d_df(name[0], name[1])
-        elif object_type in ['CharacteristicTimeSeries1d']:
-            df = self.pandas_index_manager.create_empty_exp_frame_indexed_1d_df(name)
-        elif object_type in ['CharacteristicTimeSeries2d']:
-            df = self.pandas_index_manager.create_empty_exp_frame_indexed_2d_df(name[0], name[1])
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'id_ant'])
+        elif object_type in ['Characteristics1d', 'Characteristics2d']:
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names='id_exp')
+        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'frame'])
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
@@ -452,27 +447,33 @@ class ExperimentGroups:
     def add_new1d_from_array(
             self, array, name, object_type, category=None, label=None, description=None, replace=False):
 
-        df = self.__convert_array_to_1d_df(array, name, object_type)
+        df = self.__convert_array_to_df(array, name, object_type)
 
         obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
 
         self.add_object(name, obj, replace=replace)
 
-    def __convert_array_to_1d_df(self, array, name, object_type):
-        if object_type in ['Events1d', 'TimeSeries1d']:
-            df = self.pandas_index_manager.convert_to_exp_ant_frame_indexed_1d_df(array, name)
-        elif object_type in ['AntCharacteristics1d']:
-            df = self.pandas_index_manager.convert_to_exp_ant_indexed_df(array, name)
-        elif object_type in ['Characteristics1d']:
-            df = self.pandas_index_manager.convert_to_exp_indexed_df(array, name)
-        elif object_type in ['CharacteristicTimeSeries1d']:
-            df = self.pandas_index_manager.convert_to_exp_frame_indexed_1d_df(array, name)
-        elif object_type in [
-                'Events2d', 'TimeSeries2d', 'CharacteristicTimeSeries2d', 'Characteristics2d', 'AntCharacteristics2d']:
-            raise TypeError('Object in 2d')
+    def __convert_array_to_df(self, array, name, object_type):
+
+        if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
+            df = self.pandas_index_manager.convert_array_to_df(
+                array, index_names=['id_exp', 'id_ant', 'frame'], column_names=name)
+
+        elif object_type in ['AntCharacteristics1d', 'AntCharacteristics2d']:
+            df = self.pandas_index_manager.convert_array_to_df(
+                array, index_names=['id_exp', 'id_ant'], column_names=name)
+
+        elif object_type in ['Characteristics1d', 'Characteristics2d']:
+            df = self.pandas_index_manager.convert_array_to_df(array, index_names='id_exp', column_names=name)
+
+        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
+            df = self.pandas_index_manager.convert_array_to_df(
+                array, index_names=['id_exp', 'frame'], column_names=name)
+
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
+
         return df
 
     def get_reindexed_df(self, name_to_reindex, reindexer_name, fill_value=None):
@@ -751,7 +752,7 @@ class ExperimentGroups:
     def compute_time_intervals(
             self, name_to_intervals, result_name=None, category=None, label=None, description=None, replace=False):
 
-        if self.__is_1d(name_to_intervals):
+        if self.get_object_type(name_to_intervals) == 'TimeSeries1d':
 
             if result_name is None:
                 result_name = name_to_intervals+'_intervals'
@@ -784,7 +785,7 @@ class ExperimentGroups:
 
             self.add_new1d_from_df(
                 df=df_intervals, name=result_name, object_type='Events1d',
-                category=category, label=label, description=description
+                category=category, label=label, description=description, replace=replace
             )
 
             return result_name
