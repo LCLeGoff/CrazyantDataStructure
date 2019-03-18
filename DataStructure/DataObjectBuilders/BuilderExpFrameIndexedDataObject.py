@@ -25,7 +25,7 @@ class BuilderExpFrameIndexedDataObject:
         if frame1 is None:
             return self.df.loc[pd.IndexSlice[id_exp, frame0:], :]
         else:
-            return self.df.loc[pd.IndexSlice[id_exp, frame0:frame1], :]
+            return self.df.loc[pd.IndexSlice[id_exp, frame0:frame1-1], :]
 
     def operation_on_id_exp(self, id_exp, func):
         self.df.loc[id_exp, :] = np.array(func(self.df.loc[id_exp, :]))

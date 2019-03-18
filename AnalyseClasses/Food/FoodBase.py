@@ -551,12 +551,12 @@ class AnalyseFoodBase:
             distance_diff_name, distance_name, orientation_name, speed_name)
 
         clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[1, :, :], :], df_labels.loc[pd.IndexSlice[1, :, :], :])
-        prediction1 = clf.predict(df_to_predict.loc[pd.IndexSlice[1, :, :], :])
+        clf.fit(df_features.loc[pd.IndexSlice[:2, :, :], :], df_labels.loc[pd.IndexSlice[:2, :, :], :])
+        prediction1 = clf.predict(df_to_predict.loc[pd.IndexSlice[:2, :, :], :])
 
         clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[2:, :, :], :], df_labels.loc[pd.IndexSlice[2:, :, :], :])
-        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[2:, :, :], :])
+        clf.fit(df_features.loc[pd.IndexSlice[3:, :, :], :], df_labels.loc[pd.IndexSlice[3:, :, :], :])
+        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[3:, :, :], :])
 
         prediction = np.zeros(len(prediction1)+len(prediction2), dtype=int)
         prediction[:len(prediction1)] = prediction1

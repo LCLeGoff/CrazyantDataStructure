@@ -192,7 +192,7 @@ class MovieCanvas(FigureCanvas):
                 frame_img = self.crop_frame_img(self.movie.get_next_frame())
                 for i in range(self.frame_list[self.iter_frame - 1] + 1, frame):
                     frame_img = self.crop_frame_img(self.movie.get_next_frame())
-                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, frame-100:frame+1], :]
+                xy = self.xy_df.loc[pd.IndexSlice[self.id_exp, self.id_ant, frame-100:frame], :]
 
                 self.frame_graph.set_data(frame_img)
                 self.xy_graph.set_xdata(xy.x)
