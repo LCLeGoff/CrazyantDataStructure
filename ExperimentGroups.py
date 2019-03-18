@@ -96,7 +96,7 @@ class ExperimentGroups:
         return self.get_data_object(name).df.index
 
     def get_index_names(self, name):
-        return self.get_df(name).index.names
+        return list(self.get_df(name).index.names)
 
     def get_ref_id_exp(self, id_exp):
         return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
@@ -238,26 +238,19 @@ class ExperimentGroups:
             raise TypeError('Object type ' + object_type + ' unknown')
 
     def __is_indexed_by_exp(self, name):
-        object_type = self.get_object_type(name)
-        return object_type in ['Characteristics1d', 'Characteristics2d']
+        return set(self.get_index_names(name)) == {id_exp_name}
 
     def __is_indexed_by_exp_ant_frame(self, name):
-        object_type = self.get_object_type(name)
-        return object_type in ['Events1d', 'TimeSeries1d', 'Events2d', 'TimeSeries2d']
+        return set(self.get_index_names(name)) == {id_exp_name, id_ant_name, id_frame_name}
 
     def __is_indexed_by_exp_ant(self, name):
-        object_type = self.get_object_type(name)
-        return object_type in ['AntCharacteristics1d', 'AntCharacteristics2d']
+        return set(self.get_index_names(name)) == {id_exp_name, id_ant_name}
 
     def __is_indexed_by_exp_frame(self, name):
-        object_type = self.get_object_type(name)
-        return object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
+        return set(self.get_index_names(name)) == {id_exp_name, id_frame_name}
 
     def __is_frame_in_indexes(self, name):
-        object_type = self.get_object_type(name)
-        return object_type in [
-            'Events1d', 'Events2d', 'TimeSeries1d', 'TimeSeries2d',
-            'CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']
+        return id_frame_name in self.get_index_names(name)
 
     def __is_a_time_series(self, name):
         object_type = self.get_object_type(name)
@@ -271,7 +264,7 @@ class ExperimentGroups:
         return set(index_name1) == set(index_name2)
 
     def rename_data(
-            self, old_name, new_name, xname=None, yname=None, category=None,
+            self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
         print('renaming ', old_name, 'to', new_name)
 
@@ -281,7 +274,7 @@ class ExperimentGroups:
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
     def rename(
-            self, old_name, new_name, xname=None, yname=None, category=None,
+            self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
         self.load(old_name)
         if self.__is_1d(old_name):
@@ -290,16 +283,21 @@ class ExperimentGroups:
             self.rename2d(
                 old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
                 label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-        self.add_object(new_name, self.get_data_object(old_name))
-        self.remove_object(old_name)
+        if old_name == new_name:
+            self.add_object(new_name, self.get_data_object(old_name))
+            self.remove_object(old_name)
 
-    def rename1d(self, old_name, new_name, category=None, label=None, description=None):
+    def rename1d(self, old_name, new_name=None, category=None, label=None, description=None):
+        if new_name is None:
+            new_name = old_name
         self.__dict__[old_name].rename(name=new_name, category=category, label=label, description=description)
 
     def rename2d(
-            self, old_name, new_name, xname=None, yname=None, category=None,
+            self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
 
+        if new_name is None:
+            new_name = old_name
         self.__dict__[old_name].rename(
             name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
@@ -410,7 +408,7 @@ class ExperimentGroups:
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace=replace)
 
-    def __create_empty_df(self, name, object_type):
+    def __create_empty_df(self, name, object_type, index_names=None):
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name,
                                                            index_names=[id_exp_name, id_ant_name, id_frame_name])
@@ -463,7 +461,7 @@ class ExperimentGroups:
 
         self.add_object(name, obj, replace=replace)
 
-    def __convert_array_to_df(self, array, name, object_type):
+    def __convert_array_to_df(self, array, name, object_type, index_names=None):
 
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.convert_array_to_df(
@@ -648,7 +646,7 @@ class ExperimentGroups:
                 )
 
             self.operation_between_2names(
-                name1=result_name, name2='filter', fct=lambda x, y: x * y
+                name1=result_name, name2='filter', func=lambda x, y: x * y
             )
 
             self.__dict__[result_name].df = self.__dict__[result_name].df.dropna()
@@ -1051,3 +1049,7 @@ class ExperimentGroups:
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
             orientation = norm_angle_tab(orientation - np.pi)
         return orientation
+
+    def plot(self, name_to_plot, preplot=None, **kwargs):
+        plotter = Plotter(root=self.root, obj=self.get_data_object(name_to_plot), **kwargs)
+        return plotter.plot(preplot=preplot, **kwargs)
