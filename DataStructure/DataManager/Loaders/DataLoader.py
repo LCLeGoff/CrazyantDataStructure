@@ -1,9 +1,11 @@
 from DataStructure.DataManager.Loaders.CharacteristicTimeSeriesLoader import CharacteristicTimeSeries1dLoader
 from DataStructure.DataManager.Loaders.AntCharacteristicsLoader import AntCharacteristics1dLoader
 from DataStructure.DataManager.Loaders.CharacteristicsLoader import Characteristics1dLoader, Characteristics2dLoader
+from DataStructure.DataManager.Loaders.DataSetLoader import DataSetLoader
 from DataStructure.DataManager.Loaders.DefinitionLoader import DefinitionLoader
 from DataStructure.DataManager.Loaders.EventsLoader import Events1dLoader, Events2dLoader
 from DataStructure.DataManager.Loaders.TimeSeriesLoader import TimeSeries1dLoader
+from DataStructure.VariableNames import dataset_name
 
 
 class DataLoader:
@@ -17,6 +19,7 @@ class DataLoader:
         self.characteristics2d_loader = Characteristics2dLoader(root, group)
         self.ant_characteristics1d_loader = AntCharacteristics1dLoader(root, group)
         self.characteristic_timeseries1d_loader = CharacteristicTimeSeries1dLoader(root, group)
+        self.dataset_loader = DataSetLoader(root, group)
 
     def load(self, name):
         definition = self.definition_loader.build(name)
@@ -34,6 +37,8 @@ class DataLoader:
             res = self.ant_characteristics1d_loader.load(definition)
         elif definition.object_type == 'CharacteristicTimeSeries1d':
             res = self.characteristic_timeseries1d_loader.load(definition)
+        elif definition.object_type == dataset_name:
+            res = self.dataset_loader.load(definition)
         else:
             raise ValueError(name + ' has no defined object type :')
         return res

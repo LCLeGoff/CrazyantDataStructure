@@ -1,9 +1,11 @@
 from DataStructure.DataManager.Renamers.AntCharacteristicsRenamer import AntCharacteristics1dRenamer
 from DataStructure.DataManager.Renamers.CharacteristicTimeSeriesRenamer import CharacteristicTimeSeries1dRenamer
 from DataStructure.DataManager.Renamers.CharacteristicsRenamer import Characteristics1dRenamer
+from DataStructure.DataManager.Renamers.DataSetRenamer import DataSetRenamer
 from DataStructure.DataManager.Renamers.DefinitionRenamer import DefinitionRenamer
 from DataStructure.DataManager.Renamers.EventsRenamer import Events1dRenamer, Events2dRenamer
 from DataStructure.DataManager.Renamers.TimeSeriesRenamer import TimeSeries1dRenamer
+from DataStructure.VariableNames import dataset_name
 
 
 class DataRenamer:
@@ -15,12 +17,15 @@ class DataRenamer:
         self.characteristics1d_renamer = Characteristics1dRenamer(root, group)
         self.ant_characteristics1d_renamer = AntCharacteristics1dRenamer(root, group)
         self.characteristic_timeseries1d_renamer = CharacteristicTimeSeries1dRenamer(root, group)
+        self.dataset_renamer = DataSetRenamer(root, group)
 
     def rename(
             self, obj, name, xname=None, yname=None, category=None,
             label=None, description=None, xlabel=None, ylabel=None):
 
         old_name = obj.name
+        if name is None:
+            name = old_name
 
         if obj.object_type == 'TimeSeries1d':
             self.timeseries1d_renamer.rename(
@@ -46,6 +51,10 @@ class DataRenamer:
         elif obj.object_type == 'CharacteristicTimeSeries1d':
             self.characteristic_timeseries1d_renamer.rename(
                 chara_ts1d=obj, name=name, category=category, label=label, description=description)
+
+        elif obj.object_type == dataset_name:
+            self.dataset_renamer.rename(
+                dataset=obj, name=name, category=category, label=label, description=description)
 
         else:
             raise ValueError(obj.name + ' has no defined object type')

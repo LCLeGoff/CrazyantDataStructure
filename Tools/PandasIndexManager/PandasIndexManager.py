@@ -39,13 +39,13 @@ class PandasIndexManager:
 
     @staticmethod
     def get_index_location(df, index_name):
-        return np.where(df.index.names == index_name)[0][0]
+        return np.where(np.array(list(df.index.names)) == index_name)[0][0]
 
     @staticmethod
-    def get_index_array(df, index_names=None):
+    def get_unique_index_array(df, index_names=None):
         if index_names is None:
             idx_set = set(df.index)
-            return np.array(sorted(idx_set), dtype=int)
+            return np.array(sorted(idx_set))
         else:
             index_names = turn_to_list(index_names)
             list_names = list(df.index.names)
@@ -56,13 +56,25 @@ class PandasIndexManager:
             for names in list_names:
                 idxs = idxs.droplevel(names)
             idx_set = set(idxs)
-            return np.array(sorted(idx_set), dtype=int)
+            return np.array(sorted(idx_set))
+
+    @staticmethod
+    def get_index_array(df, index_names=None):
+        if index_names is None:
+            return np.array(df.index)
+        else:
+            index_names = turn_to_list(index_names)
+            idxs = []
+            for index_name in list(df.index.names):
+                if index_name in index_names:
+                    idxs.append(list(df.index.get_level_values(index_name)))
+            return np.array(idxs).T
 
     def get_index_dict(self, df, index_names):
         if len(index_names) not in [2, 3]:
             raise IndexError('Only one index name or to many index names')
         else:
-            index_array = self.get_index_array(df, index_names)
+            index_array = self.get_unique_index_array(df, index_names)
 
             res = dict()
             if len(index_names) == 2:
@@ -89,28 +101,27 @@ class PandasIndexManager:
                         res[idx1][idx2].sort()
             return res
 
-    def get_dict_id_ant_frame_index(self, df, index_names, fixed_index_name, fixed_index_value):
-        if fixed_index_name in index_names:
-            raise ValueError('index to fixed is in index name list')
-        else:
-            loc_list = list(range(len(index_names)+1))
-            idx_loc = self.get_index_location(df, fixed_index_value)
-            loc_list.remove(idx_loc)
+    def get_dict_index_with_one_index_fixed(self, df, fixed_index_name, fixed_index_value):
+        index_names = df.index.names
+        loc_list = list(range(len(index_names)))
+        idx_loc = self.get_index_location(df, fixed_index_name)
+        loc_list.remove(idx_loc)
 
-            index_array = self.get_index_array(df=df, index_names=index_names)
-            index_array = index_array[index_array[:, idx_loc] == fixed_index_value, loc_list]
+        index_array = self.get_index_array(df=df, index_names=index_names)
+        index_array = index_array[index_array[:, idx_loc] == fixed_index_value, :]
+        index_array = index_array[:, loc_list]
 
-            res = dict()
-            for (idx1, idx2) in index_array:
-                if idx1 in res:
-                    res[idx1].append(idx2)
-                else:
-                    res[idx1] = [idx2]
+        res = dict()
+        for (idx1, idx2) in index_array:
+            if idx1 in res:
+                res[idx1].append(idx2)
+            else:
+                res[idx1] = [idx2]
 
-            for idx1 in res:
-                res[idx1].sort()
+        for idx1 in res:
+            res[idx1].sort()
 
-            return res
+        return res
 
     @staticmethod
     def concat_dfs(df1, df2):

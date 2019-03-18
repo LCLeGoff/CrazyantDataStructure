@@ -1,30 +1,43 @@
 import numpy as np
 
+from DataStructure.VariableNames import id_frame_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
-class OneIndexedDataSetDecorator:
+class IndexedDataSetDecorator:
     def __init__(self, df):
-        if df.index.names != ['id_exp']:
-            raise IndexError('Index names are not id_exp')
-        else:
-            self.df = df
+        self.df = df
 
     def rename_df(self, names):
         if isinstance(names, str):
             names = [names]
         self.df.columns = names
 
+    def get_index_names(self):
+        return self.df.index.names
+
+    def get_column_names(self):
+        return self.df.columns
+
+    def get_nbr_index(self):
+        return len(self.df.index.names)
+
+    def get_dimension(self):
+        return len(self.df.columns)
+
     def get_index_location(self, index_name):
         return PandasIndexManager().get_index_location(self.df, index_name)
 
-    def get_array(self):
-        return np.array(self.df)
+    def get_array(self, column_name=None):
+        if column_name is None:
+            return np.array(self.df)
+        else:
+            return np.array(self.df[column_name])
 
     def convert_df_to_array(self):
         return PandasIndexManager().convert_df_to_array(self.df)
 
-    def get_column_values(self, n_col=0):
+    def get_column_df(self, n_col=0):
         if isinstance(n_col, str):
             return self.df[n_col]
         else:
@@ -42,19 +55,22 @@ class OneIndexedDataSetDecorator:
     def operation(self, func):
         self.df = func(self.df)
 
-    def operation_with_data_obj(self, obj, fct, self_name_col=None, obj_name_col=None):
+    def operation_with_data_obj(self, obj, func, self_name_col=None, obj_name_col=None):
         if self_name_col is None:
             self_name_col = self.df.columns
         if obj_name_col is None:
             obj_name_col = self.df.columns
 
-        self.df[self_name_col] = fct(self.df[self_name_col], obj.df[obj_name_col])
+        self.df[self_name_col] = func(self.df[self_name_col], obj.df[obj_name_col])
 
     def print(self, short=True):
         if short:
             print(self.df.head())
         else:
             print(self.df)
+
+    def get_unique_index_array(self, index_names=None):
+        return PandasIndexManager().get_unique_index_array(df=self.df, index_names=index_names)
 
     def get_index_array(self, index_names=None):
         return PandasIndexManager().get_index_array(df=self.df, index_names=index_names)
@@ -64,7 +80,7 @@ class OneIndexedDataSetDecorator:
 
     def get_array_of_all_idx1_by_idx2(self, idx1_name, idx2_name, idx2_value):
 
-        idx_array = self.get_index_array()
+        idx_array = self.get_unique_index_array()
 
         idx1_loc = self.get_index_location(idx1_name)
         idx2_loc = self.get_index_location(idx2_name)
@@ -88,6 +104,31 @@ class OneIndexedDataSetDecorator:
         index_names = self.df.index.names[:idx_loc+1]
         return self.df.mean(level=index_names)
 
+    @staticmethod
+    def __time_delta4each_group(df):
+        df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+        df.iloc[-1, -1] = np.nan
+        return df
+
+    def compute_time_delta(self, index_name=id_frame_name):
+        index_names = list(self.df.index.names)
+        index_names.remove(index_name)
+        return self.df.groupby(index_names).apply(self.__time_delta4each_group)
+
+    def hist1d(self, column_name=None, bins='fd'):
+        if column_name is None:
+            if self.get_dimension() == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        y, x = np.histogram(self.df[column_name].dropna(), bins)
+        x = (x[1:] + x[:-1]) / 2., 2
+        h = np.array(list(zip(x, y)))
+
+        df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
+        return df.astype(int)
+
     # def mean_over(self, level_df, mean_level=None, new_level_as=None):
     #     df = self.df.copy()
     #     filter_idx = 'new_idx'
@@ -97,9 +138,9 @@ class OneIndexedDataSetDecorator:
     #     if mean_level is None:
     #         df = df.mean(level=[filter_idx])
     #     elif mean_level == 'exp':
-    #         df = df.mean(level=['id_exp', filter_idx])
+    #         df = df.mean(level=[id_exp_name, filter_idx])
     #     elif mean_level == 'ant':
-    #         df = df.mean(level=['id_exp', 'id_ant', filter_idx])
+    #         df = df.mean(level=[id_exp_name, id_ant_name, filter_idx])
     #     else:
     #         raise ValueError(mean_level + ' not understood')
     #     if new_level_as is None:

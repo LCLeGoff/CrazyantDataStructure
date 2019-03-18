@@ -1,10 +1,12 @@
 from DataStructure.DataObjects.Definitions import DefinitionBuilder
-from Tools.Plotter.Plotter1d import Plotter1d
+from DataStructure.DataSetDecorators.IndexedDataSetDecorator import IndexedDataSetDecorator
+from DataStructure.VariableNames import dataset_name
 
 
-class DataSet(OneIndexedDataSet):
+class DataSet(IndexedDataSetDecorator):
+
     def __init__(self, df, definition):
-        OneIndexedDataSet.__init__(self, df)
+        IndexedDataSetDecorator.__init__(self, df)
         DefinitionBuilder.add_definition_to_class(self, definition)
 
     def rename(self, name, category=None, label=None, description=None):
@@ -18,7 +20,7 @@ class DataSet(OneIndexedDataSet):
 
         self.rename_df(name)
         definition = DefinitionBuilder().build1d(
-            name=name, object_type='Events1d', category=category, label=label, description=description)
+            name=name, object_type=dataset_name, category=category, label=label, description=description)
         DefinitionBuilder.add_definition_to_class(self, definition=definition)
 
     def copy(self, name, category=None, label=None, description=None):
@@ -33,7 +35,7 @@ class DataSetBuilder:
     @staticmethod
     def build(df, name, category=None, label=None, description=None):
         definition = DefinitionBuilder().build1d(
-            name=name, category=category, object_type='Events1d',
+            name=name, category=category, object_type=dataset_name,
             label=label, description=description
         )
         df.columns = [name]

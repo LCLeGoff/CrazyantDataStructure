@@ -1,9 +1,11 @@
 from DataStructure.DataManager.Writers.CharacteristicTimeSeriesWriter import CharacteristicTimeSeries1dWriter
 from DataStructure.DataManager.Writers.AntCharacteristicsWriter import AntCharacteristics1dWriter
 from DataStructure.DataManager.Writers.CharacteristicsWriter import Characteristics1dWriter
+from DataStructure.DataManager.Writers.DataSetWriter import DataSetWriter
 from DataStructure.DataManager.Writers.DefinitionWriter import DefinitionWriter
 from DataStructure.DataManager.Writers.EventsWriter import Events1dWriter, Events2dWriter
 from DataStructure.DataManager.Writers.TimeSeriesWriter import TimeSeriesWriter
+from DataStructure.VariableNames import dataset_name
 
 
 class DataWriter:
@@ -15,6 +17,7 @@ class DataWriter:
         self.characteristics1d_writer = Characteristics1dWriter(root, group)
         self.ant_characteristics1d_writer = AntCharacteristics1dWriter(root, group)
         self.characteristic_timeseries1d_writer = CharacteristicTimeSeries1dWriter(root, group)
+        self.dataset_writer = DataSetWriter(root, group)
 
     def write(self, obj):
         if obj.object_type == 'TimeSeries1d':
@@ -29,6 +32,10 @@ class DataWriter:
             self.ant_characteristics1d_writer.write(obj)
         elif obj.object_type == 'CharacteristicTimeSeries1d':
             self.characteristic_timeseries1d_writer.write(obj)
+        elif obj.object_type == 'CharacteristicTimeSeries1d':
+            self.characteristic_timeseries1d_writer.write(obj)
+        elif obj.object_type == dataset_name:
+            self.dataset_writer.write(obj)
         else:
             raise ValueError(obj.name + ' has no defined object type')
         self.definition_writer.write(obj.definition)

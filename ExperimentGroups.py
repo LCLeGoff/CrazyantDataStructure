@@ -4,7 +4,7 @@ import matplotlib.pylab as plt
 from cv2 import cv2
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
-from DataStructure.DataObjectBuilders.Builder import Builder
+from DataStructure.Builders.Builder import Builder
 from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicTimeSeries2dBuilder
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
@@ -117,7 +117,7 @@ class ExperimentGroups:
         return cv2.imread(address, cv2.IMREAD_GRAYSCALE)
 
     def get_array_all_indexes(self, name):
-        return self.pandas_index_manager.get_index_array(df=self.get_df(name))
+        return self.pandas_index_manager.get_unique_index_array(df=self.get_df(name))
 
     def get_array_id_exp_ant(self, name):
         return self.pandas_index_manager.get_unique_index_array(df=self.get_df(name),
@@ -231,6 +231,8 @@ class ExperimentGroups:
         elif object_type in [
                 'Events1d', 'TimeSeries1d', 'Characteristics1d', 'AntCharacteristics1d', 'CharacteristicTimeSeries1d']:
             return True
+        elif object_type in [dataset_name]:
+            return self.get_data_object(name).get_dimension() == 1
         else:
             raise TypeError('Object type ' + object_type + ' unknown')
 
@@ -417,6 +419,8 @@ class ExperimentGroups:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=id_exp_name)
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_frame_name])
+        elif object_type in [dataset_name]:
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=index_names)
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
@@ -474,6 +478,9 @@ class ExperimentGroups:
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
             df = self.pandas_index_manager.convert_array_to_df(
                 array, index_names=[id_exp_name, id_frame_name], column_names=name)
+
+        elif object_type in [dataset_name]:
+            df = self.pandas_index_manager.convert_array_to_df(array, index_names=index_names, column_names=name)
 
         else:
             raise IndexError('Object type ' + object_type + ' unknown')

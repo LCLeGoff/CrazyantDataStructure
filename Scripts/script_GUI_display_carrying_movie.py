@@ -98,7 +98,7 @@ class MovieCanvas(FigureCanvas):
         return fig, ax
 
     def get_idx_list(self, id_exp):
-        idx_dict = PandasIndexManager().get_dict_id_ant_frame_index(self.xy_df0, id_exp)
+        idx_dict = PandasIndexManager().get_dict_index_with_one_index_fixed(self.xy_df0, 'id_exp', id_exp)
         list_id_ant = sorted(idx_dict.keys())
         return idx_dict, list_id_ant
 
