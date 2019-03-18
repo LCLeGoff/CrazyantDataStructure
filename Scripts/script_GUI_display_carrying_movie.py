@@ -51,11 +51,11 @@ class MovieCanvas(FigureCanvas):
         self.time_loop()
 
     def get_traj_and_movie(self, id_exp):
-        self.exp.load('is_carrying')
+        self.exp.load('carrying_next2food')
         self.exp.load('xy_next2food')
         xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
-        carrying_df = self.exp.is_carrying.df
+        carrying_df = self.exp.carrying_next2food.df
         movie = self.exp.get_movie(id_exp)
         return xy_df, carrying_df, movie
 
@@ -267,6 +267,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
-aw = ApplicationWindow(group0, id_exp=55)
+
+aw = ApplicationWindow(group0, id_exp=3)
 aw.show()
 sys.exit(qApp.exec_())

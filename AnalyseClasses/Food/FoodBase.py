@@ -53,18 +53,6 @@ class AnalyseFoodBase:
         df_d = pd.DataFrame(df_d)
         return df_d
 
-    def compute_mm5_distance2food(self):
-        name = 'distance2food'
-        category = 'Distance2foodMM'
-        time_window = 5
-
-        self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=category
-        )
-
-        self.exp.write(result_name)
-
     def compute_mm10_distance2food(self):
         name = 'distance2food'
         category = 'Distance2foodMM'
@@ -205,8 +193,7 @@ class AnalyseFoodBase:
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='speed next to food',
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name, label='speed next to food',
             description='Moving mean (time window of 10 frames) of the instantaneous speed of ant close to the food'
         )
 
@@ -219,8 +206,7 @@ class AnalyseFoodBase:
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='speed next to food',
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name, label='speed next to food',
             description='Moving mean (time window of 20 frames) of the instantaneous speed of ant close to the food'
         )
 
@@ -248,7 +234,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='Food distance next to food',
+            label='Food distance next to food',
             description='Moving mean (time window of 5 frames) '
                         'of the distance between the food and the ants next to the food'
         )
@@ -263,7 +249,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='Food distance next to food',
+            label='Food distance next to food',
             description='Moving mean (time window of 10 frames) '
                         'of the distance between the food and the ants next to the food'
         )
@@ -278,7 +264,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='Food distance next to food',
+            label='Food distance next to food',
             description='Moving mean (time window of 20 frames) '
                         'of the distance between the food and the ants next to the food'
         )
@@ -333,7 +319,7 @@ class AnalyseFoodBase:
         self.exp.load([name, 'fps'])
 
         self.exp.add_copy(
-            old_name=name, new_name=result_name, category='FoodBase', label='Food distance differential',
+            old_name=name, new_name=result_name, label='Food distance differential',
             description='Differential of the distance between the food and the ants', replace=True
         )
 
@@ -349,7 +335,7 @@ class AnalyseFoodBase:
         self.exp.load([name, 'fps'])
 
         self.exp.add_copy(
-            old_name=name, new_name=result_name, category='FoodBase', label='Food distance differential',
+            old_name=name, new_name=result_name, label='Food distance differential',
             description='Differential of the distance between the food and the ants', replace=True
         )
 
@@ -366,7 +352,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='orientation next to food', description='Body orientation of ant next to food'
+            label='orientation next to food', description='Body orientation of ant next to food'
         )
 
         self.exp.write(res_name)
@@ -379,7 +365,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='orientation next to food',
+            label='orientation next to food',
             description='Moving mean (time window of 10 frames) of the body orientation of ant next to food'
         )
 
@@ -393,7 +379,7 @@ class AnalyseFoodBase:
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category='FoodBase', label='orientation next to food',
+            label='orientation next to food',
             description='Moving mean (time window of 20 frames) of the body orientation of ant next to food'
         )
 

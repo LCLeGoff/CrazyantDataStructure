@@ -3,7 +3,6 @@ from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
 from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
-import matplotlib.pyplot as plt
 
 group = 'UO'
 
@@ -18,12 +17,12 @@ traj = AnalyseTrajectory(root, group)
 # traj.compute_mm20_speed()
 # traj.compute_mm10_orientation()
 # traj.compute_mm20_orientation()
+# traj.compute_is_from_outside()
 
 FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 # FoodBase.compute_speed_food()
 #
 # FoodBase.compute_distance2food()
-# FoodBase.compute_mm5_distance2food()
 # FoodBase.compute_mm10_distance2food()
 # FoodBase.compute_mm20_distance2food()
 #
@@ -36,7 +35,6 @@ FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 # FoodBase.compute_mm20_speed_next2food()
 #
 # FoodBase.compute_distance2food_next2food()
-# FoodBase.compute_mm5_distance2food_next2food()
 # FoodBase.compute_mm10_distance2food_next2food()
 # FoodBase.compute_mm20_distance2food_next2food()
 
@@ -61,7 +59,7 @@ FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 # FoodBase.compute_is_carrying()
 
 Carrying = AnalyseFoodCarrying(root, group, exp=FoodBase.exp)
-Carrying.compute_carrying_intervals()
-Carrying.compute_not_carrying_intervals()
-plt.show()
-
+# Carrying.compute_carrying()
+# Carrying.compute_carrying_intervals(True)
+# Carrying.compute_not_carrying_intervals(True)
+# Carrying.compute_carried_food()

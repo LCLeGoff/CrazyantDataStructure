@@ -373,6 +373,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
-aw = ApplicationWindow(group0, id_exp=55)
+aw = ApplicationWindow(group0, id_exp=2)
 aw.show()
 sys.exit(qApp.exec_())

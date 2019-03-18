@@ -814,6 +814,8 @@ class ExperimentGroups:
                 category=category, label=label, description=description, replace=replace
             )
 
+            self.load('fps')
+            self.operation_between_2names(name1=result_name, name2='fps', func=lambda x, y: x/y)
             return result_name
 
         else:
@@ -1044,6 +1046,31 @@ class ExperimentGroups:
 
         return x, y
 
+    def convert_xy_to_trajectory_system(self, id_exp, x, y):
+        self.load(['food_center', 'mm2px', 'traj_translation', 'traj_reoriented'])
+
+        x -= np.array(self.traj_translation.df.x.loc[id_exp])
+        y -= np.array(self.traj_translation.df.y.loc[id_exp])
+
+        x -= np.array(self.food_center.df.x.loc[id_exp])
+        y -= np.array(self.food_center.df.y.loc[id_exp])
+
+        x /= np.array(self.mm2px.df.loc[id_exp])
+        y /= np.array(self.mm2px.df.loc[id_exp])
+
+        if int(self.traj_reoriented.df.loc[id_exp]) == 1:
+            x *= -1
+            y *= -1
+
+        return x, y
+
+    def convert_xy_to_traj_system4each_group(self, df: pd.DataFrame):
+        id_exp = df.index.get_level_values('id_exp')[0]
+        x, y = self.convert_xy_to_trajectory_system(id_exp, df.x, df.y)
+        df.x = x
+        df.y = y
+        return df
+    
     def convert_orientation_to_movie_system(self, id_exp, orientation):
         self.load(['traj_reoriented'])
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
