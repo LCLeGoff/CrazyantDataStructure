@@ -5,6 +5,7 @@ import numpy as np
 
 from cv2 import cv2
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Scripts.root import root
 from Tools.MiscellaneousTools.Geometry import distance
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_json, write_obj_pickle, write_obj_json
@@ -27,10 +28,10 @@ class AnalyseStarter:
         if index_dicts is True:
             print('write index dicts')
             add = self.root + 'Raw/TimeSeries.csv'
-            df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+            df = pd.read_csv(add, index_col=[id_exp_name, id_ant_name, id_frame_name])
 
-            dict_exp_ant = self.__get_2index_dict(df, 'id_ant')
-            dict_exp_frame = self.__get_2index_dict(df, 'frame')
+            dict_exp_ant = self.__get_2index_dict(df, id_ant_name)
+            dict_exp_frame = self.__get_2index_dict(df, id_frame_name)
             write_obj_pickle(self.root + 'TimeSeries_exp_ant_index.p', dict_exp_ant)
             write_obj_pickle(self.root + 'TimeSeries_exp_frame_index.p', dict_exp_frame)
 
@@ -47,7 +48,7 @@ class AnalyseStarter:
 
     @staticmethod
     def __get_2index_dict(df, idx_name):
-        id_exps = df.index.get_level_values('id_exp')
+        id_exps = df.index.get_level_values(id_exp_name)
         id_ants = df.index.get_level_values(idx_name)
         idx_set = set(list(zip(id_exps, id_ants)))
 
@@ -83,17 +84,17 @@ class AnalyseStarter:
         if markings is True:
             print('write markings')
             add = self.root + 'Raw/markings.csv'
-            df = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+            df = pd.read_csv(add, index_col=[id_exp_name, id_ant_name, id_frame_name])
             df.sort_index().to_csv(add)
 
     def __sort_and_rewrite_food(self, dynamic_food):
         if dynamic_food is True:
             print('write dynamic food')
             add = self.root + 'Raw/CharacteristicTimeSeries.csv'
-            df = pd.read_csv(add, index_col=['id_exp', 'frame', 'food_x0', 'food_y0'])
+            df = pd.read_csv(add, index_col=[id_exp_name, id_frame_name, 'food_x0', 'food_y0'])
             df.sort_index().to_csv(add)
 
-            dict_exp_frame = self.__get_2index_dict(df, 'frame')
+            dict_exp_frame = self.__get_2index_dict(df, id_frame_name)
             write_obj_pickle(self.root + 'CharacteristicTimeSeries_exp_frame_index.p', dict_exp_frame)
 
     def __fill_and_write_definition_dict(self, redo, markings=True, dynamic_food=False):

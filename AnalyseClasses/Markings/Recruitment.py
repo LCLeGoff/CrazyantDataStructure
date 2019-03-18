@@ -29,27 +29,27 @@ class Recruitment:
     def __compute_sum_of_is_xy_in_food_neighborhood_and_in_circular_arena(self):
         self.exp.add_copy1d('is_xy_in_food_neighborhood', 'xy_radial_zones')
 
-        def fct_sum(x, y):
+        def func_sum(x, y):
             return x + y
 
-        self.exp.operation_between_2names('xy_radial_zones', 'is_in_circular_arena', fct_sum)
+        self.exp.operation_between_2names('xy_radial_zones', 'is_in_circular_arena', func_sum)
 
     def __compute_is_xy_in_circular_arena(self):
         self.exp.add_copy1d('r', 'is_in_circular_arena')
 
-        def fct_is_lesser_than_arena_radius(x):
+        def func_is_lesser_than_arena_radius(x):
             return (x - self.arena_radius < 0).astype(int)
 
-        self.exp.operation('is_in_circular_arena', fct_is_lesser_than_arena_radius)
+        self.exp.operation('is_in_circular_arena', func_is_lesser_than_arena_radius)
 
     def __compute_is_xy_in_food_neighborhood(self):
         self.exp.add_copy1d(name_to_copy='r', copy_name='is_xy_in_food_neighborhood')
 
-        def fct_is_lesser_than_circular_arena_radius(x, y):
+        def func_is_lesser_than_circular_arena_radius(x, y):
             return (x - y < 0).astype(int)
 
         self.exp.operation_between_2names(
-            'is_xy_in_food_neighborhood', 'food_neighborhood_radius', fct_is_lesser_than_circular_arena_radius)
+            'is_xy_in_food_neighborhood', 'food_neighborhood_radius', func_is_lesser_than_circular_arena_radius)
 
     def __compute_food_neighborhood_radius(self):
         self.exp.add_copy1d(
@@ -62,10 +62,10 @@ class Recruitment:
         self.exp.write('food_neighborhood_radius')
 
     def __convert_food_radius2mm(self):
-        def fct_convert_in_mm(x, y):
+        def func_convert_in_mm(x, y):
             return round(x / y, 2)
 
-        self.exp.operation_between_2names('food_radius', 'mm2px', fct_convert_in_mm)
+        self.exp.operation_between_2names('food_radius', 'mm2px', func_convert_in_mm)
 
     def __plot_batches_from_batches(self, id_exp, id_ant, batch_list, t0=None, t1=None):
         if len(batch_list) != 0:

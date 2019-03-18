@@ -138,7 +138,7 @@ Exps.filter_with_time_occurrences(
 Exps.filter_with_time_occurrences(
     name_to_filter=orientation_name, filter_name='carrying_training_set',
     result_name='training_set_id_exp', replace=True)
-Exps.training_set_id_exp.df.training_set_id_exp = Exps.training_set_id_exp.df.index.get_level_values('id_exp')
+Exps.training_set_id_exp.df.training_set_id_exp = Exps.training_set_id_exp.df.index.get_level_values(id_exp_name)
 
 features = Exps.training_set_speed.df.join(Exps.training_set_orientation.df, how='inner')
 features = features.join(Exps.training_set_distance.df, how='inner')
@@ -149,7 +149,7 @@ features.dropna(inplace=True)
 labels = np.array(Exps.get_df(training_set_name).reindex(features.index))[:, 0]
 features = np.array(features)
 
-feature_names = np.array(['speed', 'orientation', 'distance', 'distance differential', 'id_exp'])
+feature_names = np.array(['speed', 'orientation', 'distance', 'distance differential', id_exp_name])
 
 for i in range(len(feature_names)):
     for j in range(i+1, len(feature_names)):

@@ -3,6 +3,7 @@ import numpy as np
 from pandas import IndexSlice as IdxSc
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import distance
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
@@ -66,7 +67,7 @@ class AnalyseMarkings:
             marking_interval_list = self.__add_marking_intervals(marking_interval_list, id_ant, id_exp, marks)
 
         marking_interval_df = self.pd_idx_manager.convert_array_to_df(
-                array=marking_interval_list, index_names=['id_exp', 'id_ant', 'frame'], column_names=name)
+                array=marking_interval_list, index_names=[id_exp_name, id_ant_name, id_frame_name], column_names=name)
         self.exp.add_new1d_from_df(
             df=marking_interval_df, name=name, object_type='Events1d', category='Markings',
             label='marking intervals', description='Time intervals between two marking events'
@@ -99,7 +100,7 @@ class AnalyseMarkings:
             marking_distance_list = self.__add_marking_distances(marking_distance_list, id_ant, id_exp, mark_xy)
 
         marking_distance_df = self.pd_idx_manager.convert_array_to_df(
-                array=marking_distance_list, index_names=['id_exp', 'id_ant', 'frame'], column_names=name)
+                array=marking_distance_list, index_names=[id_exp_name, id_ant_name, id_frame_name], column_names=name)
 
         self.exp.add_new1d_from_df(
             df=marking_distance_df, name=name, object_type='Events1d', category='Markings',

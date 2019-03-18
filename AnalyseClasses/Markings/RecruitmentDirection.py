@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Fits import linear_fit
 from Tools.MiscellaneousTools.Geometry import convert_polar2cartesian, convert_cartesian2polar, norm_angle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -223,7 +224,7 @@ class RecruitmentDirection:
             direction_list, recruitment_direction_name,
             certainty_list, recruitment_certainty_name):
 
-        idx_names = ['id_exp', 'id_ant', 'frame']
+        idx_names = [id_exp_name, id_ant_name, id_frame_name]
 
         df = pd.DataFrame(ab_list, columns=idx_names + ['a', 'b'])
         df.set_index(idx_names, inplace=True)

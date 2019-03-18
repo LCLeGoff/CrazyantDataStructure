@@ -234,14 +234,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             pass
         self.update()
 
-    def create_button(self, n_line, n_col, text, fct):
+    def create_button(self, n_line, n_col, text, func):
         button = QPushButton(text, self)
         button.setGeometry(
             QRect(
                 10 + (self.bt_length+self.dl) * n_col,
                 560 + (self.bt_height + self.dl) * n_line,
                 self.bt_length, self.bt_height))
-        button.clicked.connect(fct)
+        button.clicked.connect(func)
 
     def replay(self):
         self.movie_canvas.reset_play()

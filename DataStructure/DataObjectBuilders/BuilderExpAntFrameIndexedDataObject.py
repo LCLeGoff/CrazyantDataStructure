@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
 
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class BuilderExpAntFrameIndexedDataObject:
     def __init__(self, df):
-        if df.index.names != ['id_exp', 'id_ant', 'frame']:
+        if df.index.names != [id_exp_name, id_ant_name, id_frame_name]:
             raise IndexError('Index names are not (id_exp, id_ant, frame)')
         else:
             self.df = df
@@ -30,10 +31,10 @@ class BuilderExpAntFrameIndexedDataObject:
             return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return self.pandas_index_manager.get_index_dict(df=self.df, index_names=['id_exp', 'id_ant', 'frame'])
+        return self.pandas_index_manager.get_index_dict(df=self.df, index_names=[id_exp_name, id_ant_name, id_frame_name])
 
-    def operation_on_id_exp(self, id_exp, fct):
-        self.df.loc[id_exp, :, :] = fct(self.df.loc[id_exp, :, :])
+    def operation_on_id_exp(self, id_exp, func):
+        self.df.loc[id_exp, :, :] = func(self.df.loc[id_exp, :, :])
 
     @staticmethod
     def __time_delta4each_group(df: pd.DataFrame):
@@ -42,4 +43,4 @@ class BuilderExpAntFrameIndexedDataObject:
         return df
 
     def compute_time_delta(self):
-        return self.df.groupby(['id_exp', 'id_ant']).apply(self.__time_delta4each_group)
+        return self.df.groupby([id_exp_name, id_ant_name]).apply(self.__time_delta4each_group)

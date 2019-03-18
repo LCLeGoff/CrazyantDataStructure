@@ -1,5 +1,6 @@
 import numpy as np
 
+from DataStructure.VariableNames import id_ant_name, id_frame_name, id_exp_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -8,16 +9,16 @@ class BuilderDataObject:
         self.df = df
         self.pandas_index_manager = PandasIndexManager()
 
-    def operation(self, fct):
-        self.df = fct(self.df)
+    def operation(self, func):
+        self.df = func(self.df)
 
-    def operation_with_data_obj(self, obj, fct, self_name_col=None, obj_name_col=None):
+    def operation_with_data_obj(self, obj, func, self_name_col=None, obj_name_col=None):
         if self_name_col is None:
             self_name_col = self.df.columns[0]
         if obj_name_col is None:
-            obj_name_col = obj.column_names
+            obj_name_col = obj.name_col
 
-        self.df[self_name_col] = fct(self.df[self_name_col], obj.df[obj_name_col])
+        self.df[self_name_col] = func(self.df[self_name_col], obj.df[obj_name_col])
 
     def print(self, short=True):
         if short:
@@ -35,25 +36,25 @@ class BuilderDataObject:
         return self.df.loc[list(map(tuple, np.array(idx_array))), :]
 
     def get_index_array_of_id_exp(self):
-        return PandasIndexManager().get_index_array(self.df, 'id_exp')
+        return PandasIndexManager().get_unique_index_array(self.df, id_exp_name)
 
     def get_index_array_of_id_exp_ant(self):
-        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'id_ant'])
+        return PandasIndexManager().get_unique_index_array(self.df, [id_exp_name, id_ant_name])
 
     def get_index_array_of_id_exp_frame(self):
-        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'frame'])
+        return PandasIndexManager().get_unique_index_array(self.df, [id_exp_name, id_frame_name])
 
     def get_index_array_of_id_exp_ant_frame(self):
-        return PandasIndexManager().get_index_array(self.df, ['id_exp', 'id_ant', 'frame'])
+        return PandasIndexManager().get_unique_index_array(self.df, [id_exp_name, id_ant_name, id_frame_name])
 
     def get_index_dict_of_id_exp_ant(self):
-        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'id_ant'])
+        return PandasIndexManager().get_index_dict(self.df, [id_exp_name, id_ant_name])
 
     def get_index_dict_of_id_exp_frame(self):
-        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'frame'])
+        return PandasIndexManager().get_index_dict(self.df, [id_exp_name, id_frame_name])
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return PandasIndexManager().get_index_dict(self.df, ['id_exp', 'id_ant', 'frame'])
+        return PandasIndexManager().get_index_dict(self.df, [id_exp_name, id_ant_name, id_frame_name])
 
     def get_array_of_all_ants_of_exp(self, id_exp):
         id_exp_ant_frame_array = self.get_index_array_of_id_exp_ant_frame()
@@ -63,7 +64,7 @@ class BuilderDataObject:
         return np.array(res)
 
     def get_array_of_all_frames_of_exp(self, id_exp):
-        if 'id_ant' not in self.df.columns:
+        if id_ant_name not in self.df.columns:
             id_exp_frame_array = self.get_index_array_of_id_exp_ant_frame()
         else:
             id_exp_frame_array = self.get_index_array_of_id_exp_frame()
@@ -95,16 +96,16 @@ class BuilderDataObject:
             self.df = self.df[idx_to_keep]
 
     def mean_over_ants(self):
-        return self.df.mean(level=['id_exp', 'id_ant'])
+        return self.df.mean(level=[id_exp_name, id_ant_name])
 
     def mean_over_experiments(self):
-        return self.df.mean(level='id_exp')
+        return self.df.mean(level=id_exp_name)
 
     def mean_over_frames(self):
-        if 'id_ant' not in self.df.columns:
-            return self.df.mean(level=['id_exp', 'id_ant', 'frame'])
+        if id_ant_name not in self.df.columns:
+            return self.df.mean(level=[id_exp_name, id_ant_name, id_frame_name])
         else:
-            return self.df.mean(level=['id_exp', 'frame'])
+            return self.df.mean(level=[id_exp_name, id_frame_name])
 
     def mean_over(self, level_df, mean_level=None, new_level_as=None):
         df = self.df.copy()
@@ -115,9 +116,9 @@ class BuilderDataObject:
         if mean_level is None:
             df = df.mean(level=[filter_idx])
         elif mean_level == 'exp':
-            df = df.mean(level=['id_exp', filter_idx])
+            df = df.mean(level=[id_exp_name, filter_idx])
         elif mean_level == 'ant':
-            df = df.mean(level=['id_exp', 'id_ant', filter_idx])
+            df = df.mean(level=[id_exp_name, id_ant_name, filter_idx])
         else:
             raise ValueError(mean_level + ' not understood')
         if new_level_as is None:

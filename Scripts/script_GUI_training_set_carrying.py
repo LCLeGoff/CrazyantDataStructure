@@ -232,7 +232,7 @@ class DataManager:
     def add_new_entry(self, index: pd.Index, is_carrying):
         id_exp_ant_tuples = self.exp.get_array_id_exp_ant(self.name)
         id_exp_ant_tuples = list(zip(id_exp_ant_tuples[:, 0], id_exp_ant_tuples[:, 1]))
-        id_ant = index.get_level_values('id_ant')[0]
+        id_ant = index.get_level_values(id_ant_name)[0]
         if (self.exp, id_ant) in id_exp_ant_tuples:
             for id_exp, id_ant, frame in index:
                 self.exp.carrying_training_set.df.loc[id_exp, id_ant, frame] = is_carrying
@@ -316,14 +316,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             pass
         self.update()
 
-    def create_button(self, n_line, n_col, text, fct):
+    def create_button(self, n_line, n_col, text, func):
         button = QPushButton(text, self)
         button.setGeometry(
             QRect(
                 10 + (self.bt_length+self.dl) * n_col,
                 560 + (self.bt_height + self.dl) * n_line,
                 self.bt_length, self.bt_height))
-        button.clicked.connect(fct)
+        button.clicked.connect(func)
 
     def replay(self):
         self.movie_canvas.reset_play()

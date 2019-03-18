@@ -1,6 +1,7 @@
 import pandas as pd
 
 from DataStructure.DataObjects.TimeSeries1d import TimeSeries1d
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 
 
 class TimeSeries1dLoader:
@@ -11,7 +12,7 @@ class TimeSeries1dLoader:
     def load_category(self, category):
         add = self.root + category + '/TimeSeries.csv'
         if not (category in self.categories.keys()):
-            self.categories[category] = pd.read_csv(add, index_col=['id_exp', 'id_ant', 'frame'])
+            self.categories[category] = pd.read_csv(add, index_col=[id_exp_name, id_ant_name, id_frame_name])
 
     def load(self, definition):
         self.load_category(definition.category)

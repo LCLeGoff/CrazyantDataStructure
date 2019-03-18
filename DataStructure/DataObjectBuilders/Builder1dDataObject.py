@@ -32,8 +32,8 @@ class Builder1dDataObject(BuilderDataObject):
     def replace_values(self, vals):
         self.df[self.df.columns[0]] = vals
 
-    def operation_with_data1d(self, obj, fct):
-        self.replace_values(fct(self.df[self.name_col], obj.df[obj.name_col]))
+    def operation_with_data1d(self, obj, func):
+        self.replace_values(func(self.df[self.name_col], obj.df[obj.name_col]))
 
-    def operation_with_data2d(self, obj, obj_name_col, fct):
-        self.replace_values(fct(self.df[self.name_col], obj.df[obj_name_col]))
+    def operation_with_data2d(self, obj, obj_name_col, func):
+        self.replace_values(func(self.df[self.name_col], obj.df[obj_name_col]))

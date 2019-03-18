@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as scs
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_exp_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -61,32 +62,32 @@ class ObstacleTemporaryResults:
                 elif temp_res == 'LR':
                     details.append((id_exp, 3))
 
-        arrival_df = pd.DataFrame(arrival_res, columns=['id_exp', temporary_arrival_side_name], dtype=int)
-        arrival_df.set_index('id_exp', inplace=True)
+        arrival_df = pd.DataFrame(arrival_res, columns=[id_exp_name, temporary_arrival_side_name], dtype=int)
+        arrival_df.set_index(id_exp_name, inplace=True)
         self.exp.add_new1d_from_df(
             df=arrival_df, name=temporary_arrival_side_name, object_type='Characteristics1d',
             category='ObstacleChoice', label='from which side of the obstacle the ant reaches the food',
             description='from which side of the obstacle the ant reaches the food'
         )
 
-        departure_df = pd.DataFrame(departure_res, columns=['id_exp', temporary_departure_side_name], dtype=int)
-        departure_df.set_index('id_exp', inplace=True)
+        departure_df = pd.DataFrame(departure_res, columns=[id_exp_name, temporary_departure_side_name], dtype=int)
+        departure_df.set_index(id_exp_name, inplace=True)
         self.exp.add_new1d_from_df(
             df=departure_df, name=temporary_departure_side_name, object_type='Characteristics1d',
             category='ObstacleChoice', label='from which side of the obstacle the ant leaves the food',
             description='from which side of the obstacle the ant leaves the food'
         )
 
-        same_side_df = pd.DataFrame(same_side, columns=['id_exp', temporary_same_side_name], dtype=int)
-        same_side_df.set_index('id_exp', inplace=True)
+        same_side_df = pd.DataFrame(same_side, columns=[id_exp_name, temporary_same_side_name], dtype=int)
+        same_side_df.set_index(id_exp_name, inplace=True)
         self.exp.add_new1d_from_df(
             df=same_side_df, name=temporary_same_side_name, object_type='Characteristics1d',
             category='ObstacleChoice', label='Does ant reach and leave the food by the same side?',
             description='Does ant reach and leave the food by the same side?'
         )
 
-        details_df = pd.DataFrame(details, columns=['id_exp', 'details'], dtype=int)
-        details_df.set_index('id_exp', inplace=True)
+        details_df = pd.DataFrame(details, columns=[id_exp_name, 'details'], dtype=int)
+        details_df.set_index(id_exp_name, inplace=True)
         self.exp.add_new1d_from_df(
             df=details_df, name='details', object_type='Characteristics1d'
         )

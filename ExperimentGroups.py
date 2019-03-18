@@ -9,6 +9,7 @@ from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicT
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
 from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
+from DataStructure.VariableNames import dataset_name, id_exp_name, id_ant_name, id_frame_name
 from Movies.Movies import Movies
 from Scripts.root import root_movie
 from Tools.MiscellaneousTools.ArrayManipulation import running_mean
@@ -119,20 +120,22 @@ class ExperimentGroups:
         return self.pandas_index_manager.get_index_array(df=self.get_df(name))
 
     def get_array_id_exp_ant(self, name):
-        return self.pandas_index_manager.get_index_array(df=self.get_df(name), index_names=['id_exp', 'id_ant'])
+        return self.pandas_index_manager.get_unique_index_array(df=self.get_df(name),
+                                                                index_names=[id_exp_name, id_ant_name])
 
     def get_dict_id_exp_ant(self, name):
         if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
             return self.timeseries_exp_ant_index
         else:
-            return self.pandas_index_manager.get_index_dict(df=self.get_df(name), index_names=['id_exp', 'id_ant'])
+            return self.pandas_index_manager.get_index_dict(df=self.get_df(name),
+                                                            index_names=[id_exp_name, id_ant_name])
 
     def get_dict_id_exp_ant_frame(self, name):
         if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
             return self.timeseries_exp_ant_frame_index
         else:
             return self.pandas_index_manager.get_index_dict(
-                df=self.get_df(name), index_names=['id_exp', 'id_ant', 'frame'])
+                df=self.get_df(name), index_names=[id_exp_name, id_ant_name, id_frame_name])
 
     def plot_traj_on_movie(self, traj_names, id_exp, frame, id_ants=None):
         self.load_timeseries_exp_frame_ant_index()
@@ -406,13 +409,14 @@ class ExperimentGroups:
 
     def __create_empty_df(self, name, object_type):
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
-            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'id_ant', 'frame'])
+            df = self.pandas_index_manager.create_empty_df(column_names=name,
+                                                           index_names=[id_exp_name, id_ant_name, id_frame_name])
         elif object_type in ['AntCharacteristics1d']:
-            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'id_ant'])
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_ant_name])
         elif object_type in ['Characteristics1d', 'Characteristics2d']:
-            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names='id_exp')
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=id_exp_name)
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
-            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=['id_exp', 'frame'])
+            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_frame_name])
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
         return df
@@ -458,18 +462,18 @@ class ExperimentGroups:
 
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.convert_array_to_df(
-                array, index_names=['id_exp', 'id_ant', 'frame'], column_names=name)
+                array, index_names=[id_exp_name, id_ant_name, id_frame_name], column_names=name)
 
         elif object_type in ['AntCharacteristics1d', 'AntCharacteristics2d']:
             df = self.pandas_index_manager.convert_array_to_df(
-                array, index_names=['id_exp', 'id_ant'], column_names=name)
+                array, index_names=[id_exp_name, id_ant_name], column_names=name)
 
         elif object_type in ['Characteristics1d', 'Characteristics2d']:
-            df = self.pandas_index_manager.convert_array_to_df(array, index_names='id_exp', column_names=name)
+            df = self.pandas_index_manager.convert_array_to_df(array, index_names=id_exp_name, column_names=name)
 
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
             df = self.pandas_index_manager.convert_array_to_df(
-                array, index_names=['id_exp', 'frame'], column_names=name)
+                array, index_names=[id_exp_name, id_frame_name], column_names=name)
 
         else:
             raise IndexError('Object type ' + object_type + ' unknown')
@@ -485,27 +489,27 @@ class ExperimentGroups:
                 df = self.get_df(name_to_reindex).reindex(self.get_index(reindexer_name), fill_value=fill_value)
                 return df
             else:
-                id_exps = self.get_index(reindexer_name).get_level_values('id_exp')
-                id_ants = self.get_index(reindexer_name).get_level_values('id_ant')
-                frames = self.get_index(reindexer_name).get_level_values('frame')
+                id_exps = self.get_index(reindexer_name).get_level_values(id_exp_name)
+                id_ants = self.get_index(reindexer_name).get_level_values(id_ant_name)
+                frames = self.get_index(reindexer_name).get_level_values(id_frame_name)
 
                 if self.__is_indexed_by_exp(name_to_reindex) is True:
 
                     df = self.get_df(name_to_reindex).reindex(id_exps, fill_value=fill_value)
-                    df['id_ant'] = id_ants
-                    df['frame'] = frames
+                    df[id_ant_name] = id_ants
+                    df[id_frame_name] = frames
                     df.reset_index(inplace=True)
-                    df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                    df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
                     return df
 
                 elif self.__is_indexed_by_exp_frame(reindexer_name) is True:
 
-                    idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
+                    idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
 
                     df = self.get_df(name_to_reindex).reindex(idxs, fill_value=fill_value)
-                    df['id_ant'] = id_ants
+                    df[id_ant_name] = id_ants
                     df.reset_index(inplace=True)
-                    df.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+                    df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
                     return df
 
                 else:
@@ -687,22 +691,22 @@ class ExperimentGroups:
                 category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace
             )
 
-    def operation(self, name, fct):
-        self.get_data_object(name).operation(fct)
+    def operation(self, name, func):
+        self.get_data_object(name).operation(func)
 
-    def operation_between_2names(self, name1, name2, fct, col_name1=None, col_name2=None):
+    def operation_between_2names(self, name1, name2, func, col_name1=None, col_name2=None):
 
         if self.__is_1d(name1) and self.__is_1d(name2):
-            self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), fct=fct)
+            self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), func=func)
         elif self.__is_1d(name1) and not self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), fct=fct, obj_name_col=col_name1)
+                obj=self.get_data_object(name2), func=func, obj_name_col=col_name1)
         elif not self.__is_1d(name1) and self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name2)
+                obj=self.get_data_object(name2), func=func, self_name_col=col_name2)
         else:
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), fct=fct, self_name_col=col_name1, obj_name_col=col_name2)
+                obj=self.get_data_object(name2), func=func, self_name_col=col_name1, obj_name_col=col_name2)
 
     def event_extraction_from_timeseries(
             self, name_ts, name_extracted_events,
@@ -763,7 +767,7 @@ class ExperimentGroups:
             def interval4each_group(df: pd.DataFrame):
                 df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
                 df.iloc[-1, -1] = 0
-                frame0 = df.index.get_level_values('frame')[0]
+                frame0 = df.index.get_level_values(id_frame_name)[0]
 
                 arr = np.array(df[df != 0].dropna().reset_index())[:, 2:]
                 df[:] = np.nan
@@ -779,7 +783,7 @@ class ExperimentGroups:
 
                 return df
 
-            df_intervals = self.get_df(name_to_intervals).groupby(['id_exp', 'id_ant']).apply(interval4each_group)
+            df_intervals = self.get_df(name_to_intervals).groupby([id_exp_name, id_ant_name]).apply(interval4each_group)
             df_intervals.dropna(inplace=True)
             df_intervals.astype(int, inplace=True)
 
@@ -831,7 +835,7 @@ class ExperimentGroups:
             result_name='temp_obj')
 
         mean_df = self.get_data_object(temp_name).mean_over(
-            self.get_df(interval_index_name), mean_level=mean_level, new_level_as='frame')
+            self.get_df(interval_index_name), mean_level=mean_level, new_level_as=id_frame_name)
 
         self.remove_object([temp_name, interval_index_name])
 
@@ -894,7 +898,7 @@ class ExperimentGroups:
                 return df_fit
             else:
                 if filter_as_frame is True:
-                    self.pandas_index_manager.rename_index_level(df_fit, 'filter', 'frame')
+                    self.pandas_index_manager.rename_index_level(df_fit, 'filter', id_frame_name)
                     if level == 'ant':
                         self.add_new2d_from_df(
                             df=df_fit, name=result_name, xname=xname, yname=yname, object_type='Events2d',
@@ -957,17 +961,17 @@ class ExperimentGroups:
                 name = df.columns[0]
 
                 if len(df) > 0:
-                    id_exp = df.index.get_level_values('id_exp')[0]
-                    id_ant = df.index.get_level_values('id_ant')[0]
-                    frame0 = df.index.get_level_values('frame')[0]
-                    frame1 = df.index.get_level_values('frame')[-1]
+                    id_exp = df.index.get_level_values(id_exp_name)[0]
+                    id_ant = df.index.get_level_values(id_ant_name)[0]
+                    frame0 = df.index.get_level_values(id_frame_name)[0]
+                    frame1 = df.index.get_level_values(id_frame_name)[-1]
 
                     rg = range(frame0, frame1 + 1)
                     time_lg = frame1 - frame0 + 1
 
                     idx = pd.MultiIndex.from_tuples(
                         list(zip(np.full(time_lg, id_exp), np.full(time_lg, id_ant), rg)),
-                        names=['id_exp', 'id_ant', 'frame'])
+                        names=[id_exp_name, id_ant_name, id_frame_name])
 
                     df2 = df.reindex(idx)
                     time_array = np.array((1 - df2.isna()).astype(float))
@@ -983,20 +987,20 @@ class ExperimentGroups:
                 return df
 
             if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
-                lg = len(set(self.get_df(result_name).index.get_level_values('id_exp')))
+                lg = len(set(self.get_df(result_name).index.get_level_values(id_exp_name)))
                 lg = int(np.floor(lg / 5) * 5)
                 for i in range(5, lg, 5):
                     idx_sl = pd.IndexSlice[i - 5:i, :, :]
                     self.__dict__[result_name].df.loc[idx_sl, :] = \
-                        self.get_df(result_name).loc[idx_sl, :].groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+                        self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
 
                 idx_sl = pd.IndexSlice[lg:, :, :]
                 self.__dict__[result_name].df.loc[idx_sl, :] = \
-                    self.get_df(result_name).loc[idx_sl, :].groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+                    self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
 
             else:
                 self.__dict__[result_name].df \
-                    = self.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(mm4each_group)
+                    = self.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
 
         return result_name
 

@@ -319,7 +319,7 @@ class SetupPlotter(BasePlotters):
 
         self.__plot_with_colorization_ant2(ax, list_id_exp, self.__plot_phi_direction)
 
-    def __plot_with_colorization_ant2(self, ax, list_id_exp, fct):
+    def __plot_with_colorization_ant2(self, ax, list_id_exp, func):
         idx_dict = self.obj.get_index_dict_of_id_exp_ant()
         for id_exp in list_id_exp:
             if id_exp in idx_dict:
@@ -329,7 +329,7 @@ class SetupPlotter(BasePlotters):
                     self.line['c'] = col_list_for_each_ant[id_ant]
                     self.id_exp = id_exp
                     self.id_ant = id_ant
-                    fct(ax)
+                    func(ax)
 
     def __plot_phi_direction_per_frame2(self, ax, list_id_exp):
         self.__plot_with_colorization_frame2(ax, list_id_exp, self.__plot_phi_direction)
@@ -374,7 +374,7 @@ class SetupPlotter(BasePlotters):
         elif color_variety == 'frame2':
             self.__plot_with_colorization_frame2(ax, list_id_exp, self.__plot_one_ab_line)
 
-    def __plot_with_colorization_frame2(self, ax, list_id_exp, fct):
+    def __plot_with_colorization_frame2(self, ax, list_id_exp, func):
         if list_id_exp is None:
             list_id_exp = self.obj.get_index_array_of_id_exp
         index_dict = self.obj.get_index_dict_of_id_exp_ant_frame()
@@ -388,7 +388,7 @@ class SetupPlotter(BasePlotters):
                         self.id_ant = id_ant
                         self.frame = frame
                         self.line['c'] = col_list_for_each_ant[frame]
-                        fct(ax)
+                        func(ax)
 
     def __plot_one_ab_line(self, ax):
         a, b = self.obj.get_value((self.id_exp, self.id_ant, self.frame))

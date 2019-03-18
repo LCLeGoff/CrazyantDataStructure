@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn import svm
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from ExperimentGroups import ExperimentGroups
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2
 
@@ -19,10 +20,10 @@ class AnalyseFoodBase:
         print(name)
         self.exp.load(['food_x', 'food_y', 'x', 'y'])
 
-        id_exps = self.exp.x.df.index.get_level_values('id_exp')
-        id_ants = self.exp.x.df.index.get_level_values('id_ant')
-        frames = self.exp.x.df.index.get_level_values('frame')
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
+        id_exps = self.exp.x.df.index.get_level_values(id_exp_name)
+        id_ants = self.exp.x.df.index.get_level_values(id_ant_name)
+        frames = self.exp.x.df.index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
 
         self.exp.add_2d_from_1ds(
             name1='food_x', name2='food_y', result_name='food_xy',
@@ -41,10 +42,10 @@ class AnalyseFoodBase:
     def __reindexing_food_xy(self, id_ants, idxs):
         df_d = self.exp.food_xy.df.copy()
         df_d = df_d.reindex(idxs)
-        df_d['id_ant'] = id_ants
+        df_d[id_ant_name] = id_ants
         df_d.reset_index(inplace=True)
-        df_d.columns = ['id_exp', 'frame', 'x', 'y', 'id_ant']
-        df_d.set_index(['id_exp', 'id_ant', 'frame'], inplace=True)
+        df_d.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
+        df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
         return df_d
 
     def __compute_distance_from_food(self, df_f):
@@ -287,7 +288,7 @@ class AnalyseFoodBase:
     def __diff4each_group(self, df: pd.DataFrame):
         name0 = df.columns[0]
         df.dropna(inplace=True)
-        id_exp = df.index.get_level_values('id_exp')[0]
+        id_exp = df.index.get_level_values(id_exp_name)[0]
         d = np.array(df)
         if len(d) > 1:
 
@@ -297,7 +298,7 @@ class AnalyseFoodBase:
             d[0] = d1-d[0]
             d[-1] = d[-1]-d2
 
-            dt = np.array(df.index.get_level_values('frame'), dtype=float)
+            dt = np.array(df.index.get_level_values(id_frame_name), dtype=float)
             dt[1:-1] = dt[2:] - dt[:-2]
             dt[0] = 1
             dt[-1] = 1
@@ -321,7 +322,7 @@ class AnalyseFoodBase:
         )
 
         self.exp.get_data_object(result_name).change_values(
-            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
+            self.exp.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
@@ -337,7 +338,7 @@ class AnalyseFoodBase:
         )
 
         self.exp.get_data_object(result_name).change_values(
-            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
+            self.exp.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
@@ -353,7 +354,7 @@ class AnalyseFoodBase:
         )
 
         self.exp.get_data_object(result_name).change_values(
-            self.exp.get_df(result_name).groupby(['id_exp', 'id_ant']).apply(self.__diff4each_group))
+            self.exp.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(self.__diff4each_group))
 
         self.exp.write(result_name)
 
@@ -407,10 +408,10 @@ class AnalyseFoodBase:
             name1='x', name2='y', result_name='xy',
             xname='x', yname='y', replace=True
         )
-        id_exps = self.exp.xy.df.index.get_level_values('id_exp')
-        id_ants = self.exp.xy.df.index.get_level_values('id_ant')
-        frames = self.exp.xy.df.index.get_level_values('frame')
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=['id_exp', 'frame'])
+        id_exps = self.exp.xy.df.index.get_level_values(id_exp_name)
+        id_ants = self.exp.xy.df.index.get_level_values(id_ant_name)
+        frames = self.exp.xy.df.index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
         self.exp.add_2d_from_1ds(
             name1='food_x', name2='food_y', result_name='food_xy',
             xname='x_ant', yname='y_ant', replace=True

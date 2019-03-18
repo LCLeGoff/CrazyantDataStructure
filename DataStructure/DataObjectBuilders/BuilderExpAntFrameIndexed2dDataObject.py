@@ -4,13 +4,14 @@ import numpy as np
 
 from DataStructure.DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataStructure.DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
 class BuilderExpAntFrameIndexed2dDataObject(Builder2dDataObject, BuilderExpAntFrameIndexedDataObject):
     def __init__(self, df):
-        if df.index.names != ['id_exp', 'id_ant', 'frame']:
+        if df.index.names != [id_exp_name, id_ant_name, id_frame_name]:
             raise IndexError('Index names are not (id_exp, id_ant, frame)')
         else:
             Builder2dDataObject.__init__(self, df)
@@ -60,14 +61,14 @@ class BuilderExpAntFrameIndexed2dDataObject(Builder2dDataObject, BuilderExpAntFr
                     res.append((filter_val, a, b))
         elif level == 'exp':
             if filter_df is None:
-                idx_names = ['id_exp']
+                idx_names = [id_exp_name]
                 for id_exp in list_id_exp:
                     x, y = self.get_xy_values_of_id_exp(id_exp)
                     a, b = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
                     res.append((id_exp, a, b))
             else:
                 for id_exp in list_id_exp:
-                    idx_names = ['id_exp', filter_idx_name]
+                    idx_names = [id_exp_name, filter_idx_name]
                     df = self.get_row_of_id_exp(id_exp)
                     xy_array = self.pandas_index_manager.convert_df_to_array(df)
                     filter_value_set = set(xy_array[:, -3])
@@ -78,14 +79,14 @@ class BuilderExpAntFrameIndexed2dDataObject(Builder2dDataObject, BuilderExpAntFr
         elif level == 'ant':
             list_id_exp_ant = self.get_index_array_of_id_exp_ant()
             if filter_df is None:
-                idx_names = ['id_exp', 'id_ant']
+                idx_names = [id_exp_name, id_ant_name]
                 for id_exp, id_ant in list_id_exp_ant:
                     if id_exp in list_id_exp:
                         x, y = self.get_xy_values_of_id_exp(id_exp)
                         a, b = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
                         res.append((id_exp, id_ant, a, b))
             else:
-                idx_names = ['id_exp', 'id_ant', filter_idx_name]
+                idx_names = [id_exp_name, id_ant_name, filter_idx_name]
                 for id_exp, id_ant in list_id_exp_ant:
                     if id_exp in list_id_exp:
                         df = self.get_row_of_id_exp_ant(id_exp, id_ant)
