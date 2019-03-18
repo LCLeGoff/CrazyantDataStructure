@@ -726,6 +726,22 @@ class ExperimentGroups:
 
             self.add_object(name_extracted_events, event, replace)
 
+    def hist1d(self, name_to_hist, result_name=None, column_to_hist=None, bins='fd',
+               category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name_to_hist + '_hist'
+
+        if category is None:
+            category = self.get_category(name_to_hist)
+
+        df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins)
+
+        self.add_new1d_from_df(df=df, name=result_name, object_type=dataset_name,
+                               category=category, label=label, description=description, replace=replace)
+
+        return result_name
+
     def compute_time_delta(
             self, name_to_delta, result_name=None, xname=None, yname=None,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False

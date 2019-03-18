@@ -126,3 +126,17 @@ class BuilderDataObject:
         else:
             self.pandas_index_manager.rename_index_level(df, filter_idx, new_level_as)
         return df
+
+    def hist1d(self, column_name=None, bins='fd'):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        y, x = np.histogram(self.df[column_name].dropna(), bins)
+        x = (x[1:] + x[:-1]) / 2.
+        h = np.array(list(zip(x, y)))
+
+        df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
+        return df.astype(int)
