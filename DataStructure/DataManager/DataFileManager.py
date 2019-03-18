@@ -64,8 +64,12 @@ class DataFileManager:
                 df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
     def write(self, obj):
-        if obj.category is None or obj.label is None or obj.description is None:
-            raise ValueError(obj.name + ' definition not properly set')
+        if obj.category is None:
+            raise ValueError(obj.name + ' definition not properly set: category is missing')
+        elif obj.label is None:
+            raise ValueError(obj.name + ' definition not properly set: label is missing')
+        elif obj.description is None:
+            raise ValueError(obj.name + ' definition not properly set: description is missing')
         else:
             self.create_new_category(obj.category)
             self.data_writer.write(obj)

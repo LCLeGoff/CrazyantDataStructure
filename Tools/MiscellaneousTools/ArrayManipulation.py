@@ -15,3 +15,8 @@ def turn_to_list(names):
     if isinstance(names, str):
         names = [names]
     return names
+
+
+def round_float(x, n):
+    f = np.vectorize(lambda y: np.around(y, -np.array(np.floor(np.sign(y) * np.log10(abs(y))), dtype=int) + n - 1))
+    return f(x)

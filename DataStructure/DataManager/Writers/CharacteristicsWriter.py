@@ -13,9 +13,7 @@ class Characteristics1dWriter:
         id_exp_list = chara1d.get_index_array_of_id_exp()
         for id_exp in id_exp_list:
             val = chara1d.df.loc[id_exp][chara1d.name]
-            if isinstance(val, float):
-                val = np.around(val, 3)
-            elif isinstance(val, np.int64):
+            if isinstance(val, np.int64):
                 val = int(val)
             chara_dict[str(id_exp)][chara1d.name] = val
         write_obj_json(address, chara_dict)

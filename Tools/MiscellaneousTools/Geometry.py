@@ -131,3 +131,7 @@ def norm_vect_df(vect):
     v[v.columns[0]] /= d
     v[v.columns[1]] /= d
     return v
+
+
+def is_in_polygon(pts, path):
+    return path.contains_point(pts)
