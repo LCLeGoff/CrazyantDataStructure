@@ -16,6 +16,7 @@ from Tools.MiscellaneousTools.ArrayManipulation import running_mean
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
+from Tools.Plotter.Plotter import Plotter
 
 
 class ExperimentGroups:

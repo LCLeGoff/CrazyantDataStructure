@@ -51,6 +51,7 @@ class DataFileManager:
             if not (os.path.isdir(add)):
                 try:
                     os.mkdir(add)
+                    os.mkdir(add+'Plots/')
                 except FileExistsError:
                     pass
                 chara = dict()

@@ -13,14 +13,25 @@ class ArgumentsTools:
 
 
 class LineFeatureArguments:
-    def __init__(self, ls='-', lw=3, c='w', alpha=1, marker='', fc='w', ms=5):
+    def __init__(self, ls='-', lw=3, c='k', alpha=1, marker='.', markeredgecolor=None, ms=5):
         self.ls = ls
         self.lw = lw
         self.c = c
         self.alpha = alpha
         self.ms = ms
         self.marker = marker
-        self.markeredgecolor = fc
+        if markeredgecolor is None:
+            self.markeredgecolor = c
+        else:
+            self.markeredgecolor = markeredgecolor
+
+
+class AxisFeatureArguments:
+    def __init__(self, xscale=None, yscale=None, xlabel=None, ylabel=None):
+        self.xscale = xscale
+        self.yscale = yscale
+        self.xlabel = xlabel
+        self.ylabel = ylabel
 
 
 class ArenaFeatureArguments:

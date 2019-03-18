@@ -22,35 +22,43 @@ class BasePlotters:
         ax.yaxis.label.set_color(fg_color)
         ax.title.set_color('w')
 
-    def create_plot(self, preplot=None, figsize=(5, 4)):
+    def create_plot(self, preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
         if preplot is None:
             fig, ax = plt.subplots(figsize=figsize)
-            self.black_background(fig, ax)
+            fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top)
+            # self.black_background(fig, ax)
             return fig, ax
         else:
             return preplot
 
     @staticmethod
-    def axis_scale(ax, xscale=None, yscale=None):
-        if xscale is None:
+    def set_axis_scales_and_labels(ax, axis_dict):
+        if axis_dict['xscale'] is None:
             ax.set_xscale('linear')
         else:
-            ax.set_xscale(xscale)
-        if yscale is None:
+            ax.set_xscale(axis_dict['xscale'])
+        if axis_dict['yscale'] is None:
             ax.set_yscale('linear')
         else:
-            ax.set_yscale(yscale)
+            ax.set_yscale(axis_dict['yscale'])
+
+        if axis_dict['xlabel'] is not None:
+            ax.set_xlabel(axis_dict['xlabel'])
+        if axis_dict['ylabel'] is not None:
+            ax.set_ylabel(axis_dict['ylabel'])
 
     @staticmethod
     def remove_axis(fig, ax):
         ax.axis('off')
         fig.subplots_adjust(left=0, right=1, bottom=0, top=0.95)
 
-    def display_title(self, ax, title_prefix=None):
+    def display_title(self, ax, title_prefix=None, title=None):
+        if title is None:
+            title = self.obj.definition.label
         if title_prefix is None:
-            ax.set_title(self.obj.definition.label)
+            ax.set_title(title)
         else:
-            if self.obj.definition.label is None:
+            if title is None:
                 ax.set_title(title_prefix)
             else:
-                ax.set_title(title_prefix + ' ' + self.obj.definition.label)
+                ax.set_title(title_prefix + ' ' + title)

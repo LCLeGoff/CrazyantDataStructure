@@ -31,7 +31,7 @@ class Plotter1d(BasePlotters):
         self.arg_tools.change_arg_value('line', kwargs)
 
         fig, ax = self.create_plot(preplot)
-        self.axis_scale(ax, xscale, yscale)
+        self.set_axis_scales_and_labels(ax, xscale, yscale)
 
         if multi_plot == 'exp':
             self._plot_hist_for_each_exp(ax, bins, normed)
