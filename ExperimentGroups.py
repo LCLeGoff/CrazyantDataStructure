@@ -798,8 +798,8 @@ class ExperimentGroups:
                     arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
                     arr[0, 0] -= frame0
 
-                    inters = arr[arr[:, -1] == -1, :]
-                    frame_list = frame_list[arr[:, -1] == -1]
+                    inters = arr[arr[:, -1] == 1, :]
+                    frame_list = frame_list[arr[:, -1] == 1]
 
                     df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters[:, 0]
 

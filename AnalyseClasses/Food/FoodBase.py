@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
-from sklearn import svm
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from ExperimentGroups import ExperimentGroups
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle
 
 
 class AnalyseFoodBase:
@@ -14,6 +13,22 @@ class AnalyseFoodBase:
             self.exp = ExperimentGroupBuilder(root).build(group)
         else:
             self.exp = exp
+
+    def compute_food_phi(self):
+        result_name = 'food_phi'
+        print(result_name)
+        self.exp.load(['food_x', 'food_y'])
+
+        self.exp.add_2d_from_1ds(name1='food_x', name2='food_y', result_name='food_xy')
+
+        self.exp.add_copy1d(name_to_copy='food_x', copy_name=result_name, category='FoodBase',
+                            label='food trajectory phi', description='angular coordinate of the food trajectory'
+                                                                     ' (in the food system)')
+
+        phi = np.around(angle([1, 0], self.exp.food_xy.get_array()), 3)
+        self.exp.get_data_object(result_name).replace_values(phi)
+
+        self.exp.write(result_name)
 
     def compute_distance2food(self):
         name = 'distance2food'
@@ -515,89 +530,3 @@ class AnalyseFoodBase:
         )
 
         self.exp.write(res_name)
-
-    def compute_is_carrying(self):
-        name_result = 'carrying_next2food'
-
-        speed_name = 'mm20_speed_next2food'
-        orientation_name = 'mm20_angle_body_food_next2food'
-        distance_name = 'mm20_distance2food_next2food'
-        distance_diff_name = 'mm20_distance2food_next2food_diff'
-        training_set_name = 'carrying_training_set'
-
-        self.exp.load(
-            [training_set_name, speed_name, orientation_name, distance_name, distance_diff_name, 'mm2px'])
-
-        self.exp.get_data_object(orientation_name).change_values(self.exp.get_df(orientation_name).abs())
-
-        df_features, df_labels = self.__get_training_features_and_labels4carrying(
-            speed_name, orientation_name, distance_name, distance_diff_name, training_set_name)
-
-        df_to_predict = self.__get_df_to_predict_carrying(
-            distance_diff_name, distance_name, orientation_name, speed_name)
-
-        clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[:2, :, :], :], df_labels.loc[pd.IndexSlice[:2, :, :], :])
-        prediction1 = clf.predict(df_to_predict.loc[pd.IndexSlice[:2, :, :], :])
-
-        clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[3:, :, :], :], df_labels.loc[pd.IndexSlice[3:, :, :], :])
-        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[3:, :, :], :])
-
-        prediction = np.zeros(len(prediction1)+len(prediction2), dtype=int)
-        prediction[:len(prediction1)] = prediction1
-        prediction[len(prediction1):] = prediction2
-
-        self.exp.add_copy(
-            old_name=distance_name, new_name=name_result,
-            category='FoodCarrying', label='Is ant carrying?',
-            description='Boolean giving if ants are carrying or not, for the ants next to the food'
-        )
-        self.exp.__dict__[name_result].df = self.exp.get_df(name_result).reindex(df_to_predict.index)
-        self.exp.get_data_object(name_result).change_values(prediction)
-        self.exp.write(name_result)
-
-    def __get_df_to_predict_carrying(
-            self, distance_diff_name, distance_name, orientation_name, speed_name):
-
-        df_to_predict = self.exp.get_df(distance_name).join(self.exp.get_df(orientation_name), how='inner')
-        self.exp.remove_object(orientation_name)
-        df_to_predict = df_to_predict.join(self.exp.get_df(speed_name), how='inner')
-        self.exp.remove_object(speed_name)
-        df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
-        self.exp.remove_object(distance_diff_name)
-        df_to_predict.dropna(inplace=True)
-        return df_to_predict
-
-    def __get_training_features_and_labels4carrying(
-            self, speed_name, orientation_name, distance_name, distance_diff_name, training_set_name):
-
-        self.exp.filter_with_time_occurrences(
-            name_to_filter=speed_name, filter_name=training_set_name,
-            result_name='training_set_speed', replace=True)
-
-        self.exp.filter_with_time_occurrences(
-            name_to_filter=orientation_name, filter_name=training_set_name,
-            result_name='training_set_orientation', replace=True)
-
-        self.exp.filter_with_time_occurrences(
-            name_to_filter=distance_name, filter_name=training_set_name,
-            result_name='training_set_distance', replace=True)
-
-        self.exp.filter_with_time_occurrences(
-            name_to_filter=distance_diff_name, filter_name=training_set_name,
-            result_name='training_set_distance_diff', replace=True)
-
-        df_features = self.exp.training_set_distance.df.join(self.exp.training_set_orientation.df, how='inner')
-        df_features = df_features.join(self.exp.training_set_speed.df, how='inner')
-        df_features = df_features.join(self.exp.training_set_distance_diff.df, how='inner')
-        df_features.dropna(inplace=True)
-
-        self.exp.remove_object('training_set_speed')
-        self.exp.remove_object('training_set_orientation')
-        self.exp.remove_object('training_set_distance')
-        self.exp.remove_object('training_set_distance_diff')
-
-        df_labels = self.exp.get_df(training_set_name).reindex(df_features.index)
-
-        return df_features, df_labels

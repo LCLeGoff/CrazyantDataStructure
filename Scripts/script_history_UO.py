@@ -20,6 +20,7 @@ traj = AnalyseTrajectory(root, group)
 # traj.compute_is_from_outside()
 
 FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
+FoodBase.compute_food_phi()
 # FoodBase.compute_speed_food()
 #
 # FoodBase.compute_distance2food()
@@ -56,10 +57,11 @@ FoodBase = AnalyseFoodBase(root, group, exp=traj.exp)
 # FoodBase.compute_mm10_angle_body_food_next2food()
 # FoodBase.compute_mm20_angle_body_food_next2food()
 
-# FoodBase.compute_is_carrying()
 
 Carrying = AnalyseFoodCarrying(root, group, exp=FoodBase.exp)
+# Carrying.compute_carrying_next2food_with_svm()
+# Carrying.compute_carrying_from_svm()
 # Carrying.compute_carrying()
+# Carrying.compute_carried_food()
 # Carrying.compute_carrying_intervals(True)
 # Carrying.compute_not_carrying_intervals(True)
-# Carrying.compute_carried_food()
