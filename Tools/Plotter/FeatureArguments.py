@@ -13,7 +13,7 @@ class ArgumentsTools:
 
 
 class LineFeatureArguments:
-    def __init__(self, ls='-', lw=3, c='k', alpha=1, marker='.', markeredgecolor=None, ms=5):
+    def __init__(self, ls='-', lw=2, c='k', alpha=1, marker='.', markeredgecolor=None, ms=8):
         self.ls = ls
         self.lw = lw
         self.c = c

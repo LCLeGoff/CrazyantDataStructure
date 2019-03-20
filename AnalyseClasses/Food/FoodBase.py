@@ -5,6 +5,7 @@ from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from ExperimentGroups import ExperimentGroups
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle
+from Tools.Plotter.Plotter import Plotter
 
 
 class AnalyseFoodBase:
@@ -14,21 +15,45 @@ class AnalyseFoodBase:
         else:
             self.exp = exp
 
-    def compute_food_phi(self):
+    def compute_food_phi(self, redo=False, redo_hist=False):
         result_name = 'food_phi'
+        hist_name = result_name+'_hist'
         print(result_name)
         self.exp.load(['food_x', 'food_y'])
 
-        self.exp.add_2d_from_1ds(name1='food_x', name2='food_y', result_name='food_xy')
+        dtheta = np.pi/10.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        hist_label = 'Histogram of food phi'
+        hist_description = 'Histogram of the angular coordinate of the food trajectory (in the food system)'
 
-        self.exp.add_copy1d(name_to_copy='food_x', copy_name=result_name, category='FoodBase',
-                            label='food trajectory phi', description='angular coordinate of the food trajectory'
-                                                                     ' (in the food system)')
+        if redo is True:
+            self.exp.add_2d_from_1ds(name1='food_x', name2='food_y', result_name='food_xy')
 
-        phi = np.around(angle([1, 0], self.exp.food_xy.get_array()), 3)
-        self.exp.get_data_object(result_name).replace_values(phi)
+            self.exp.add_copy1d(name_to_copy='food_x', copy_name=result_name, category='FoodBase',
+                                label='food trajectory phi', description='angular coordinate of the food trajectory'
+                                                                         ' (in the food system)')
 
-        self.exp.write(result_name)
+            phi = np.around(angle([1, 0], self.exp.food_xy.get_array()), 3)
+            self.exp.get_data_object(result_name).replace_values(phi)
+
+            self.exp.write(result_name)
+
+            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
+            self.exp.write(hist_name)
+
+        elif redo_hist is True:
+            self.exp.load(result_name)
+            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
+            self.exp.write(hist_name)
+
+        else:
+            self.exp.load(hist_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True
+                               # xscale='log', yscale='log', ls='',
+                               )
+        plotter.save(fig)
 
     def compute_distance2food(self):
         name = 'distance2food'

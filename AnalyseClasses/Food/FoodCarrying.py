@@ -4,7 +4,7 @@ from cv2 import cv2
 from sklearn import svm
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from DataStructure.VariableNames import id_exp_name, id_ant_name
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from ExperimentGroups import ExperimentGroups
 from Tools.Plotter.Plotter import Plotter
 
@@ -145,6 +145,33 @@ class AnalyseFoodCarrying:
 
         self.exp.write(result_name)
 
+    def compute_carried_food(self):
+        result_name = 'carried_food'
+        category = 'FoodCarrying'
+        name = 'carrying'
+
+        self.exp.load(name)
+
+        def carried_food4each_group(carrying):
+            xys = np.array(carrying)
+            carrying[:] = np.nan
+            carried_food = any(xys)
+            carrying.iloc[0, :] = carried_food
+
+            return carrying
+
+        self.exp.get_data_object(name).df\
+            = self.exp.get_df(name).groupby(['id_exp', 'id_ant']).apply(carried_food4each_group)
+
+        df_res = self.exp.get_df(name).dropna()
+        df_res.index = df_res.index.droplevel('frame')
+
+        self.exp.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
+                                   category=category, label='Has the ant carried the food?',
+                                   description='Boolean saying if the ant has at least once carried the food')
+
+        self.exp.write(result_name)
+
     def compute_carrying_intervals(self, redo=False, redo_hist=False):
 
         result_name = 'carrying_intervals'
@@ -214,23 +241,37 @@ class AnalyseFoodCarrying:
                                xscale='log', yscale='log', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_carried_food(self):
-        result_name = 'carried_food'
+    def compute_food_information_after_first_attachment(self):
+        result_name = 'food_info_after_first_attachment'
         category = 'FoodCarrying'
-        name = 'carrying'
 
-        self.exp.load(name)
+        name = 'carrying_intervals'
+        self.exp.load(['ant_from_outside', name, 'food_phi', 'fps'])
+        if (self.exp.fps.df == self.exp.fps.df.iloc[0]).all():
+            dt = np.array([-2, 8], dtype=int)*self.exp.fps.df.iloc[0]
+            res = dict()
+            for t in range(dt[0], dt[1]):
+                res[t] = []
 
-        def carried_food4each_group(carrying):
-            xys = np.array(carrying)
-            carrying[:] = np.nan
-            carried_food = any(xys)
-            carrying.iloc[0, :] = carried_food
+            def attachment4each_group(df):
+                id_exp = df.index.get_index_value(id_exp_name)[0]
+                id_ant = df.index.get_index_value(id_ant_name)[0]
 
-            return carrying
+                if self.exp.ant_from_outside.loc[id_exp, id_ant] == 1:
+                    intervals = self.exp.get_df(name).loc[id_exp, id_ant, :]
+                    if len(intervals) != 0:
+                        dframes = dt*self.exp.fps.loc[id_exp]
+                        frame_first_attachment = min(intervals.index.get_index_value(id_frame_name))
+                        food_directions\
+                            = self.exp.phi_food.loc[id_exp, id_ant, frame_first_attachment-dframes[0]
+                                                                    :frame_first_attachment+dframes[1]+1]
 
-        self.exp.get_data_object(name).df\
-            = self.exp.get_df(name).groupby(['id_exp', 'id_ant']).apply(carried_food4each_group)
+                        for frame in food_directions.index.get_index_value(id_frame_name):
+                            res[frame].append(food_directions.loc[id_exp, id_ant, frame])
+                return df
+
+        self.exp.get_data_object(name).df \
+            = self.exp.get_df(name).groupby([id_exp_name, id_ant_name]).apply(attachment4each_group)
 
         df_res = self.exp.get_df(name).dropna()
         df_res.index = df_res.index.droplevel('frame')

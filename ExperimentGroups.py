@@ -807,7 +807,6 @@ class ExperimentGroups:
 
             df_intervals = self.get_df(name_to_intervals).groupby([id_exp_name, id_ant_name]).apply(interval4each_group)
             df_intervals.dropna(inplace=True)
-            df_intervals.astype(int, inplace=True)
 
             self.add_new1d_from_df(
                 df=df_intervals, name=result_name, object_type='Events1d',

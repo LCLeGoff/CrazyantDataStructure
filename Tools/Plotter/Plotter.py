@@ -8,7 +8,7 @@ class Plotter(BasePlotters):
     def __init__(self, root, obj, column_name=None, **kwargs):
 
         if obj.category is not None:
-            self.root = root+'/'+obj.category+'/Plots/'+obj.name
+            self.root = root+obj.category+'/Plots/'+obj.name
         else:
             self.root = None
 
