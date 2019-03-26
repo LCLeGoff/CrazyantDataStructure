@@ -38,5 +38,4 @@ class DataSetBuilder:
             name=name, category=category, object_type=dataset_name,
             label=label, description=description
         )
-        df.columns = [name]
         return DataSet(df.sort_index(), definition)

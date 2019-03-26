@@ -15,6 +15,10 @@ class Builder:
         self.pandas_index_manager = PandasIndexManager()
 
     @staticmethod
+    def build_dataset_from_df(df, name, category=None, label=None, description=None):
+        return DataSetBuilder.build(df=df, name=name, category=category, label=label, description=description)
+
+    @staticmethod
     def build1d_from_df(df, name, object_type, category=None, label=None, description=None):
         if object_type == 'TimeSeries1d':
             return TimeSeries1dBuilder.build(df=df, name=name, category=category, label=label, description=description)

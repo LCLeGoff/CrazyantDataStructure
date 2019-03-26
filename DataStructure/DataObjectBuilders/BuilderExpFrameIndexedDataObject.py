@@ -38,3 +38,31 @@ class BuilderExpFrameIndexedDataObject:
 
     def compute_time_delta(self):
         return self.df.groupby([id_exp_name]).apply(self.__time_delta4each_group)
+
+    def hist1d_time_evolution(self, column_name, frame_intervals, bins):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        frame_intervals = np.array(frame_intervals, dtype=int)
+
+        h = np.zeros((len(bins)-1, len(frame_intervals)+1))
+        h[:, 0] = (bins[1:] + bins[:-1]) / 2.
+
+        for i in range(len(frame_intervals)-1):
+            frame0 = int(frame_intervals[i])
+            frame1 = int(frame_intervals[i+1])
+
+            df = self.df[column_name].loc[:, frame0:frame1]
+            y, x = np.histogram(df.dropna(), bins)
+            h[:, i+1] = y
+
+        frame0 = int(frame_intervals[-1])
+        y, x = np.histogram(self.df[column_name].loc[:, frame0:].dropna(), bins)
+        h[:, -1] = y
+
+        df = PandasIndexManager().convert_array_to_df(
+                array=h, index_names='bins', column_names=np.array(frame_intervals, dtype=str))
+        return df.astype(int)

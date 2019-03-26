@@ -440,6 +440,11 @@ class ExperimentGroups:
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace)
 
+    def add_new_dataset_from_df(self, df, name, category=None, label=None, description=None, replace=False):
+        obj = Builder.build_dataset_from_df(
+            df=df, name=name, category=category, label=label, description=description)
+        self.add_object(name, obj, replace)
+
     def add_new2d_from_df(
             self, df, name, xname, yname, object_type, category=None,
             label=None, xlabel=None, ylabel=None, description=None, replace=False):
@@ -740,6 +745,28 @@ class ExperimentGroups:
 
         return result_name
 
+    def hist1d_time_evolution(
+            self, name_to_hist, frame_intervals, bins, result_name=None, column_to_hist=None,
+            category=None, label=None, description=None, replace=False):
+
+        if self.__is_frame_in_indexes(name_to_hist):
+            if result_name is None:
+                result_name = name_to_hist + '_hist'
+
+            if category is None:
+                category = self.get_category(name_to_hist)
+
+            df = self.get_data_object(name_to_hist).hist1d_time_evolution(
+                column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins)
+
+            self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                         label=label, description=description, replace=replace)
+
+            return result_name
+
+        else:
+            raise TypeError(name_to_hist+' is not frame indexed')
+
     def compute_time_delta(
             self, name_to_delta, result_name=None, xname=None, yname=None,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False
@@ -1024,6 +1051,85 @@ class ExperimentGroups:
             else:
                 self.__dict__[result_name].df \
                     = self.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
+
+        return result_name
+
+    def moving_mean4exp_frame_indexed_1d(
+            self, name_to_average, time_window, result_name=None,
+            category=None, label=None, description=None, replace=False, segmented_computation=False):
+
+        if not self.__is_1d(name_to_average):
+            raise TypeError(name_to_average + ' is not 1d')
+
+        elif not self.__is_indexed_by_exp_frame(name_to_average):
+            raise TypeError(name_to_average + ' is not indexed by (exp, frame)')
+
+        else:
+
+            if result_name is None:
+                result_name = 'mm' + str(time_window) + '_' + name_to_average
+
+            if category is None:
+                category = self.get_category(name_to_average)
+
+            if label is None:
+                label = 'MM of ' + name_to_average + ' on ' + str(time_window) + ' frames'
+
+            if description is None:
+                description = 'Moving mean of ' + name_to_average + ' on a time window of ' + str(
+                    time_window) + ' frames'
+
+            self.add_copy(
+                old_name=name_to_average, new_name=result_name, category=category,
+                label=label, description=description, replace=replace
+            )
+            self.get_df(result_name).dropna(inplace=True)
+
+            time_window = int(np.floor(time_window / 2) * 2 + 1)
+
+            def mm4each_group(df: pd.DataFrame):
+                name = df.columns[0]
+
+                if len(df) > 0:
+                    id_exp = df.index.get_level_values(id_exp_name)[0]
+                    frame0 = df.index.get_level_values(id_frame_name)[0]
+                    frame1 = df.index.get_level_values(id_frame_name)[-1]
+
+                    rg = range(frame0, frame1 + 1)
+                    time_lg = frame1 - frame0 + 1
+
+                    idx = pd.MultiIndex.from_tuples(
+                        list(zip(np.full(time_lg, id_exp), rg)),
+                        names=[id_exp_name, id_frame_name])
+
+                    df2 = df.reindex(idx)
+                    time_array = np.array((1 - df2.isna()).astype(float))
+                    mask0 = np.where(time_array == 0)[0]
+                    mask1 = np.where(time_array == 1)[0]
+                    values_array = np.array(df2[name])
+                    values_array[mask0] = 0
+                    mm_val = running_mean(values_array, time_window)[mask1]
+                    mm_time = running_mean(time_array, time_window)[mask1]
+
+                    df[name] = np.around(mm_val / mm_time, 3)
+
+                return df
+
+            if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
+                lg = len(set(self.get_df(result_name).index.get_level_values(id_exp_name)))
+                lg = int(np.floor(lg / 5) * 5)
+                for i in range(5, lg, 5):
+                    idx_sl = pd.IndexSlice[i - 5:i, :, :]
+                    self.__dict__[result_name].df.loc[idx_sl, :] = \
+                        self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name]).apply(mm4each_group)
+
+                idx_sl = pd.IndexSlice[lg:, :, :]
+                self.__dict__[result_name].df.loc[idx_sl, :] = \
+                    self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name]).apply(mm4each_group)
+
+            else:
+                self.__dict__[result_name].df \
+                    = self.get_df(result_name).groupby([id_exp_name]).apply(mm4each_group)
 
         return result_name
 

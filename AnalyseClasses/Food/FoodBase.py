@@ -50,10 +50,41 @@ class AnalyseFoodBase:
             self.exp.load(hist_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True
-                               # xscale='log', yscale='log', ls='',
-                               )
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
         plotter.save(fig)
+
+    def compute_food_phi_evol(self, redo=False):
+        name = 'food_phi'
+        result_name = 'food_phi_hist_evol'
+        dtheta = np.pi/10.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        if redo:
+            self.exp.load(name)
+            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=range(0, 42000, 10000), bins=bins,
+                                           result_name=result_name, category='FoodBase',
+                                           label='food phi distribution over time',
+                                           description='Histogram of the angular coordinate of the food trajectory'
+                                                       ' over time')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
+        plotter.save(fig)
+
+    def compute_mm1s_food_phi(self):
+        name = 'food_phi'
+        category = 'FoodMM'
+        time_window = 100
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, result_name='mm1s_'+name, category=category
+        )
+
+        self.exp.write(result_name)
 
     def compute_distance2food(self):
         name = 'distance2food'

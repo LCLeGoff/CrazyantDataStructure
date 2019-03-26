@@ -6,7 +6,10 @@ from sklearn import svm
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from ExperimentGroups import ExperimentGroups
+from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing
 from Tools.Plotter.Plotter import Plotter
+
+import matplotlib.pyplot as plt
 
 
 class AnalyseFoodCarrying:
@@ -246,38 +249,63 @@ class AnalyseFoodCarrying:
         category = 'FoodCarrying'
 
         name = 'carrying_intervals'
-        self.exp.load(['ant_from_outside', name, 'food_phi', 'fps'])
-        if (self.exp.fps.df == self.exp.fps.df.iloc[0]).all():
-            dt = np.array([-2, 8], dtype=int)*self.exp.fps.df.iloc[0]
+        name_phi = 'mm1s_food_phi'
+        from_outside_name = 'from_outside'
+
+        self.exp.load([from_outside_name, name, name_phi, 'fps'])
+        if int((self.exp.fps.df == self.exp.fps.df.iloc[0]).all()) == 1:
+            fps = int(self.exp.fps.df.iloc[0])
+
+            dt = np.arange(-2, 5.5)
+            dframes = np.array(dt*fps, dtype=int)
             res = dict()
-            for t in range(dt[0], dt[1]):
-                res[t] = []
+            for frame in dframes:
+                res[frame] = []
 
             def attachment4each_group(df):
-                id_exp = df.index.get_index_value(id_exp_name)[0]
-                id_ant = df.index.get_index_value(id_ant_name)[0]
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+                print(id_exp, id_ant)
 
-                if self.exp.ant_from_outside.loc[id_exp, id_ant] == 1:
-                    intervals = self.exp.get_df(name).loc[id_exp, id_ant, :]
-                    if len(intervals) != 0:
-                        dframes = dt*self.exp.fps.loc[id_exp]
-                        frame_first_attachment = min(intervals.index.get_index_value(id_frame_name))
-                        food_directions\
-                            = self.exp.phi_food.loc[id_exp, id_ant, frame_first_attachment-dframes[0]
-                                                                    :frame_first_attachment+dframes[1]+1]
+                if int(self.exp.get_df(from_outside_name).loc[id_exp, id_ant]) == 1:
+                    carrying_times = self.exp.get_df(name).loc[id_exp, id_ant, :].index.get_level_values(id_frame_name)
 
-                        for frame in food_directions.index.get_index_value(id_frame_name):
-                            res[frame].append(food_directions.loc[id_exp, id_ant, frame])
-                return df
+                    if len(carrying_times) != 0:
 
-        self.exp.get_data_object(name).df \
-            = self.exp.get_df(name).groupby([id_exp_name, id_ant_name]).apply(attachment4each_group)
+                        frame_first_attachment = min(carrying_times)
 
-        df_res = self.exp.get_df(name).dropna()
-        df_res.index = df_res.index.droplevel('frame')
+                        food_directions = self.exp.get_df(name_phi).loc[
+                                          pd.IndexSlice[id_exp, frame_first_attachment+dframes[0]
+                                                        :frame_first_attachment+dframes[-1]], :]
 
-        self.exp.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
-                                   category=category, label='Has the ant carried the food?',
-                                   description='Boolean saying if the ant has at least once carried the food')
+                        for dframe0 in dframes:
 
-        self.exp.write(result_name)
+                            frame0 = frame_first_attachment + dframe0
+                            if food_directions.index.contains((id_exp, frame0)):
+                                interval_containing_frame = get_interval_containing(
+                                    frame0-frame_first_attachment, dframes)
+
+                                if interval_containing_frame is not None:
+                                    res[interval_containing_frame].append(
+                                        np.around(food_directions.loc[id_exp, frame0][0], 3))
+
+                        # for dframe0 in food_directions.index.get_level_values(id_frame_name):
+                        #     interval_containing_frame = get_interval_containing(dframe0 - frame_first_attachment, dframes)
+                        #     if interval_containing_frame is not None:
+                        #         res[interval_containing_frame].append(np.around(food_directions.loc[id_exp, dframe0][0], 3))
+
+            self.exp.get_df(name).groupby([id_exp_name, id_ant_name]).apply(attachment4each_group)
+
+            res_arr = np.zeros(len(res))
+            for i, frame in enumerate(res):
+                res_arr[i] = np.mean(res[frame])
+                h = np.histogram(res[frame], np.arange(-np.pi, np.pi, 0.1))
+                plt.figure()
+                plt.plot(h[1][1:], h[0], '.-')
+                plt.title(frame)
+
+            # plt.plot(dframes, res_arr)
+            plt.show()
+
+        else:
+            raise ValueError('fps not all the same')

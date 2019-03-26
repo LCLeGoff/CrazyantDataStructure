@@ -14,9 +14,21 @@ def running_mean(x, n):
 def turn_to_list(names):
     if isinstance(names, str):
         names = [names]
-    return names
+    return list(names)
 
 
 def round_float(x, n):
     f = np.vectorize(lambda y: np.around(y, -np.array(np.floor(np.sign(y) * np.log10(abs(y))), dtype=int) + n - 1))
     return f(x)
+
+
+def get_interval_containing(value, interval_beginnings):
+    i = 0
+    while i < len(interval_beginnings) and value >= interval_beginnings[i]:
+        i += 1
+
+    i -= 1
+    if i == -1:
+        return None
+    else:
+        return interval_beginnings[i]

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from DataStructure.VariableNames import id_ant_name, id_frame_name, id_exp_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -28,6 +29,9 @@ class BuilderDataObject:
 
     def convert_df_to_array(self):
         return self.pandas_index_manager.convert_df_to_array(self.df)
+
+    def get_dimension(self):
+        return len(self.df.columns)
 
     def get_row(self, idx):
         return self.df.loc[idx, :]
