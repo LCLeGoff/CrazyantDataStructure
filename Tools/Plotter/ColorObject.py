@@ -24,12 +24,12 @@ class ColorObject:
             norm = colors.Normalize(0, int(idx_list) - 1)
             cmap = plt.get_cmap(cmap)
             for i in range(int(idx_list)):
-                cols[i] = cmap(norm(i))
+                cols[str(i)] = cmap(norm(i))
         else:
             norm = colors.Normalize(0, len(idx_list) - 1)
             cmap = plt.get_cmap(cmap)
             for i, idx in enumerate(idx_list):
                 if isinstance(idx, np.ndarray):
                     idx = tuple(idx)
-                cols[idx] = cmap(norm(i))
+                cols[str(idx)] = cmap(norm(i))
         return cols

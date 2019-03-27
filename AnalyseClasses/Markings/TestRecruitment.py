@@ -5,14 +5,14 @@ from pandas import IndexSlice as IdxSc
 
 from matplotlib import pylab as plt
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.Plotter.ColorObject import ColorObject
 
 
-class TestRecruitment:
-    def __init__(self, root, group):
-        self.exp = ExperimentGroupBuilder(root).build(group)
+class TestRecruitment(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
 
     def compute_radial_zones(self):
         self.exp.load(['r', 'food_radius', 'mm2px'])

@@ -1,19 +1,15 @@
 import numpy as np
 import pandas as pd
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from ExperimentGroups import ExperimentGroups
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
 
-class AnalyseFoodBase:
-    def __init__(self, root, group, exp: ExperimentGroups = None):
-        if exp is None:
-            self.exp = ExperimentGroupBuilder(root).build(group)
-        else:
-            self.exp = exp
+class AnalyseFoodBase(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
 
     def compute_food_phi(self, redo=False, redo_hist=False):
         result_name = 'food_phi'
@@ -58,10 +54,11 @@ class AnalyseFoodBase:
         result_name = 'food_phi_hist_evol'
         dtheta = np.pi/10.
         bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        frame_intervals = np.arange(0, 5, 0.5)*60*100
 
         if redo:
             self.exp.load(name)
-            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=range(0, 42000, 10000), bins=bins,
+            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
                                            result_name=result_name, category='FoodBase',
                                            label='food phi distribution over time',
                                            description='Histogram of the angular coordinate of the food trajectory'
@@ -85,6 +82,70 @@ class AnalyseFoodBase:
         )
 
         self.exp.write(result_name)
+
+    def compute_food_phi_speed(self, redo=False, redo_hist=False):
+        name = 'food_phi'
+        result_name = name+'_speed'
+        hist_name = result_name+'_hist'
+        bins = np.arange(0, 1e3, 0.5)
+
+        hist_label = 'Histogram of food phi speed (rad/s)'
+        hist_description = 'Histogram of the speed of the angular coordinate' \
+                           ' of the food trajectory (rad/s, in the food system)'
+        if redo:
+            self.exp.load([name, 'fps'])
+
+            self.exp.add_copy1d(
+                name_to_copy=name, copy_name=result_name, category='FoodBase', label='Food phi speed (rad/s)',
+                description='Speed of the angular coordinate of the food trajectory (rad/s, in the food system)'
+            )
+
+            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+                dphi = np.array(self.exp.get_df(name).loc[id_exp, :])
+                dphi1 = dphi[1, :]
+                dphi2 = dphi[-2, :]
+                dphi[1:-1, :] = (angle_distance(dphi[2:, :], dphi[:-2, :]))/2.
+                dphi[0, :] = angle_distance(dphi1, dphi[0, :])
+                dphi[-1, :] = angle_distance(dphi[-1, :], dphi2)
+
+                dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
+                dt[0] = 1
+                dt[-1] = 1
+                dphi[dt > 2] = np.nan
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.around(np.abs(dphi)*self.exp.fps.df.loc[id_exp].fps, 3)
+
+            self.exp.write(result_name)
+
+        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xscale='log', yscale='log', normed=True)
+        plotter.save(fig)
+
+    def compute_food_phi_speed_evol(self, redo=False):
+        name = 'food_phi_speed'
+        result_name = 'food_phi_speed_hist_evol'
+        bins = np.arange(0, 1e3, 0.5)
+        frame_intervals = np.arange(0, 5, 0.5)*60*100
+
+        if redo:
+            self.exp.load(name)
+            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
+                                           result_name=result_name, category='FoodBase',
+                                           label='food phi speed distribution over time',
+                                           description='Histogram of the angular coordinate speed'
+                                                       ' of the food trajectory over time')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xscale='log', yscale='log', xlabel=r'$\dot\varphi$', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        plotter.save(fig)
 
     def compute_distance2food(self):
         name = 'distance2food'
@@ -153,7 +214,7 @@ class AnalyseFoodBase:
         self.exp.load(['food_x', 'food_y', 'fps'])
 
         self.exp.add_copy1d(
-            name_to_copy='food_x', copy_name=name, category='Trajectory', label='Food speed',
+            name_to_copy='food_x', copy_name=name, category='FoodBase', label='Food speed',
             description='Instantaneous speed of the food'
         )
         # self.exp.add_copy1d(

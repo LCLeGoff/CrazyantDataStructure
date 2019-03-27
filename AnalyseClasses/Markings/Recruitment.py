@@ -3,16 +3,16 @@ import numpy as np
 from matplotlib import pylab as plt
 from pandas import IndexSlice as IdxSc
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from Tools.MiscellaneousTools.Geometry import distance
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Tools.Plotter.ColorObject import ColorObject
 
 
-class Recruitment:
-    def __init__(self, root, group):
+class Recruitment(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
         self.pd_idx_manager = PandasIndexManager()
-        self.exp = ExperimentGroupBuilder(root).build(group)
         self.arena_radius = 120
 
     def __compute_xy_radial_zones(self):

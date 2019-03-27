@@ -3,22 +3,17 @@ import pandas as pd
 from cv2 import cv2
 from sklearn import svm
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from ExperimentGroups import ExperimentGroups
 from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing
 from Tools.Plotter.Plotter import Plotter
 
 import matplotlib.pyplot as plt
 
 
-class AnalyseFoodCarrying:
-
-    def __init__(self, root, group, exp: ExperimentGroups = None):
-        if exp is None:
-            self.exp = ExperimentGroupBuilder(root).build(group)
-        else:
-            self.exp = exp
+class AnalyseFoodCarrying(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
 
     def compute_carrying_next2food_with_svm(self):
         name_result = 'carrying_next2food_from_svm'
@@ -35,10 +30,10 @@ class AnalyseFoodCarrying:
         self.exp.get_data_object(orientation_name).change_values(self.exp.get_df(orientation_name).abs())
 
         df_features, df_labels = self.__get_training_features_and_labels4carrying(
-            speed_name, orientation_name, distance_name, distance_diff_name, training_set_name)
+            orientation_name, distance_name, distance_diff_name, training_set_name)
 
         df_to_predict = self.__get_df_to_predict_carrying(
-            distance_diff_name, distance_name, orientation_name, speed_name)
+            distance_diff_name, distance_name, orientation_name)
 
         clf = svm.SVC(kernel='rbf', gamma='auto')
         clf.fit(df_features.loc[pd.IndexSlice[:2, :, :], :], df_labels.loc[pd.IndexSlice[:2, :, :], :])
@@ -62,23 +57,17 @@ class AnalyseFoodCarrying:
         self.exp.write(name_result)
 
     def __get_df_to_predict_carrying(
-            self, distance_diff_name, distance_name, orientation_name, speed_name):
+            self, distance_diff_name, distance_name, orientation_name):
 
         df_to_predict = self.exp.get_df(distance_name).join(self.exp.get_df(orientation_name), how='inner')
         self.exp.remove_object(orientation_name)
-        # df_to_predict = df_to_predict.join(self.exp.get_df(speed_name), how='inner')
-        # self.exp.remove_object(speed_name)
         df_to_predict = df_to_predict.join(self.exp.get_df(distance_diff_name), how='inner')
         self.exp.remove_object(distance_diff_name)
         df_to_predict.dropna(inplace=True)
         return df_to_predict
 
     def __get_training_features_and_labels4carrying(
-            self, speed_name, orientation_name, distance_name, distance_diff_name, training_set_name):
-
-        # self.exp.filter_with_time_occurrences(
-        #     name_to_filter=speed_name, filter_name=training_set_name,
-        #     result_name='training_set_speed', replace=True)
+            self, orientation_name, distance_name, distance_diff_name, training_set_name):
 
         self.exp.filter_with_time_occurrences(
             name_to_filter=orientation_name, filter_name=training_set_name,
@@ -93,11 +82,9 @@ class AnalyseFoodCarrying:
             result_name='training_set_distance_diff', replace=True)
 
         df_features = self.exp.training_set_distance.df.join(self.exp.training_set_orientation.df, how='inner')
-        # df_features = df_features.join(self.exp.training_set_speed.df, how='inner')
         df_features = df_features.join(self.exp.training_set_distance_diff.df, how='inner')
         df_features.dropna(inplace=True)
 
-        # self.exp.remove_object('training_set_speed')
         self.exp.remove_object('training_set_orientation')
         self.exp.remove_object('training_set_distance')
         self.exp.remove_object('training_set_distance_diff')
@@ -242,6 +229,77 @@ class AnalyseFoodCarrying:
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel='Not carrying intervals', ylabel='PDF',
                                xscale='log', yscale='log', ls='', normed=True)
+        plotter.save(fig)
+
+    def compute_first_attachment_time_of_outside_ant(self):
+        result_name = 'first_attachment_time_of_outside_ant'
+        from_outside_name = 'from_outside'
+        carrying_name = 'carrying_intervals'
+        self.exp.load([from_outside_name, carrying_name])
+
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
+                                 category='FoodCarrying', label='First attachment time of a outside ant',
+                                 description='First attachment time of an ant coming from outside')
+
+        def compute_first_attachment4each_exp(df):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+            is_from_outside = int(self.exp.get_df(from_outside_name).loc[id_exp, id_ant])
+            if is_from_outside == 1:
+                frames = df.index.get_level_values(id_frame_name)
+                min_time = int(np.nanmin([self.exp.get_value(result_name, id_exp), frames.min()]))
+                self.exp.change_value(result_name, id_exp, min_time)
+
+        self.exp.get_df(carrying_name).groupby([id_exp_name, id_ant_name]).apply(compute_first_attachment4each_exp)
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
+        self.exp.write(result_name)
+
+    def compute_autocorrelation_food_phi(self, redo=False):
+
+        name = 'food_phi'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = 'autocorrelation_food_phi'
+        frame_intervals = np.array(np.arange(-2, 10, 1)*100*60, dtype=int)
+
+        if redo:
+            self.exp.load([name, first_attachment_name])
+
+            self.exp.add_copy1d(
+                name_to_copy=name, copy_name=result_name, category='FoodBase', label='Food phi speed (rad/s)',
+                description='Speed of the angular coordinate of the food trajectory (rad/s, in the food system)'
+            )
+
+            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+                food_pĥi = self.exp.get_df(name).loc[id_exp, :]
+                first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+                for i in range(len(frame_intervals)-1):
+                    frame0 = frame_intervals[i]+first_attachment_time
+                    frame1 = frame_intervals[i+1]+first_attachment_time
+                    food_phi_temp = food_pĥi.loc[id_exp, frame0:frame1]
+                    autocorr = np.correlate(food_phi_temp, food_phi_temp, mode='full')[food_phi_temp.size-1:]
+
+
+                dphi = np.array(self.exp.get_df(name).loc[id_exp, :])
+                dphi1 = dphi[1, :]
+                dphi2 = dphi[-2, :]
+                dphi[1:-1, :] = (angle_distance(dphi[2:, :], dphi[:-2, :]))/2.
+                dphi[0, :] = angle_distance(dphi1, dphi[0, :])
+                dphi[-1, :] = angle_distance(dphi[-1, :], dphi2)
+
+                dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
+                dt[0] = 1
+                dt[-1] = 1
+                dphi[dt > 2] = np.nan
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.around(np.abs(dphi)*self.exp.fps.df.loc[id_exp].fps, 3)
+
+            self.exp.write(result_name)
+
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xscale='log', yscale='log', normed=True)
         plotter.save(fig)
 
     def compute_food_information_after_first_attachment(self):

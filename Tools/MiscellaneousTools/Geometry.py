@@ -135,3 +135,7 @@ def norm_vect_df(vect):
 
 def is_in_polygon(pts, path):
     return path.contains_point(pts)
+
+
+def angle_distance(phi, theta):
+    return np.angle(np.exp(1j*(phi-theta)))

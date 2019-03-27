@@ -22,7 +22,8 @@ class BasePlotters:
         ax.yaxis.label.set_color(fg_color)
         ax.title.set_color('w')
 
-    def create_plot(self, preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
+    @staticmethod
+    def create_plot(preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
         if preplot is None:
             fig, ax = plt.subplots(figsize=figsize)
             fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top)

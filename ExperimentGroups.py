@@ -98,6 +98,12 @@ class ExperimentGroups:
     def get_index_names(self, name):
         return list(self.get_df(name).index.names)
 
+    def get_value(self, name, idx):
+        return self.get_data_object(name).df.loc[idx][0]
+
+    def change_value(self, name, idx, value):
+        self.get_data_object(name).df.loc[idx] = value
+
     def get_ref_id_exp(self, id_exp):
         return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
 
@@ -414,8 +420,12 @@ class ExperimentGroups:
                                                            index_names=[id_exp_name, id_ant_name, id_frame_name])
         elif object_type in ['AntCharacteristics1d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_ant_name])
-        elif object_type in ['Characteristics1d', 'Characteristics2d']:
+        elif object_type in ['Characteristics2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=id_exp_name)
+        elif object_type in ['Characteristics1d']:
+            df = pd.DataFrame(zip(self.id_exp_list, np.full(len(self.id_exp_list), np.nan)),
+                              columns=[id_exp_name, name])
+            df.set_index([id_exp_name], inplace=True)
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_frame_name])
         elif object_type in [dataset_name]:
@@ -758,6 +768,9 @@ class ExperimentGroups:
 
             df = self.get_data_object(name_to_hist).hist1d_time_evolution(
                 column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins)
+
+            frame_intervals = np.array(frame_intervals)/100
+            df.columns = frame_intervals
 
             self.add_new_dataset_from_df(df=df, name=result_name, category=category,
                                          label=label, description=description, replace=replace)

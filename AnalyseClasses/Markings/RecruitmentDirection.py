@@ -2,17 +2,17 @@ import pandas as pd
 # import matplotlib.pyplot as plt
 import numpy as np
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Fits import linear_fit
 from Tools.MiscellaneousTools.Geometry import convert_polar2cartesian, convert_cartesian2polar, norm_angle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
-class RecruitmentDirection:
-    def __init__(self, root, group):
+class RecruitmentDirection(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
         self.pd_idx_manager = PandasIndexManager()
-        self.exp = ExperimentGroupBuilder(root).build(group)
         self.circular_arena_radius = 120
 
     def compute_recruitment_direction(self, list_id_exp=None):

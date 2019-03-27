@@ -33,6 +33,9 @@ class BuilderDataObject:
     def get_dimension(self):
         return len(self.df.columns)
 
+    def get_nbr_index(self):
+        return len(self.df.index.names)
+
     def get_row(self, idx):
         return self.df.loc[idx, :]
 

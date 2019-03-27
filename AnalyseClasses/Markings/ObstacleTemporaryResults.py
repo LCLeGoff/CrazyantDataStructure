@@ -1,17 +1,16 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import scipy.stats as scs
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
-class ObstacleTemporaryResults:
-    def __init__(self, root, group):
+class ObstacleTemporaryResults(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
         self.pd_idx_manager = PandasIndexManager()
-        self.exp = ExperimentGroupBuilder(root).build(group)
 
     def convert_temporary_result(self, list_id_exp=None):
 

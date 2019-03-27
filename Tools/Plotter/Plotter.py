@@ -30,7 +30,6 @@ class Plotter(BasePlotters):
                 self.axis['xlabel'] = obj.label
                 self.axis['ylabel'] = column_name
                 self.arg_tools.change_arg_value('axis', kwargs)
-                self.cmap = 'hot'
             else:
                 raise NameError(column_name+' is not a column name')
 
@@ -38,8 +37,12 @@ class Plotter(BasePlotters):
             raise IndexError('There are more than one index columns')
 
     def plot(
-            self, normed=False, title=None, title_prefix=None,
+            self, normed=False, title=None, title_prefix=None, label_suffix=None,
             preplot=None, **kwargs):
+        if label_suffix is None:
+            label_suffix = ''
+        else:
+            label_suffix = ' '+label_suffix
 
         self.arg_tools.change_arg_value('line', kwargs)
         self.arg_tools.change_arg_value('axis', kwargs)
@@ -59,7 +62,7 @@ class Plotter(BasePlotters):
             for column_name in self.obj.get_column_names():
                 y = self.__get_y(self.obj.df[column_name], normed, x)
                 self.line['c'] = colors[str(column_name)]
-                ax.plot(x, y, label=column_name, **self.line)
+                ax.plot(x, y, label=str(column_name)+label_suffix, **self.line)
             ax.legend(loc=0)
 
         return fig, ax

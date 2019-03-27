@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
 from matplotlib.path import Path
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle_tab
 from math import pi
 
+from Tools.Plotter.Plotter import Plotter
 
-class AnalyseTrajectory:
-    def __init__(self, root, group):
-        self.exp = ExperimentGroupBuilder(root).build(group)
+
+class AnalyseTrajectory(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
 
     def initialize_xy_orientation_food(self, dynamic_food=False):
         print('x, y')
@@ -165,80 +166,145 @@ class AnalyseTrajectory:
             description='coordinates of ant positions'
         )
 
-    def compute_speed(self):
+    def compute_speed(self, redo=False, redo_hist=False):
         name = 'speed'
-        self.exp.load(['x', 'y', 'fps'])
-        self.exp.load_timeseries_exp_ant_frame_index()
+        hist_name = 'speed_hist'
+        bins = np.arange(0, 8e2, 1)
+        hist_label = 'Distribution of the speed (mm/s)'
+        hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)'
 
-        self.exp.add_copy1d(
-            name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
-            description='Instantaneous speed of the ants'
-        )
-        self.exp.add_copy1d(
-            name_to_copy='x', copy_name=name+'_x', category='Trajectory', label='X speed',
-            description='X coordinate of the instantaneous speed of the ants'
-        )
-        self.exp.add_copy1d(
-            name_to_copy='x', copy_name=name+'_y', category='Trajectory', label='Y speed',
-            description='Y coordinate of the instantaneous speed of the ants'
-        )
+        if redo:
+            self.exp.load(['x', 'y', 'fps'])
+            self.exp.load_timeseries_exp_ant_frame_index()
 
-        for id_exp in self.exp.timeseries_exp_ant_frame_index:
-            for id_ant in self.exp.timeseries_exp_ant_frame_index[id_exp]:
-                print(id_exp, id_ant)
+            self.exp.add_copy1d(
+                name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
+                description='Instantaneous speed of the ants'
+            )
+            self.exp.add_copy1d(
+                name_to_copy='x', copy_name=name+'_x', category='Trajectory', label='X speed',
+                description='X coordinate of the instantaneous speed of the ants'
+            )
+            self.exp.add_copy1d(
+                name_to_copy='x', copy_name=name+'_y', category='Trajectory', label='Y speed',
+                description='Y coordinate of the instantaneous speed of the ants'
+            )
 
-                dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
-                dx1 = dx[1, :].copy()
-                dx2 = dx[-2, :].copy()
-                dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
-                dx[0, :] = dx1-dx[0, :]
-                dx[-1, :] = dx[-1, :]-dx2
+            for id_exp in self.exp.timeseries_exp_ant_frame_index:
+                for id_ant in self.exp.timeseries_exp_ant_frame_index[id_exp]:
+                    print(id_exp, id_ant)
 
-                dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
-                dy1 = dy[1, :].copy()
-                dy2 = dy[-2, :].copy()
-                dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
-                dy[0, :] = dy1-dy[0, :]
-                dy[-1, :] = dy[-1, :]-dy2
+                    dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
+                    dx1 = dx[1, :].copy()
+                    dx2 = dx[-2, :].copy()
+                    dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
+                    dx[0, :] = dx1-dx[0, :]
+                    dx[-1, :] = dx[-1, :]-dx2
 
-                dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
-                dt.sort()
-                dt[1:-1] = dt[2:]-dt[:-2]
-                dt[0] = 1
-                dt[-1] = 1
-                dx[dt > 2] = np.nan
-                dy[dt > 2] = np.nan
+                    dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
+                    dy1 = dy[1, :].copy()
+                    dy2 = dy[-2, :].copy()
+                    dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
+                    dy[0, :] = dy1-dy[0, :]
+                    dy[-1, :] = dy[-1, :]-dy2
 
-                self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.around(dx*self.exp.fps.df.loc[id_exp].fps)
-                self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.around(dy*self.exp.fps.df.loc[id_exp].fps)
-                self.exp.speed.df.loc[id_exp, id_ant, :] =\
-                    np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
+                    dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
+                    dt.sort()
+                    dt[1:-1] = dt[2:]-dt[:-2]
+                    dt[0] = 1
+                    dt[-1] = 1
+                    dx[dt > 2] = np.nan
+                    dy[dt > 2] = np.nan
 
-        self.exp.write([name, name+'_x', name+'_y'])
+                    self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.around(dx*self.exp.fps.df.loc[id_exp].fps)
+                    self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.around(dy*self.exp.fps.df.loc[id_exp].fps)
+                    self.exp.speed.df.loc[id_exp, id_ant, :] =\
+                        np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
 
-    def compute_mm10_speed(self):
+            self.exp.write([name, name+'_x', name+'_y'])
+
+        if redo or redo_hist:
+            self.exp.load(name)
+            self.exp.hist1d(name_to_hist=name, result_name=hist_name,
+                            bins=bins, label=hist_label, description=hist_description)
+            self.exp.write(hist_name)
+
+        else:
+            self.exp.load(hist_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(yscale='log', normed=True)
+        plotter.save(fig)
+
+    def compute_mm10_speed(self, redo=False, redo_hist=False):
         name = 'speed'
         category = 'SpeedMM'
         time_window = 10
+        result_name = 'mm'+str(time_window)+'_'+name
+        hist_name = result_name+'_hist'
+        bins = np.arange(0, 500, 1)
+        hist_label = 'Distribution of the speed (mm/s), MM '+str(time_window)
+        hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)' \
+                           ' smoothed with a moving mean of window length '+str(time_window)+' frames'
+        if redo:
+            self.exp.load(name)
+            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average=name, time_window=time_window, category=category
+            )
 
-        self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=category
-        )
+            self.exp.write(result_name)
 
-        self.exp.write(result_name)
+        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
 
-    def compute_mm20_speed(self):
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(yscale='log', normed=True)
+        plotter.save(fig)
+
+    def compute_mm20_speed(self, redo=False, redo_hist=False):
         name = 'speed'
         category = 'SpeedMM'
         time_window = 20
+        result_name = 'mm' + str(time_window) + '_' + name
+        hist_name = result_name + '_hist'
+        bins = np.arange(0, 500, 1)
+        hist_label = 'Distribution of the speed (mm/s), MM '+str(time_window)
+        hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)' \
+                           ' smoothed with a moving mean of window length ' + str(time_window) + ' frames'
+        if redo:
+            self.exp.load(result_name)
+            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average=result_name, time_window=time_window, category=category
+            )
+            self.exp.write(result_name)
 
-        self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=category
-        )
+        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
 
-        self.exp.write(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(yscale='log', normed=True)
+        plotter.save(fig)
+
+    def compute_mm1s_speed(self, redo=False, redo_hist=False):
+        name = 'speed'
+        category = 'SpeedMM'
+        time_window = 100
+        result_name = 'mm1s_' + name
+        hist_name = result_name + '_hist'
+        bins = np.arange(0, 500, 1)
+        hist_label = 'Distribution of the speed (mm/s), MM 1s'
+        hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)' \
+                           ' smoothed with a moving mean of window length 1 second'
+        if redo:
+            self.exp.load(name)
+            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average=name, time_window=time_window, category=category
+            )
+            self.exp.write(result_name)
+
+        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(yscale='log', normed=True)
+        plotter.save(fig)
 
     def compute_mm10_orientation(self):
         name = 'orientation'

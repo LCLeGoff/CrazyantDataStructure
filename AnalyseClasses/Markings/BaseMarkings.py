@@ -2,16 +2,16 @@ import numpy as np
 
 from pandas import IndexSlice as IdxSc
 
-from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import distance
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
-class AnalyseMarkings:
-    def __init__(self, root, group):
+class AnalyseMarkings(AnalyseClassDecorator):
+    def __init__(self, group, exp=None):
+        AnalyseClassDecorator.__init__(self, group, exp)
         self.pd_idx_manager = PandasIndexManager()
-        self.exp = ExperimentGroupBuilder(root).build(group)
 
     def compute_xy_marking(self):
         name = 'xy_markings'
