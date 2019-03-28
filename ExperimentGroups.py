@@ -12,7 +12,7 @@ from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
 from DataStructure.VariableNames import dataset_name, id_exp_name, id_ant_name, id_frame_name
 from Movies.Movies import Movies
 from Scripts.root import root_movie
-from Tools.MiscellaneousTools.ArrayManipulation import running_mean
+from Tools.MiscellaneousTools.ArrayManipulation import running_mean, turn_to_list
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -415,6 +415,7 @@ class ExperimentGroups:
         self.add_object(name, obj, replace=replace)
 
     def __create_empty_df(self, name, object_type, index_names=None):
+        # TODO: for all, do like for object type characteristics1d
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name,
                                                            index_names=[id_exp_name, id_ant_name, id_frame_name])
@@ -423,9 +424,10 @@ class ExperimentGroups:
         elif object_type in ['Characteristics2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=id_exp_name)
         elif object_type in ['Characteristics1d']:
-            df = pd.DataFrame(zip(self.id_exp_list, np.full(len(self.id_exp_list), np.nan)),
+            df = pd.DataFrame(np.array(list(zip(self.id_exp_list, np.full(len(self.id_exp_list), 0)))),
                               columns=[id_exp_name, name])
             df.set_index([id_exp_name], inplace=True)
+            df[:] = np.nan
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_frame_name])
         elif object_type in [dataset_name]:
@@ -448,6 +450,23 @@ class ExperimentGroups:
     def add_new1d_from_df(self, df, name, object_type, category=None, label=None, description=None, replace=False):
         obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+        self.add_object(name, obj, replace)
+
+    def add_new_empty_dataset(
+            self, name, index_name, column_names, index_values=None, fill_value=np.nan,
+            category=None, label=None, description=None, replace=False):
+
+        if index_values is None:
+            df = PandasIndexManager.create_empty_df(index_names=index_name, column_names=column_names)
+        else:
+            column_names = turn_to_list(column_names)
+            empty_array = np.zeros((len(index_values), len(column_names)+1), dtype=type(index_values[0]))
+            empty_array[:, 0] = index_values
+            df = pd.DataFrame(empty_array, columns=[index_name]+list(column_names))
+            df.set_index([index_name], inplace=True)
+            df[:] = fill_value
+        obj = Builder.build_dataset_from_df(
+            df=df, name=name, category=category, label=label, description=description)
         self.add_object(name, obj, replace)
 
     def add_new_dataset_from_df(self, df, name, category=None, label=None, description=None, replace=False):
@@ -748,6 +767,12 @@ class ExperimentGroups:
         if category is None:
             category = self.get_category(name_to_hist)
 
+        if label is None:
+            label = self.get_label(name_to_hist)+' histogram'
+
+        if description is None:
+            description = 'Histogram of '+self.get_description(name_to_hist).lower()
+
         df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins)
 
         self.add_new1d_from_df(df=df, name=result_name, object_type=dataset_name,
@@ -756,7 +781,7 @@ class ExperimentGroups:
         return result_name
 
     def hist1d_time_evolution(
-            self, name_to_hist, frame_intervals, bins, result_name=None, column_to_hist=None,
+            self, name_to_hist, frame_intervals, bins, normed=False, result_name=None, column_to_hist=None,
             category=None, label=None, description=None, replace=False):
 
         if self.__is_frame_in_indexes(name_to_hist):
@@ -767,7 +792,7 @@ class ExperimentGroups:
                 category = self.get_category(name_to_hist)
 
             df = self.get_data_object(name_to_hist).hist1d_time_evolution(
-                column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins)
+                column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins, normed=normed)
 
             frame_intervals = np.array(frame_intervals)/100
             df.columns = frame_intervals

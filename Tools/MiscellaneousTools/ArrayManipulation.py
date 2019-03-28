@@ -32,3 +32,17 @@ def get_interval_containing(value, interval_beginnings):
         return None
     else:
         return interval_beginnings[i]
+
+
+def auto_corr(tab):
+    x = np.array(tab).ravel()
+    variance = x.var()
+    x = x - x.mean()
+    r = np.correlate(x, x, mode='full')[-len(tab):]
+    return r / (variance * (np.arange(len(tab), 0, -1)))
+
+
+def get_entropy(tab):
+    tab2 = np.array(tab)
+    mask = np.where(tab2 != 0)[0]
+    return -np.sum(tab2[mask]*np.log2(tab2[mask]))

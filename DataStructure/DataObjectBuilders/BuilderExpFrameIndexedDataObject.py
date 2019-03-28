@@ -39,7 +39,7 @@ class BuilderExpFrameIndexedDataObject:
     def compute_time_delta(self):
         return self.df.groupby([id_exp_name]).apply(self.__time_delta4each_group)
 
-    def hist1d_time_evolution(self, column_name, frame_intervals, bins):
+    def hist1d_time_evolution(self, column_name, frame_intervals, bins, normed=False):
         if column_name is None:
             if len(self.df.columns) == 1:
                 column_name = self.df.columns[0]
@@ -56,13 +56,16 @@ class BuilderExpFrameIndexedDataObject:
             frame1 = int(frame_intervals[i+1])
 
             df = self.df[column_name].loc[:, frame0:frame1]
-            y, x = np.histogram(df.dropna(), bins)
+            y, x = np.histogram(df.dropna(), bins, normed=normed)
             h[:, i+1] = y
 
         frame0 = int(frame_intervals[-1])
-        y, x = np.histogram(self.df[column_name].loc[:, frame0:].dropna(), bins)
+        y, x = np.histogram(self.df[column_name].loc[:, frame0:].dropna(), bins, normed=normed)
         h[:, -1] = y
 
         df = PandasIndexManager().convert_array_to_df(
                 array=h, index_names='bins', column_names=np.array(frame_intervals, dtype=str))
-        return df.astype(int)
+        if normed:
+            return df
+        else:
+            return df.astype(int)

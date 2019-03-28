@@ -11,6 +11,30 @@ class AnalyseFoodBase(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
 
+    def compute_food_traj_length(self):
+        result_name = 'food_traj_length'
+        food_traj_name = 'food_x'
+        self.exp.load([food_traj_name, 'fps'])
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category='FoodBase',
+                                 label='Food trajectory length (s)',
+                                 description='Length of the trajectory of the food in second')
+        for id_exp in self.exp.id_exp_list:
+            traj = self.exp.get_df(food_traj_name).loc[id_exp, :]
+            frames = traj.index.get_level_values(id_frame_name)
+            length = (int(frames.max())-int(frames.min()))/float(self.exp.fps.df.loc[id_exp])
+            self.exp.change_value(name=result_name, idx=id_exp, value=length)
+
+        self.exp.write(result_name)
+
+        bins = range(-30, 500, 60)
+        hist_name = self.exp.hist1d(name_to_hist=result_name, bins=bins)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot()
+        ax.grid()
+        ax.set_xticks(range(0, 430, 60))
+        plotter.save(fig)
+
     def compute_food_phi(self, redo=False, redo_hist=False):
         result_name = 'food_phi'
         hist_name = result_name+'_hist'
@@ -46,28 +70,6 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.exp.load(hist_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
-        plotter.save(fig)
-
-    def compute_food_phi_evol(self, redo=False):
-        name = 'food_phi'
-        result_name = 'food_phi_hist_evol'
-        dtheta = np.pi/10.
-        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
-        frame_intervals = np.arange(0, 5, 0.5)*60*100
-
-        if redo:
-            self.exp.load(name)
-            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category='FoodBase',
-                                           label='food phi distribution over time',
-                                           description='Histogram of the angular coordinate of the food trajectory'
-                                                       ' over time')
-            self.exp.write(result_name)
-        else:
-            self.exp.load(result_name)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
         plotter.save(fig)
 

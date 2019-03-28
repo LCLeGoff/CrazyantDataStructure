@@ -21,8 +21,9 @@ Traj = AnalyseTrajectory(group)
 # Traj.compute_is_from_outside()
 
 FoodBase = AnalyseFoodBase(group, exp=Traj.exp)
+# FoodBase.compute_food_traj_length()
+
 # FoodBase.compute_food_phi()
-# FoodBase.compute_food_phi_evol()
 # FoodBase.compute_mm1s_food_phi()
 # FoodBase.compute_food_phi_speed()
 # FoodBase.compute_food_phi_speed_evol()
@@ -65,11 +66,17 @@ FoodBase = AnalyseFoodBase(group, exp=Traj.exp)
 
 
 Carrying = AnalyseFoodCarrying(group, exp=FoodBase.exp)
+# Carrying.compute_food_traj_length_around_first_attachment()
+
 # Carrying.compute_carrying_next2food_with_svm()
 # Carrying.compute_carrying_from_svm()
+
 # Carrying.compute_carrying()
 # Carrying.compute_carried_food()
 # Carrying.compute_carrying_intervals(True)
 # Carrying.compute_not_carrying_intervals(True)
-Carrying.compute_first_attachment_time_of_outside_ant()
-# Carrying.compute_food_information_after_first_attachment()
+
+# Carrying.compute_first_attachment_time_of_outside_ant()
+# Carrying.compute_food_phi_evol(True)
+# Carrying.compute_autocorrelation_food_phi()
+Carrying.compute_food_phi_entropy_evol(True)
