@@ -92,11 +92,14 @@ class ExperimentGroups:
     def get_df(self, name):
         return self.get_data_object(name).df
 
+    def get_level_values(self, name, id_name):
+        return self.get_index(name).get_level_values(id_name)
+
     def get_index(self, name):
-        return self.get_data_object(name).df.index
+        return self.get_df(name).index
 
     def get_index_names(self, name):
-        return list(self.get_df(name).index.names)
+        return list(self.get_index(name).names)
 
     def get_value(self, name, idx):
         return self.get_data_object(name).df.loc[idx][0]

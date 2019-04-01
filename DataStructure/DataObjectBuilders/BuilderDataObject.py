@@ -42,6 +42,9 @@ class BuilderDataObject:
     def get_row_of_idx_array(self, idx_array):
         return self.df.loc[list(map(tuple, np.array(idx_array))), :]
 
+    def get_index_array(self, index_names=None):
+        return PandasIndexManager().get_index_array(df=self.df, index_names=index_names)
+
     def get_index_array_of_id_exp(self):
         return PandasIndexManager().get_unique_index_array(self.df, id_exp_name)
 

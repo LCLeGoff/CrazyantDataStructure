@@ -61,7 +61,7 @@ class PandasIndexManager:
     @staticmethod
     def get_index_array(df, index_names=None):
         if index_names is None:
-            return np.array(df.index)
+            return np.array(df.index.tolist())
         else:
             index_names = turn_to_list(index_names)
             idxs = []

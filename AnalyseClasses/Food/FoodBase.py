@@ -211,51 +211,61 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
-    def compute_speed_food(self):
+    def compute_speed_food(self, redo=False, redo_hist=False):
         name = 'food_speed'
-        self.exp.load(['food_x', 'food_y', 'fps'])
+        hist_name = name+'_hist'
+        bins = np.arange(0, 200, 1)
+        hist_label = 'Distribution of the food speed (mm/s)'
+        hist_description = 'Distribution of the instantaneous speed of the food trajectory (mm/s)'
 
-        self.exp.add_copy1d(
-            name_to_copy='food_x', copy_name=name, category='FoodBase', label='Food speed',
-            description='Instantaneous speed of the food'
-        )
-        # self.exp.add_copy1d(
-        #     name_to_copy='food_x', copy_name=name+'_x', category='Trajectory', label='X food speed',
-        #     description='X coordinate of the instantaneous speed of the ants'
-        # )
-        # self.exp.add_copy1d(
-        #     name_to_copy='food_x', copy_name=name+'_y', category='Trajectory', label='Y food speed',
-        #     description='Y coordinate of the instantaneous speed of the food'
-        # )
+        if redo:
+            self.exp.load(['food_x', 'food_y', 'fps'])
 
-        for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
-            dx = np.array(self.exp.food_x.df.loc[id_exp, :])
-            dx1 = dx[1, :]
-            dx2 = dx[-2, :]
-            dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
-            dx[0, :] = dx1 - dx[0, :]
-            dx[-1, :] = dx[-1, :] - dx2
+            self.exp.add_copy1d(
+                name_to_copy='food_x', copy_name=name, category='FoodBase', label='Food speed',
+                description='Instantaneous speed of the food'
+            )
 
-            dy = np.array(self.exp.food_y.df.loc[id_exp, :])
-            dy1 = dy[1, :]
-            dy2 = dy[-2, :]
-            dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
-            dy[0, :] = dy1 - dy[0, :]
-            dy[-1, :] = dy[-1, :] - dy2
+            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+                dx = np.array(self.exp.food_x.df.loc[id_exp, :])
+                dx1 = dx[1, :]
+                dx2 = dx[-2, :]
+                dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
+                dx[0, :] = dx1 - dx[0, :]
+                dx[-1, :] = dx[-1, :] - dx2
 
-            dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
-            dt.sort()
-            dt[1:-1] = dt[2:]-dt[:-2]
-            dt[0] = 1
-            dt[-1] = 1
-            dx[dt > 2] = np.nan
-            dy[dt > 2] = np.nan
+                dy = np.array(self.exp.food_y.df.loc[id_exp, :])
+                dy1 = dy[1, :]
+                dy2 = dy[-2, :]
+                dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
+                dy[0, :] = dy1 - dy[0, :]
+                dy[-1, :] = dy[-1, :] - dy2
 
-            # self.exp.food_speed_x.df.loc[id_exp, id_ant, :] = dx*self.exp.fps.df.loc[id_exp].fps
-            # self.exp.food_speed_y.df.loc[id_exp, id_ant, :] = dy*self.exp.fps.df.loc[id_exp].fps
-            self.exp.food_speed.df.loc[id_exp, :] = np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
+                dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
+                dt[0] = 1
+                dt[-1] = 1
+                dx[dt > 2] = np.nan
+                dy[dt > 2] = np.nan
 
-        self.exp.write([name])
+                self.exp.food_speed.df.loc[id_exp, :] = np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
+
+            self.exp.write(name)
+
+        if redo or redo_hist:
+            self.exp.load(name)
+            self.exp.hist1d(name_to_hist=name, result_name=hist_name,
+                            bins=bins, label=hist_label, description=hist_description)
+            self.exp.write(hist_name)
+
+        else:
+            self.exp.load(hist_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\dot\varphi_{food} (mm/s)$', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        plotter.save(fig)
 
     def compute_is_xy_next2food(self):
         name = 'is_xy_next2food'

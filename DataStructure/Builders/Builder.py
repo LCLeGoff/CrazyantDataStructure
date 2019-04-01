@@ -1,4 +1,5 @@
 from DataStructure.DataObjects.AntCharacteristics1d import AntCharacteristics1dBuilder
+from DataStructure.DataObjects.CharacteristicTimeSeries1d import CharacteristicTimeSeries1dBuilder
 from DataStructure.DataObjects.Characteristics1d import Characteristics1dBuilder
 from DataStructure.DataObjects.Characteristics2d import Characteristics2dBuilder
 from DataStructure.DataObjects.DataSet import DataSetBuilder
@@ -32,6 +33,9 @@ class Builder:
         elif object_type == 'AntCharacteristics1d':
             return AntCharacteristics1dBuilder.build(df=df, name=name, category=category,
                                                      label=label, description=description)
+        if object_type == 'CharacteristicTimeSeries1d':
+            return CharacteristicTimeSeries1dBuilder.build(df=df, name=name, category=category,
+                                                           label=label, description=description)
         elif object_type == dataset_name:
             return DataSetBuilder.build(df=df, name=name, category=category, label=label, description=description)
         else:

@@ -1,10 +1,13 @@
 from matplotlib import pyplot as plt
 
+from Tools.Plotter.ColorObject import ColorObject
+
 
 class BasePlotters:
     def __init__(self, obj=None, cmap='jet_r', **kwargs):
         self.cmap = cmap
         self.obj = obj
+        self.color_object = ColorObject
 
     @staticmethod
     def black_background(fig, ax):
@@ -23,11 +26,17 @@ class BasePlotters:
         ax.title.set_color('w')
 
     @staticmethod
-    def create_plot(preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
+    def grey_background(fig, ax):
+        bg_color = '0.8'
+        fig.set_facecolor(bg_color)
+        ax.patch.set_facecolor(bg_color)
+
+    def create_plot(self, preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
         if preplot is None:
             fig, ax = plt.subplots(figsize=figsize)
             fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top)
             # self.black_background(fig, ax)
+            self.grey_background(fig, ax)
             return fig, ax
         else:
             return preplot

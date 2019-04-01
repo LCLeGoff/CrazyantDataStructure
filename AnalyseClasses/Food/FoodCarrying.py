@@ -13,6 +13,78 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
 
+    def compute_food_traj_length_around_first_attachment(self):
+        before_result_name = 'food_traj_length_before_first_attachment'
+        after_result_name = 'food_traj_length_after_first_attachment'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        food_traj_name = 'food_x'
+        category = 'FoodCarrying'
+
+        self.exp.load([food_traj_name, first_attachment_name, 'fps'])
+        self.exp.add_new1d_empty(name=before_result_name, object_type='Characteristics1d', category=category,
+                                 label='Food trajectory length before first outside attachment (s)',
+                                 description='Length of the trajectory of the food in second '
+                                             'before the first ant coming from outside attached to the food')
+        self.exp.add_new1d_empty(name=after_result_name, object_type='Characteristics1d', category=category,
+                                 label='Food trajectory length after first outside attachment (s)',
+                                 description='Length of the trajectory of the food in second '
+                                             'after the first ant coming from outside attached to the food')
+
+        for id_exp in self.exp.id_exp_list:
+            traj = self.exp.get_df(food_traj_name).loc[id_exp, :]
+            frames = traj.index.get_level_values(id_frame_name)
+            first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+
+            length_before = (first_attachment_time-int(frames.min()))/float(self.exp.fps.df.loc[id_exp])
+            length_after = (int(frames.max())-first_attachment_time)/float(self.exp.fps.df.loc[id_exp])
+
+            self.exp.change_value(name=before_result_name, idx=id_exp, value=length_before)
+            self.exp.change_value(name=after_result_name, idx=id_exp, value=length_after)
+
+        self.exp.write(before_result_name)
+        self.exp.write(after_result_name)
+
+        bins = range(0, 130, 15)
+        hist_name = self.exp.hist1d(name_to_hist=before_result_name, bins=bins)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot()
+        ax.grid()
+        ax.set_xticks(range(0, 120, 15))
+        plotter.save(fig)
+
+        bins = range(-30, 500, 60)
+        hist_name = self.exp.hist1d(name_to_hist=after_result_name, bins=bins)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot()
+        ax.grid()
+        ax.set_xticks(range(0, 430, 60))
+        plotter.save(fig)
+
+    def compute_outside_ant_attachment(self):
+        carrying_name = 'carrying_intervals'
+        outside_ant_name = 'from_outside'
+        results_name = 'outside_ant_carrying_intervals'
+        category = 'FoodCarrying'
+
+        self.exp.load([carrying_name, outside_ant_name])
+        self.exp.add_copy(old_name=carrying_name, new_name=results_name, category=category,
+                          label='Carrying intervals of outside ants',
+                          description='Intervals of the carrying periods for the ants coming from outside')
+
+        def keep_only_outside_ants4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+
+            from_outside = self.exp.get_value(outside_ant_name, (id_exp, id_ant))
+            if from_outside == 0:
+                self.exp.get_df(results_name).drop(pd.IndexSlice[id_exp, id_ant], inplace=True)
+
+        self.exp.get_df(results_name).groupby([id_exp_name, id_ant_name]).apply(keep_only_outside_ants4each_group)
+
+        self.exp.write(results_name)
+
     def compute_carrying_next2food_with_svm(self):
         name_result = 'carrying_next2food_from_svm'
 
@@ -231,9 +303,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_first_attachment_time_of_outside_ant(self):
         result_name = 'first_attachment_time_of_outside_ant'
-        from_outside_name = 'from_outside'
-        carrying_name = 'carrying_intervals'
-        self.exp.load([from_outside_name, carrying_name])
+        carrying_name = 'outside_ant_carrying_intervals'
+        self.exp.load(carrying_name)
 
         self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
                                  category='FoodCarrying', label='First attachment time of a outside ant',
@@ -241,65 +312,14 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         def compute_first_attachment4each_exp(df):
             id_exp = df.index.get_level_values(id_exp_name)[0]
-            id_ant = df.index.get_level_values(id_ant_name)[0]
-            is_from_outside = int(self.exp.get_df(from_outside_name).loc[id_exp, id_ant])
-            if is_from_outside == 1:
-                frames = df.index.get_level_values(id_frame_name)
-                min_time = int(np.nanmin([self.exp.get_value(result_name, id_exp), frames.min()]))
-                self.exp.change_value(result_name, id_exp, min_time)
+            frames = df.index.get_level_values(id_frame_name)
 
-        self.exp.get_df(carrying_name).groupby([id_exp_name, id_ant_name]).apply(compute_first_attachment4each_exp)
+            min_time = int(frames.min())
+            self.exp.change_value(result_name, id_exp, min_time)
+
+        self.exp.get_df(carrying_name).groupby(id_exp_name).apply(compute_first_attachment4each_exp)
         self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
         self.exp.write(result_name)
-
-    def compute_food_traj_length_around_first_attachment(self):
-        before_result_name = 'food_traj_length_before_first_attachment'
-        after_result_name = 'food_traj_length_after_first_attachment'
-        first_attachment_name = 'first_attachment_time_of_outside_ant'
-        food_traj_name = 'food_x'
-        category = 'FoodCarrying'
-
-        self.exp.load([food_traj_name, first_attachment_name, 'fps'])
-        self.exp.add_new1d_empty(name=before_result_name, object_type='Characteristics1d', category=category,
-                                 label='Food trajectory length before first outside attachment (s)',
-                                 description='Length of the trajectory of the food in second '
-                                             'before the first ant coming from outside attached to the food')
-        self.exp.add_new1d_empty(name=after_result_name, object_type='Characteristics1d', category=category,
-                                 label='Food trajectory length after first outside attachment (s)',
-                                 description='Length of the trajectory of the food in second '
-                                             'after the first ant coming from outside attached to the food')
-
-        for id_exp in self.exp.id_exp_list:
-            traj = self.exp.get_df(food_traj_name).loc[id_exp, :]
-            frames = traj.index.get_level_values(id_frame_name)
-            first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
-
-            length_before = (first_attachment_time-int(frames.min()))/float(self.exp.fps.df.loc[id_exp])
-            length_after = (int(frames.max())-first_attachment_time)/float(self.exp.fps.df.loc[id_exp])
-
-            self.exp.change_value(name=before_result_name, idx=id_exp, value=length_before)
-            self.exp.change_value(name=after_result_name, idx=id_exp, value=length_after)
-
-        self.exp.write(before_result_name)
-        self.exp.write(after_result_name)
-
-        bins = range(0, 130, 15)
-        hist_name = self.exp.hist1d(name_to_hist=before_result_name, bins=bins)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot()
-        ax.grid()
-        ax.set_xticks(range(0, 120, 15))
-        plotter.save(fig)
-
-        bins = range(-30, 500, 60)
-        hist_name = self.exp.hist1d(name_to_hist=after_result_name, bins=bins)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot()
-        ax.grid()
-        ax.set_xticks(range(0, 430, 60))
-        plotter.save(fig)
 
     def compute_food_phi_evol(self, redo=False):
         name = 'food_phi'
@@ -308,7 +328,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         dtheta = np.pi/12.
         bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
-        frame_intervals = np.arange(-1, 5, 1)*60*100
+        frame_intervals = np.arange(-2, 6, 1)*60*100
 
         if redo:
             self.exp.load([name, first_attachment_name])
@@ -334,8 +354,12 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix=' s')
         plotter.save(fig)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', label_suffix=' s')
+        plotter.save(fig, suffix='_non_norm')
 
     def compute_autocorrelation_food_phi(self, redo=False):
 
@@ -405,17 +429,201 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         else:
             raise ValueError('fps not all the same')
 
-    def compute_food_phi_entropy_evol(self, redo=False):
+    def compute_food_phi_entropy_evol_after_first_attachment(self, redo=False):
 
         food_phi_name = 'food_phi'
-        result_name = 'food_phi_entropy_evol'
+        result_name = 'food_phi_entropy_evol_after_first_attachment'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
 
         dtheta = np.pi / 12.
-        bins = np.arange(-np.pi - dtheta / 2., np.pi + dtheta, dtheta)
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
         dt = 0.25
         frame_intervals = np.around(np.arange(-2, 7, dt) * 60 * 100)
+        max_entropy = np.log(2*np.pi*len(bins))
 
+        self.__compute_entropy_evol(bins, 'FoodCarrying', first_attachment_name, food_phi_name, frame_intervals, redo,
+                                    'Entropy of the angular coordinate distribution ', 'Food phi entropy over time',
+                                    result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='time (s)')
+        ax.set_xticks(range(-120, 8*60, 60))
+        ax.grid()
+        ax.axhline(max_entropy, ls='--', c='k', label='Max. entropy')
+        ax.axvline(0, ls='--', c='k', label='t = 0')
+        ax.legend(loc=0)
+        plotter.save(fig)
+
+        self.exp.operation(result_name, lambda x: max_entropy-x)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='time (s)')
+        ax.set_xticks(range(-120, 8*60, 60))
+        ax.grid()
+        ax.axhline(max_entropy, ls='--', c='k', label='Max. entropy')
+        ax.axvline(0, ls='--', c='k', label='t = 0')
+        ax.legend(loc=0)
+        plotter.save(fig, suffix='(info)')
+
+    def compute_food_phi_entropy_evol_per_exp(self, redo=False):
+
+        food_phi_name = 'food_phi'
+        attachment_name = 'outside_ant_carrying_intervals'
+        result_name = 'food_phi_entropy_evol_per_exp'
+        category = 'FoodCarrying'
+
+        result_label = 'Food phi entropy over time'
+        result_description = 'Entropy of the angular coordinate distribution of the food trajectory ' \
+                             'over time before and after the first attachment of an ant coming from outside, ' \
+                             'negative times (s) correspond to periods before the first attachment of an outside ant'
+
+        dtheta = np.pi / 8.
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
+        dt = 500
+        frame_intervals = range(0, 10*60*100, dt)
+
+        self.__compute_entropy_evol_per_exp(bins, category, food_phi_name, frame_intervals, redo, result_description,
+                                            result_label, result_name)
+
+        self.exp.load([food_phi_name, attachment_name])
+        for id_exp in self.exp.id_exp_list:
+            food_phi = self.exp.get_df(food_phi_name).loc[id_exp, :]
+            frames = food_phi.index.get_level_values(id_frame_name)
+            frame0 = int(frames.min())
+
+            attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
+            attachments.reset_index(inplace=True)
+            attachments = np.array(attachments)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=id_exp)
+            fig, ax = plotter.create_plot(figsize=(6, 4))
+
+            # colors = plotter.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
+            # for id_ant, frame, inter in attachments:
+            #     ax.axvline((frame-frame0)/100, c=colors[str(id_ant)], alpha=0.5)
+
+            ax.plot(np.array((frames-frame0)/100.), food_phi)
+            plotter.plot(preplot=(fig, ax), figsize=(6, 4), xlabel='time (s)', ylabel='entropy')
+
+            ax.legend(loc=1)
+            plotter.save(fig, sub_folder=plotter.obj.name, name=id_exp)
+
+    def compute_food_phi_speed_entropy_evol_per_exp(self, redo=False):
+
+        food_phi_name = 'food_phi_speed'
+        attachment_name = 'outside_ant_carrying_intervals'
+        result_name = food_phi_name+'_entropy_evol_per_exp'
+        category = 'FoodCarrying'
+
+        result_label = 'Food phi speed entropy over time'
+        result_description = 'Entropy of the speed of the angular coordinate distribution of the food trajectory ' \
+                             'over time before and after the first attachment of an ant coming from outside, ' \
+                             'negative times (s) correspond to periods before the first attachment of an outside ant'
+
+        dtheta = np.pi / 8.
+        bins = np.around(np.arange(-np.pi + dtheta / 2., np.pi + dtheta, dtheta), 3)
+        dt = 500
+        frame_intervals = range(0, 10 * 60 * 100, dt)
+
+        self.__compute_entropy_evol_per_exp(bins, category, food_phi_name, frame_intervals, redo, result_description,
+                                            result_label, result_name)
+
+        self.exp.load([food_phi_name, attachment_name])
+        for id_exp in self.exp.id_exp_list:
+            food_phi = self.exp.get_df(food_phi_name).loc[id_exp, :]
+            frames = food_phi.index.get_level_values(id_frame_name)
+            frame0 = int(frames.min())
+
+            attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
+            attachments.reset_index(inplace=True)
+            attachments = np.array(attachments)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=id_exp)
+            fig, ax = plotter.create_plot(figsize=(6, 4))
+
+            colors = plotter.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
+            for id_ant, frame, inter in attachments:
+                ax.axvline((frame-frame0)/100, c=colors[str(id_ant)], alpha=0.5)
+
+            # ax.plot(np.array((frames - frame0) / 100.), food_phi)
+            plotter.plot(preplot=(fig, ax), figsize=(6, 4), xlabel='time (s)', ylabel='entropy')
+
+            ax.legend(loc=1)
+            plotter.save(fig, sub_folder=plotter.obj.name, name=id_exp)
+
+    def __compute_entropy_evol_per_exp(self, bins, category, food_phi_name, frame_intervals, redo, result_description,
+                                       result_label, result_name):
+        if redo:
+
+            self.exp.load(food_phi_name)
+            self.exp.add_new_empty_dataset(name=result_name, index_name='theta', column_names=self.exp.id_exp_list,
+                                           index_values=np.array(frame_intervals) / 100, category=category,
+                                           label=result_label,
+                                           description=result_description)
+
+            def get_entropy_evol4each_group(df: pd.DataFrame):
+                id_exp0 = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp0)
+                frames0 = df.index.get_level_values(id_frame_name)
+                f0 = int(frames0.min())
+                frames0 -= f0
+
+                df.reset_index(inplace=True)
+                df.loc[:, id_frame_name] = frames0
+                df.set_index([id_exp_name, id_frame_name], inplace=True)
+
+                food_phi_temp = 'food_phi_temp'
+                self.exp.add_new1d_empty(name=food_phi_temp, object_type='CharacteristicTimeSeries1d', replace=True)
+                self.exp.get_data_object(food_phi_temp).df = df
+
+                food_phi_hist_name = self.exp.hist1d_time_evolution(name_to_hist=food_phi_temp,
+                                                                    frame_intervals=frame_intervals, bins=bins,
+                                                                    replace=True)
+
+                self.exp.get_data_object(food_phi_hist_name).df /= np.sum(self.exp.get_df(food_phi_hist_name))
+                # self.exp.get_data_object(food_phi_hist_name).df = self.exp.get_df(food_phi_hist_name).fillna(0)
+
+                for i, t in enumerate(np.array(frame_intervals) / 100):
+                    entropy = np.round(get_entropy(self.exp.get_df(food_phi_hist_name).loc[:, t]), 2)
+                    self.exp.change_value(result_name, (t, id_exp0), entropy)
+
+            self.exp.get_df(food_phi_name).groupby([id_exp_name]).apply(get_entropy_evol4each_group)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(food_phi_name)
+        else:
+            self.exp.load(result_name)
+
+    def compute_food_phi_speed_entropy_evol_after_first_attachment(self, redo=False):
+
+        food_phi_name = 'food_phi_speed'
+        result_name = food_phi_name+'_entropy_evol_after_first_attachment'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        category = 'FoodCarrying'
+
+        result_label = 'Food phi entropy over time'
+        result_description = 'Entropy of the angular coordinate distribution of the food trajectory' \
+                             ' over time before and after the first attachment of an ant coming from outside,' \
+                             ' negative times (s) correspond to periods before the first attachment of an outside ant'
+        dtheta = np.pi / 12.
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
+        dt = 0.25
+        frame_intervals = np.around(np.arange(-2, 7, dt) * 60 * 100)
+        max_entropy = np.log(2*np.pi*len(bins))
+
+        self.__compute_entropy_evol(bins, category, first_attachment_name, food_phi_name, frame_intervals, redo,
+                                    result_description, result_label, result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='time (s)')
+        ax.set_xticks(range(-120, 8*60, 60))
+        ax.grid()
+        ax.axhline(max_entropy, ls='--', c='k', label='Max. entropy')
+        ax.axvline(0, ls='--', c='k', label='t = 0')
+        ax.legend(loc=0)
+        plotter.save(fig)
+
+    def __compute_entropy_evol(self, bins, category, first_attachment_name, food_phi_name, frame_intervals, redo,
+                               result_description, result_label, result_name):
         if redo:
 
             self.exp.load([food_phi_name, first_attachment_name])
@@ -431,32 +639,23 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.get_df(food_phi_name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
             self.exp.get_df(food_phi_name).set_index([id_exp_name, id_frame_name], inplace=True)
 
-            food_phi_hist = self.exp.hist1d_time_evolution(name_to_hist=food_phi_name, frame_intervals=frame_intervals,
-                                                           bins=bins, normed=True)
+            food_phi_hist_name = self.exp.hist1d_time_evolution(name_to_hist=food_phi_name,
+                                                                frame_intervals=frame_intervals, bins=bins)
 
-            times = np.array(self.exp.get_columns(food_phi_hist), dtype=float)
+            self.exp.get_data_object(food_phi_hist_name).df /= np.sum(self.exp.get_df(food_phi_hist_name))
+            self.exp.get_data_object(food_phi_hist_name).df = self.exp.get_df(food_phi_hist_name).fillna(0)
+
+            times = np.array(self.exp.get_columns(food_phi_hist_name), dtype=float)
 
             self.exp.add_new_empty_dataset(name=result_name, index_name='theta', column_names='entropy',
-                                           index_values=times, category='FoodCarrying',
-                                           label='Food phi entropy over time',
-                                           description='Entropy of the angular coordinate distribution '
-                                                       'of the food trajectory over time '
-                                                       'before and after the first attachment '
-                                                       'of an ant coming from outside, '
-                                                       'negative times (s) correspond '
-                                                       'to periods before the first attachment of an outside ant')
+                                           index_values=times, category=category,
+                                           label=result_label, description=result_description)
 
             for t in times:
-                entropy = np.round(get_entropy(self.exp.get_df(food_phi_hist).loc[:, t]), 2)
+                entropy = np.round(get_entropy(self.exp.get_df(food_phi_hist_name).loc[:, t]), 2)
                 self.exp.change_value(result_name, t, entropy)
 
             self.exp.write(result_name)
 
         else:
             self.exp.load(result_name)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='time (s)')
-        ax.set_xticks(range(-60, 301, 60))
-        ax.grid()
-        plotter.save(fig)
