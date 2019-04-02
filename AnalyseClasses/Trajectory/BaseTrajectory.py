@@ -19,7 +19,6 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
         self.__load_xy_reorientation(dynamic_food=dynamic_food)
         self.__copy_xy0_to_xy(dynamic_food=dynamic_food)
-        # self.__translate_xy(dynamic_food=dynamic_food)
         self.__centered_xy_on_food(dynamic_food=dynamic_food)
         self.__convert_xy_to_mm(dynamic_food=dynamic_food)
         self.__orient_all_in_same_direction(id_exp_list, dynamic_food=dynamic_food)
@@ -29,10 +28,23 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         if dynamic_food is True:
             self.exp.load(['food_x0', 'food_y0'])
         self.exp.load([
-            'x0', 'y0', 'absoluteOrientation', 'entrance1', 'entrance2', 'food_center', 'mm2px', 'traj_translation'])
+            'x0', 'y0', 'absoluteOrientation',
+            'entrance1', 'entrance2', 'exit0_1', 'exit0_2',
+            'food_center', 'mm2px'])
 
     def __copy_xy0_to_xy(self, dynamic_food):
         print('coping xy0, absoluteOrientation and food0')
+        self.exp.add_copy2d(
+            name_to_copy='exit0_1', copy_name='exit1', category='Trajectory',
+            label='Exit position 1 (setup system)',
+            xlabel='x coordinates', ylabel='y coordinates',
+            description='Coordinates of one of the points defining the exit in the setup system')
+        self.exp.add_copy2d(
+            name_to_copy='exit0_2', copy_name='exit2', category='Trajectory',
+            label='Exit position 2 (setup system)',
+            xlabel='x coordinates', ylabel='y coordinates',
+            description='Coordinates of one of the points defining the exit in the setup system')
+
         self.exp.add_copy1d(
             name_to_copy='x0', copy_name='x', category='Trajectory',
             label='x (mm)', description='x coordinate (mm, in the initial food system)'
@@ -41,11 +53,13 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             name_to_copy='y0', copy_name='y', category='Trajectory',
             label='y (mm)', description='y coordinate (mm, in the initial food system)'
         )
+
         self.exp.add_copy1d(
             name_to_copy='absoluteOrientation', copy_name='orientation', category='Trajectory',
             label='orientation (rad)', description='ant orientation (in the initial food system)'
         )
         self.exp.operation('orientation', lambda z: round(z, 3))
+
         if dynamic_food is True:
             self.exp.add_copy1d(
                 name_to_copy='food_x0', copy_name='food_x', category='FoodBase',
@@ -58,22 +72,24 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
     def __centered_xy_on_food(self, dynamic_food):
         print('centering')
+        self.exp.operation_between_2names('exit1', 'food_center', lambda x, y: x - y, 'x', 'x')
+        self.exp.operation_between_2names('exit1', 'food_center', lambda x, y: x - y, 'y', 'y')
+        self.exp.operation_between_2names('exit2', 'food_center', lambda x, y: x - y, 'x', 'x')
+        self.exp.operation_between_2names('exit2', 'food_center', lambda x, y: x - y, 'y', 'y')
+
         self.exp.operation_between_2names('x', 'food_center', lambda x, y: x - y, 'x')
         self.exp.operation_between_2names('y', 'food_center', lambda x, y: x - y, 'y')
         if dynamic_food is True:
             self.exp.operation_between_2names('food_x', 'food_center', lambda x, y: x - y, 'x')
             self.exp.operation_between_2names('food_y', 'food_center', lambda x, y: x - y, 'y')
 
-    def __translate_xy(self, dynamic_food):
-        print('translating')
-        self.exp.operation_between_2names('x', 'traj_translation', lambda x, y: x + y, 'x')
-        self.exp.operation_between_2names('y', 'traj_translation', lambda x, y: x + y, 'y')
-        if dynamic_food is True:
-            self.exp.operation_between_2names('food_x', 'traj_translation', lambda x, y: x + y, 'x')
-            self.exp.operation_between_2names('food_y', 'traj_translation', lambda x, y: x + y, 'y')
-
     def __convert_xy_to_mm(self, dynamic_food):
         print('converting to mm')
+        self.exp.operation_between_2names('exit1', 'mm2px', lambda x, y: round(x / y, 3), 'x', 'x')
+        self.exp.operation_between_2names('exit1', 'mm2px', lambda x, y: round(x / y, 3), 'y', 'y')
+        self.exp.operation_between_2names('exit2', 'mm2px', lambda x, y: round(x / y, 3), 'x', 'x')
+        self.exp.operation_between_2names('exit2', 'mm2px', lambda x, y: round(x / y, 3), 'y', 'y')
+
         self.exp.operation_between_2names('x', 'mm2px', lambda x, y: round(x / y, 3))
         self.exp.operation_between_2names('y', 'mm2px', lambda x, y: round(x / y, 3))
         if dynamic_food is True:
@@ -115,6 +131,9 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
     def __invert_if_not_good_orientation(self, a, id_exp, dynamic_food):
         if abs(a) > pi / 2:
+            self.exp.exit1.operation_on_id_exp(id_exp, lambda z: z * -1)
+            self.exp.exit2.operation_on_id_exp(id_exp, lambda z: z * -1)
+
             self.exp.x.operation_on_id_exp(id_exp, lambda z: z * -1)
             self.exp.y.operation_on_id_exp(id_exp, lambda z: z * -1)
             self.exp.orientation.operation_on_id_exp(id_exp, lambda z: norm_angle_tab(z+np.pi))
@@ -128,7 +147,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
     def __write_initialize_xy_orientation(self, dynamic_food):
         if dynamic_food is True:
             self.exp.write(['food_x', 'food_y'])
-        self.exp.write(['traj_reoriented', 'orientation', 'x', 'y'])
+        self.exp.write(['exit1', 'exit2', 'traj_reoriented', 'orientation', 'x', 'y'])
 
     def compute_r_phi(self):
         print('r, phi')
@@ -254,7 +273,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(yscale='log', normed=True)
@@ -277,7 +297,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             )
             self.exp.write(result_name)
 
-        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(yscale='log', normed=True)
@@ -300,7 +321,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             )
             self.exp.write(result_name)
 
-        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(yscale='log', normed=True)

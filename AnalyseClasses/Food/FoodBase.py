@@ -3,7 +3,8 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle, angle_distance
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle, dot2d_df, \
+    distance_between_point_and_line_df, distance_df
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -73,81 +74,261 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
         plotter.save(fig)
 
-    def compute_mm1s_food_phi(self):
-        name = 'food_phi'
-        category = 'FoodMM'
-        time_window = 100
+    def compute_food_exit_angle(self):
+        result_name = 'food_exit_angle'
+        print(result_name)
 
-        self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, result_name='mm1s_'+name, category=category
-        )
+        food_x_name = 'food_x'
+        food_y_name = 'food_y'
+        food_name = 'food_xy'
+        exit_name1 = 'exit1'
+        exit_name2 = 'exit2'
+
+        self.exp.load([food_x_name, food_y_name, exit_name1, exit_name2])
+
+        self.exp.add_2d_from_1ds(name1=food_x_name, name2=food_y_name, result_name=food_name, xname='x', yname='y')
+
+        self.exp.add_copy(old_name=food_x_name, new_name=result_name, category='FoodBase', label='Food exit angle',
+                          description='Angular coordinate of the vector formed by the food position'
+                                      ' and the closest point of the exit segment')
+
+        def compute_angle4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            print(id_exp)
+
+            exit1 = self.exp.get_data_object('exit1').df.loc[id_exp, :]
+            exit2 = self.exp.get_data_object('exit2').df.loc[id_exp, :]
+
+            line_vector = exit2-exit1
+            food = self.exp.get_data_object(food_name).df.loc[pd.IndexSlice[id_exp, :], :]
+
+            dot1 = dot2d_df(-line_vector, exit1 - food)
+            dot2 = dot2d_df(line_vector, exit2 - food)
+
+            df.loc[(dot1 > 0) & (dot2 > 0), :] = 0
+            df.loc[dot1 < 0, :] = angle_df(exit1-food).loc[dot1 < 0, :]
+            df.loc[dot2 < 0, :] = angle_df(exit2-food).loc[dot2 < 0, :]
+
+            return df
+
+        df = self.exp.get_df(result_name).groupby(id_exp_name).apply(compute_angle4each_group)
+        self.exp.get_data_object(result_name).df = df
 
         self.exp.write(result_name)
 
-    def compute_food_phi_speed(self, redo=False, redo_hist=False):
-        name = 'food_phi'
-        result_name = name+'_speed'
-        hist_name = result_name+'_hist'
-        bins = np.arange(0, 1e3, 0.5)
+    def compute_food_exit_distance(self, redo=False, redo_hist=False):
+        result_name = 'food_exit_distance'
+        print(result_name)
 
-        hist_label = 'Histogram of food phi speed (rad/s)'
-        hist_description = 'Histogram of the speed of the angular coordinate' \
-                           ' of the food trajectory (rad/s, in the food system)'
+        bins = np.arange(0, 500, 5.)
+
         if redo:
-            self.exp.load([name, 'fps'])
+            food_x_name = 'food_x'
+            food_y_name = 'food_y'
+            food_name = 'food_xy'
+            exit_name1 = 'exit1'
+            exit_name2 = 'exit2'
 
-            self.exp.add_copy1d(
-                name_to_copy=name, copy_name=result_name, category='FoodBase', label='Food phi speed (rad/s)',
-                description='Speed of the angular coordinate of the food trajectory (rad/s, in the food system)'
-            )
+            self.exp.load([food_x_name, food_y_name, exit_name1, exit_name2])
 
-            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
-                dphi = np.array(self.exp.get_df(name).loc[id_exp, :])
-                dphi1 = dphi[1, :]
-                dphi2 = dphi[-2, :]
-                dphi[1:-1, :] = (angle_distance(dphi[2:, :], dphi[:-2, :]))/2.
-                dphi[0, :] = angle_distance(dphi1, dphi[0, :])
-                dphi[-1, :] = angle_distance(dphi[-1, :], dphi2)
+            self.exp.add_2d_from_1ds(name1=food_x_name, name2=food_y_name, result_name=food_name, xname='x', yname='y',
+                                     replace=True)
 
-                dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
-                dt.sort()
-                dt[1:-1] = dt[2:]-dt[:-2]
-                dt[0] = 1
-                dt[-1] = 1
-                dphi[dt > 2] = np.nan
+            self.exp.add_copy(old_name=food_x_name, new_name=result_name,
+                              category='FoodBase', label='Food exit distance (mm)',
+                              description='Shortest distance between the food and the exit segment (mm)')
 
-                self.exp.get_df(result_name).loc[id_exp, :] = np.around(np.abs(dphi)*self.exp.fps.df.loc[id_exp].fps, 3)
+            def compute_angle4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp)
+
+                exit1 = self.exp.get_data_object('exit1').df.loc[id_exp, :]
+                exit2 = self.exp.get_data_object('exit2').df.loc[id_exp, :]
+
+                line_vector = exit2 - exit1
+                food = self.exp.get_data_object(food_name).df.loc[pd.IndexSlice[id_exp, :], :]
+
+                dot1 = dot2d_df(-line_vector, exit1 - food)
+                dot2 = dot2d_df(line_vector, exit2 - food)
+
+                dist = distance_between_point_and_line_df(food, [exit1, exit2]).loc[(dot1 > 0) & (dot2 > 0), :]
+                df.loc[(dot1 > 0) & (dot2 > 0), :] = dist
+
+                df.loc[dot1 < 0, :] = distance_df(food, exit1).loc[dot1 < 0, :]
+                df.loc[dot2 < 0, :] = distance_df(food, exit1).loc[dot2 < 0, :]
+
+                return df.round(3)
+
+            df = self.exp.get_df(result_name).groupby(id_exp_name).apply(compute_angle4each_group)
+            self.exp.get_data_object(result_name).df = df
 
             self.exp.write(result_name)
 
-        self.compute_hist(bins, hist_description, hist_label, hist_name, redo, redo_hist, result_name)
+        hist_name = self.compute_hist(result_name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xscale='log', yscale='log', normed=True)
+        fig, ax = plotter.plot(xlabel='distance (mm)', ylabel='PDF', normed=True)
         plotter.save(fig)
 
-    def compute_food_phi_speed_evol(self, redo=False):
-        name = 'food_phi_speed'
-        result_name = 'food_phi_speed_hist_evol'
-        bins = np.arange(0, 1e3, 0.5)
-        frame_intervals = np.arange(0, 5, 0.5)*60*100
+    def compute_food_exit_distance_evol(self, redo=False):
+        name = 'food_exit_distance'
+        result_name = name+'_hist_evol'
+
+        bins = np.arange(0, 500, 10.)
+        frame_intervals = np.arange(0, 5., 0.5)*60*100
 
         if redo:
             self.exp.load(name)
             self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category='FoodBase',
-                                           label='food phi speed distribution over time',
-                                           description='Histogram of the angular coordinate speed'
-                                                       ' of the food trajectory over time')
+                                           result_name=result_name, category='FoodBase')
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xscale='log', yscale='log', xlabel=r'$\dot\varphi$', ylabel='PDF',
-                               normed=True, label_suffix='s')
+        fig, ax = plotter.plot(xlabel='distance (mm)', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
+
+    def compute_food_velocity_phi(self, redo=False, redo_hist=False):
+        name_x = 'food_x'
+        name_y = 'food_y'
+        category = 'FoodBase'
+
+        result_velocity_name = 'food_velocity_phi'
+        hist_name = result_velocity_name+'_hist'
+        dtheta = np.pi/25.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        hist_label = 'Histogram of food velocity phi (rad)'
+        hist_description = 'Histogram of the angular coordinate of the food velocity (rad, in the food system)'
+        if redo:
+            self.exp.load([name_x, name_y])
+
+            self.exp.add_copy1d(
+                name_to_copy=name_x, copy_name=result_velocity_name, category=category, label='Food velocity phi (rad)',
+                description='Angular coordinate of the food velocity (rad, in the food system)'
+            )
+
+            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+
+                dx = np.array(self.exp.food_x.df.loc[id_exp, :]).ravel()
+                dx1 = dx[1].copy()
+                dx2 = dx[-2].copy()
+                dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
+                dx[0] = dx1 - dx[0]
+                dx[-1] = dx[-1] - dx2
+
+                dy = np.array(self.exp.food_y.df.loc[id_exp, :]).ravel()
+                dy1 = dy[1].copy()
+                dy2 = dy[-2].copy()
+                dy[1:-1] = (dy[2:] - dy[:-2]) / 2.
+                dy[0] = dy1 - dy[0]
+                dy[-1] = dy[-1] - dy2
+
+                dvel_phi = angle(np.array(list(zip(dx, dy))))
+                self.exp.get_df(result_velocity_name).loc[id_exp, :] = np.around(dvel_phi, 3)
+
+            self.exp.write(result_velocity_name)
+
+        self.compute_hist(hist_name=hist_name, result_name=result_velocity_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
+        plotter.save(fig)
+
+    def compute_food_velocity_phi_evol(self, redo=False):
+        name = 'food_velocity_phi'
+        result_name = name+'_hist_evol'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        frame_intervals = np.arange(0, 5., 0.5)*60*100
+
+        if redo:
+            self.exp.load(name)
+            self.exp.operation(name, lambda x: np.abs(x))
+            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
+                                           result_name=result_name, category='FoodBase',
+                                           label='Food velocity phi distribution over time (rad)',
+                                           description='Histogram of the absolute value of the angular coordinate'
+                                                       ' of the velocity of the food trajectory over time (rad)')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_food_direction_error(self, redo=False, redo_hist=False):
+        food_exit_angle_name = 'food_exit_angle'
+        food_phi_name = 'food_velocity_phi'
+        result_name = 'food_direction_error'
+        category = 'FoodBase'
+
+        hist_name = result_name+'_hist'
+        dtheta = np.pi/25.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        result_label = 'Food direction error (rad)'
+        result_description = 'Angle between the food velocity and the food-exit vector,' \
+                             'which gives in radian how much the food is not going in the good direction'
+        if redo:
+            self.exp.load([food_exit_angle_name, food_phi_name])
+
+            tab = self.exp.get_df(food_exit_angle_name)[food_exit_angle_name] \
+                - self.exp.get_df(food_phi_name)[food_phi_name]
+
+            self.exp.add_copy1d(name_to_copy=food_phi_name, copy_name=result_name, category=category,
+                                label=result_label, description=result_description)
+
+            self.exp.change_values(result_name, np.around(tab, 3))
+
+            self.exp.write(result_name)
+
+        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi_{error}$', ylabel='PDF', normed=True)
+        plotter.save(fig)
+
+    def compute_food_direction_error_evol(self, redo=False):
+        name = 'food_direction_error'
+        result_name = name+'_hist_evol'
+        category = 'FoodBase'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        frame_intervals = np.arange(0, 5., .5)*60*100
+        func = lambda x: np.abs(x)
+
+        hist_label = 'Food direction error distribution over time (rad)'
+        hist_description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                           'which gives in radian how much the food is not going in the good direction (rad)'
+
+        if redo:
+            self.exp.load(name)
+            self.exp.operation(name, func)
+            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
+                                           result_name=result_name, category=category,
+                                           label=hist_label, description=hist_description)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_mm1s_food_direction_error(self):
+        name = 'food_direction_error'
+        category = 'FoodBase'
+        time_window = 100
+
+        self.exp.load(name)
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
+                                                      result_name='mm1s_'+name, category=category)
+
+        self.exp.write('mm1s_'+name)
 
     def compute_distance2food(self):
         name = 'distance2food'
@@ -249,7 +430,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 dx[dt > 2] = np.nan
                 dy[dt > 2] = np.nan
 
-                self.exp.food_speed.df.loc[id_exp, :] = np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
+                food_speed = np.around(np.sqrt(dx ** 2 + dy ** 2) * self.exp.fps.df.loc[id_exp].fps, 3)
+                self.exp.food_speed.df.loc[id_exp, :] = food_speed
 
             self.exp.write(name)
 

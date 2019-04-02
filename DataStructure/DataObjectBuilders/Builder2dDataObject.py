@@ -9,6 +9,7 @@ class Builder2dDataObject(BuilderDataObject):
             raise ValueError('Shape not correct')
         else:
             BuilderDataObject.__init__(self, df)
+            self.name_col = self.df.columns
 
     def rename_df(self, xname, yname):
         self.df.columns = [xname, yname]

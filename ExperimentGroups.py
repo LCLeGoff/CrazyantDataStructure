@@ -107,6 +107,9 @@ class ExperimentGroups:
     def change_value(self, name, idx, value):
         self.get_data_object(name).df.loc[idx] = value
 
+    def change_values(self, name, df):
+        self.get_data_object(name).change_values(df)
+
     def get_ref_id_exp(self, id_exp):
         return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
 
@@ -417,7 +420,7 @@ class ExperimentGroups:
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
         self.add_object(name, obj, replace=replace)
 
-    def __create_empty_df(self, name, object_type, index_names=None):
+    def __create_empty_df(self, name, object_type, xname=None, yname=None, index_names=None):
         # TODO: for all, do like for object type characteristics1d
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name,
@@ -425,7 +428,11 @@ class ExperimentGroups:
         elif object_type in ['AntCharacteristics1d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_ant_name])
         elif object_type in ['Characteristics2d']:
-            df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=id_exp_name)
+            empty_column = np.full(len(self.id_exp_list), 0)
+            empty_array = np.array(list(zip(self.id_exp_list, empty_column, empty_column)))
+            df = pd.DataFrame(empty_array, columns=[id_exp_name, xname, yname])
+            df.set_index([id_exp_name], inplace=True)
+            df[:] = np.nan
         elif object_type in ['Characteristics1d']:
             df = pd.DataFrame(np.array(list(zip(self.id_exp_list, np.full(len(self.id_exp_list), 0)))),
                               columns=[id_exp_name, name])
@@ -443,8 +450,10 @@ class ExperimentGroups:
             self, name, xname, yname, object_type, category=None,
             label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
-        obj = Builder.build2d_from_array(
-            array=np.zeros((0, 5)), name=name, xname=xname, yname=yname,
+        df = self.__create_empty_df(name=name, xname=xname, yname=yname, object_type=object_type)
+
+        obj = Builder.build2d_from_df(
+            df=df, name=name, xname=xname, yname=yname,
             object_type=object_type, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
@@ -793,6 +802,14 @@ class ExperimentGroups:
 
             if category is None:
                 category = self.get_category(name_to_hist)
+
+            if label is None:
+                if self.get_label(name_to_hist) is not None:
+                    label = self.get_label(name_to_hist)+' histogram'
+
+            if description is None:
+                if self.get_description(name_to_hist) is not None:
+                    description = 'Histogram of '+self.get_description(name_to_hist).lower()
 
             df = self.get_data_object(name_to_hist).hist1d_time_evolution(
                 column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins, normed=normed)

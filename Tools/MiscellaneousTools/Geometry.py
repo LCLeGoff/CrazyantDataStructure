@@ -30,34 +30,30 @@ def dot2d(u, v):
 
 
 def angle(u, v=None):
-    # u2 = norm_vect(u)
     if v is None:
         u2 = convert2vect(u)
-        return -np.arctan2(-u2[:, 1], u2[:, 0])
+        return norm_angle_tab(-np.arctan2(-u2[:, 1], u2[:, 0]))
     else:
-        # v2 = norm_vect(v)
-        return np.arctan2(cross2d(u, v), dot2d(u, v))
+        return norm_angle_tab(np.arctan2(cross2d(u, v), dot2d(u, v)))
 
 
 def cross2d_df(u, v):
-    u2 = convert2vect(u)
-    v2 = convert2vect(v)
-    return u2.iloc[:, 0] * v2.iloc[:, 1] - u2.iloc[:, 1] * v2.iloc[:, 0]
+    return u.x * v.y - u.y * v.x
 
 
 def dot2d_df(u, v):
-    u2 = convert2vect(u)
-    v2 = convert2vect(v)
-    return u2.iloc[:, 0] * v2.iloc[:, 0] + u2.iloc[:, 1] * v2.iloc[:, 1]
+    u2 = u.copy()
+    v2 = v.copy()
+    u2.columns = ['x', 'y']
+    v2.columns = ['x', 'y']
+    return u2.x * v2.x + u2.y * v2.y
 
 
 def angle_df(u, v=None):
-    u2 = norm_vect_df(u)
     if v is None:
-        return -np.arctan2(-u2.iloc[:, 1], u2.iloc[:, 0])
+        return -np.arctan2(-u.iloc[:, 1], u.iloc[:, 0])
     else:
-        v2 = norm_vect_df(v)
-        return np.arctan2(cross2d_df(u2, v2), dot2d_df(u2, v2))
+        return np.arctan2(cross2d_df(u, v), dot2d_df(u, v))
 
 
 def squared_distance(p, q=None):
@@ -71,11 +67,9 @@ def squared_distance(p, q=None):
 
 def squared_distance_df(p, q=None):
     if q is None:
-        return p.iloc[:, 0] ** 2 + p.iloc[:, 1] ** 2
+        return p.x ** 2 + p.y ** 2
     else:
-        p2 = convert2vect(p)
-        q2 = convert2vect(q)
-        return (p2.iloc[:, 0] - q2.iloc[:, 0]) ** 2 + (p2.iloc[:, 1] - q2.iloc[:, 1]) ** 2
+        return (p.x - q.x) ** 2 + (p.y - q.y) ** 2
 
 
 def distance(p, q=None):
@@ -139,3 +133,38 @@ def is_in_polygon(pts, path):
 
 def angle_distance(phi, theta):
     return np.angle(np.exp(1j*(phi-theta)))
+
+
+def distance_between_point_and_line(p, line):
+    p0 = np.array(p)
+    p1 = np.array(line[0])
+    p2 = np.array(line[1])
+    return np.cross(p2-p1, p0-p1)/distance(p2, p1)
+
+
+def distance_between_point_and_line_df(p, line):
+    p0 = p.copy()
+    p1 = line[0].copy()
+    p2 = line[1].copy()
+
+    p0.columns = ['x', 'y']
+    p1.columns = ['x', 'y']
+    p2.columns = ['x', 'y']
+    return np.abs(cross2d_df(p2-p1, p0-p1))/distance_df(p2, p1)
+
+# def projection_on_line(p, line):
+#
+#     p = np.array(p)
+#
+#     a = np.array(line[0])
+#     b = np.array(line[1])
+#
+#     line_vector = b - a
+#     line_vector = norm_vect(line_vector)
+#
+#     bh = line_vector * dot2d(p - b, line_vector)
+#
+#     proj_vect = b-p - bh
+#
+#     return proj_vect
+

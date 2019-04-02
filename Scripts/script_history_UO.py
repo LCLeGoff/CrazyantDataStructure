@@ -9,6 +9,8 @@ group = 'UO'
 starter = AnalyseStarter(root0=root, group=group)
 # starter.start(redo=True, index_dicts=False, markings=False, dynamic_food=True)
 # starter.compute_mm2px()
+# starter.compute_exit0()
+
 
 Traj = AnalyseTrajectory(group)
 # Traj.initialize_xy_orientation_food(dynamic_food=True)
@@ -23,10 +25,17 @@ Traj = AnalyseTrajectory(group)
 FoodBase = AnalyseFoodBase(group, exp=Traj.exp)
 # FoodBase.compute_food_traj_length()
 
-# FoodBase.compute_food_phi()
-# FoodBase.compute_mm1s_food_phi()
-# FoodBase.compute_food_phi_speed()
-# FoodBase.compute_food_phi_speed_evol()
+# FoodBase.compute_food_phi(True)
+# FoodBase.compute_food_exit_angle()
+# FoodBase.compute_food_exit_distance(True)
+# FoodBase.compute_food_exit_distance_evol(True)
+
+# FoodBase.compute_food_velocity_phi(True)
+# FoodBase.compute_food_velocity_phi_evol()
+
+# FoodBase.compute_food_direction_error(True)
+# FoodBase.compute_food_direction_error_evol(True)
+# FoodBase.compute_mm1s_food_direction_error()
 
 # FoodBase.compute_speed_food(redo_hist=True)
 
@@ -68,6 +77,7 @@ FoodBase = AnalyseFoodBase(group, exp=Traj.exp)
 Carrying = AnalyseFoodCarrying(group, exp=FoodBase.exp)
 # Carrying.compute_food_traj_length_around_first_attachment()
 # Carrying.compute_outside_ant_attachment()
+# Carrying.compute_first_attachment_time_of_outside_ant()
 
 # Carrying.compute_carrying_next2food_with_svm()
 # Carrying.compute_carrying_from_svm()
@@ -77,13 +87,13 @@ Carrying = AnalyseFoodCarrying(group, exp=FoodBase.exp)
 # Carrying.compute_carrying_intervals(True)
 # Carrying.compute_not_carrying_intervals(True)
 
-# Carrying.compute_first_attachment_time_of_outside_ant()
-# Carrying.compute_food_phi_evol(True)
-# Carrying.compute_autocorrelation_food_phi()
-# Carrying.compute_food_phi_entropy_evol_after_first_attachment()
-# Carrying.compute_food_phi_entropy_evol_per_exp(True)
+
+# Carrying.compute_food_direction_error_evol_around_first_attachment(True)
+# Carrying.compute_autocorrelation_food_phi(True)
+# Carrying.compute_autocorrelation_food_velocity_phi()
+
+# Carrying.compute_food_direction_error_entropy_evol_after_first_attachment(True)
+Carrying.compute_food_direction_error_entropy_evol_per_exp(True)
 
 # Carrying.compute_food_phi_speed_entropy_evol_after_first_attachment(True)
 # Carrying.compute_food_phi_speed_entropy_evol_per_exp(True)
-
-

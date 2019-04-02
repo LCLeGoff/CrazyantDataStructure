@@ -328,3 +328,28 @@ class AnalyseStarter:
             exps.get_df(mm2px).loc[id_exp] = round(d/21., 3)
 
         exps.write(mm2px)
+
+    def compute_exit0(self):
+        result_name1 = 'exit0_1'
+        result_name2 = 'exit0_2'
+
+        exps = ExperimentGroupBuilder(root).build(self.group)
+        exps.load(['food_x0', 'food_y0', 'entrance1', 'entrance2', 'traj_translation'])
+
+        exps.add_copy(old_name='entrance1', new_name=result_name1,
+                      category='Raw', label='Exit position 1 (setup system)',
+                      xlabel='x coordinates', ylabel='y coordinates',
+                      description='Coordinates of one of the points defining the exit in the setup system')
+
+        exps.add_copy(old_name='entrance2', new_name=result_name2,
+                      category='Raw', label='Exit position 2 (setup system)',
+                      xlabel='x coordinates', ylabel='y coordinates',
+                      description='Coordinates of one of the points defining the exit in the setup system')
+
+        exps.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'x', 'x')
+        exps.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'y', 'y')
+
+        exps.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'x', 'x')
+        exps.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'y', 'y')
+
+        exps.write([result_name1, result_name2])

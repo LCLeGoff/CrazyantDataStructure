@@ -85,6 +85,26 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.exp.write(results_name)
 
+    def compute_first_attachment_time_of_outside_ant(self):
+        result_name = 'first_attachment_time_of_outside_ant'
+        carrying_name = 'outside_ant_carrying_intervals'
+        self.exp.load(carrying_name)
+
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
+                                 category='FoodCarrying', label='First attachment time of a outside ant',
+                                 description='First attachment time of an ant coming from outside')
+
+        def compute_first_attachment4each_exp(df):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            frames = df.index.get_level_values(id_frame_name)
+
+            min_time = int(frames.min())
+            self.exp.change_value(result_name, id_exp, min_time)
+
+        self.exp.get_df(carrying_name).groupby(id_exp_name).apply(compute_first_attachment4each_exp)
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
+        self.exp.write(result_name)
+
     def compute_carrying_next2food_with_svm(self):
         name_result = 'carrying_next2food_from_svm'
 
@@ -301,34 +321,19 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                xscale='log', yscale='log', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_first_attachment_time_of_outside_ant(self):
-        result_name = 'first_attachment_time_of_outside_ant'
-        carrying_name = 'outside_ant_carrying_intervals'
-        self.exp.load(carrying_name)
-
-        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
-                                 category='FoodCarrying', label='First attachment time of a outside ant',
-                                 description='First attachment time of an ant coming from outside')
-
-        def compute_first_attachment4each_exp(df):
-            id_exp = df.index.get_level_values(id_exp_name)[0]
-            frames = df.index.get_level_values(id_frame_name)
-
-            min_time = int(frames.min())
-            self.exp.change_value(result_name, id_exp, min_time)
-
-        self.exp.get_df(carrying_name).groupby(id_exp_name).apply(compute_first_attachment4each_exp)
-        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
-        self.exp.write(result_name)
-
-    def compute_food_phi_evol(self, redo=False):
-        name = 'food_phi'
+    def compute_food_direction_error_evol_around_first_attachment(self, redo=False):
+        name = 'food_direction_error'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
-        result_name = 'food_phi_hist_evol'
+        result_name = name+'_hist_evol_around_first_attachment'
 
-        dtheta = np.pi/12.
-        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
-        frame_intervals = np.arange(-2, 6, 1)*60*100
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        frame_intervals = np.arange(-2, 5., 1)*60*100
+
+        result_label = 'Food direction error histogram evolution over time'
+        result_description = 'Evolution over time of the histogram of food error direction,negative times (s)' \
+                             ' correspond to periods before the first attachment of an outside ant'
+        category = 'FoodCarrying'
 
         if redo:
             self.exp.load([name, first_attachment_name])
@@ -343,12 +348,11 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
             self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
 
+            self.exp.operation(name, lambda x: np.abs(x))
+
             self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name,  category='FoodCarrying',
-                                           label='Food phi histogram evolution over time',
-                                           description='Evolution overtime of the histogram of the angular coordinate '
-                                                       'of the food trajectory, negative times (s) correspond '
-                                                       'to periods before the first attachment of an outside ant')
+                                           result_name=result_name, category=category,
+                                           label=result_label, description=result_description)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
@@ -359,16 +363,23 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', label_suffix=' s')
-        plotter.save(fig, suffix='_non_norm')
+        plotter.save(fig, suffix='non_norm')
 
     def compute_autocorrelation_food_phi(self, redo=False):
 
         name = 'food_phi'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
-        result_name = 'autocorrelation_food_phi'
+        result_name = 'autocorrelation_'+name
         number_name = 'number'
-        self.exp.load('fps')
+        category = 'FoodCarrying'
 
+        result_label = 'Food phi auto-correlation evolution over time'
+
+        result_description = 'Auto-correlation of the angular coordinate of the food trajectory ' \
+                             'at several intervals before and after the first  attachment' \
+                             ' of an ant coming from outside, lags are in second'
+
+        self.exp.load('fps')
         fps = int(self.exp.fps.df.iloc[0])
         if int(np.sum(self.exp.fps.df != fps)) == 0:
 
@@ -378,42 +389,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             result_index_values = range(int(60*fps*dt)+1)
 
             if redo:
-                self.exp.load([name, first_attachment_name])
-
-                self.exp.add_new_empty_dataset(name=result_name, index_name='lag', column_names=time_intervals[:-1],
-                                               index_values=result_index_values, fill_value=0, category='FoodCarrying',
-                                               label='Food phi auto-correlation evolution over time',
-                                               description='Auto-correlation of the angular coordinate'
-                                                           ' of the food trajectory at several intervals'
-                                                           ' before and after the first attachment'
-                                                           ' of an ant coming from outside, lags are in second')
-
-                self.exp.add_new_empty_dataset(name=number_name, index_name='lag', column_names=time_intervals[:-1],
-                                               index_values=result_index_values, fill_value=0)
-
-                for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
-                    print(id_exp)
-                    food_phi = self.exp.get_df(name).loc[id_exp, :]
-                    first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
-                    for i in range(len(frame_intervals) - 1):
-                        frame0 = frame_intervals[i] + first_attachment_time
-                        frame1 = frame_intervals[i + 1] + first_attachment_time
-                        food_phi_temp = food_phi.loc[frame0:frame1]
-                        if len(food_phi_temp) != 0:
-                            food_phi_temp.loc[:, name] = auto_corr(food_phi_temp)
-                            food_phi_temp = food_phi_temp.iloc[:int(len(food_phi_temp)*0.9), :]
-                            frame_index = food_phi_temp.index.get_level_values(id_frame_name)
-                            frame_index = frame_index - frame_index[0]
-                            food_phi_temp.index = frame_index
-                            self.exp.get_df(result_name).loc[frame_index, time_intervals[i]]\
-                                += food_phi_temp.loc[frame_index, name]
-                            self.exp.get_df(number_name).loc[frame_index, time_intervals[i]] += 1.
-
-                self.exp.get_data_object(result_name).df /= self.exp.get_df(number_name)
-                self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(3)
-                self.exp.get_df(result_name).index = self.exp.get_index(result_name)/fps
-
-                self.exp.write(result_name)
+                self.__compute_autocorrelation(category, first_attachment_name, fps, frame_intervals, name, number_name,
+                                               result_description, result_index_values, result_label, result_name,
+                                               time_intervals)
 
             else:
                 self.exp.load(result_name)
@@ -429,10 +407,82 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         else:
             raise ValueError('fps not all the same')
 
-    def compute_food_phi_entropy_evol_after_first_attachment(self, redo=False):
+    def compute_autocorrelation_food_velocity_phi(self, redo=False):
 
-        food_phi_name = 'food_phi'
-        result_name = 'food_phi_entropy_evol_after_first_attachment'
+        name = 'food_velocity_phi'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = 'autocorrelation_'+name
+        number_name = 'number'
+        category = 'FoodCarrying'
+
+        result_label = 'Food velocity phi auto-correlation evolution over time'
+
+        result_description = 'Auto-correlation of the angular coordinate of the velocity of the food trajectory ' \
+                             'at several intervals before and after the first  attachment' \
+                             ' of an ant coming from outside, lags are in second'
+
+        self.exp.load('fps')
+        fps = int(self.exp.fps.df.iloc[0])
+        if int(np.sum(self.exp.fps.df != fps)) == 0:
+
+            dt = 0.5
+            time_intervals = np.around(np.arange(-0.5, 2+2*dt, dt), 1)
+            frame_intervals = np.array(time_intervals*fps*60, dtype=int)
+            result_index_values = range(int(60*fps*dt)+1)
+
+            if redo:
+                self.__compute_autocorrelation(category, first_attachment_name, fps, frame_intervals, name, number_name,
+                                               result_description, result_index_values, result_label, result_name,
+                                               time_intervals)
+
+            else:
+                self.exp.load(result_name)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+            fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', marker=None, label_suffix=' min')
+            # ax.set_xlim((0, 25))
+            ax.set_ylim((-0.25, 0.25))
+            ax.axhline(0, ls='--', c='k')
+            ax.set_xticks(np.arange(0, 25, 5))
+            ax.grid()
+            plotter.save(fig)
+        else:
+            raise ValueError('fps not all the same')
+
+    def __compute_autocorrelation(self, category, first_attachment_name, fps, frame_intervals, name, number_name,
+                                  result_description, result_index_values, result_label, result_name, time_intervals):
+        self.exp.load([name, first_attachment_name])
+        self.exp.add_new_empty_dataset(name=result_name, index_name='lag', column_names=time_intervals[:-1],
+                                       index_values=result_index_values, fill_value=0, category=category,
+                                       label=result_label, description=result_description)
+        self.exp.add_new_empty_dataset(name=number_name, index_name='lag', column_names=time_intervals[:-1],
+                                       index_values=result_index_values, fill_value=0)
+        for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+            print(id_exp)
+            food_phi = self.exp.get_df(name).loc[id_exp, :]
+            first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+            for i in range(len(frame_intervals) - 1):
+                frame0 = frame_intervals[i] + first_attachment_time
+                frame1 = frame_intervals[i + 1] + first_attachment_time
+                food_phi_temp = food_phi.loc[frame0:frame1]
+                if len(food_phi_temp) != 0:
+                    food_phi_temp.loc[:, name] = auto_corr(food_phi_temp)
+                    food_phi_temp = food_phi_temp.iloc[:int(len(food_phi_temp) * 0.9), :]
+                    frame_index = food_phi_temp.index.get_level_values(id_frame_name)
+                    frame_index = frame_index - frame_index[0]
+                    food_phi_temp.index = frame_index
+                    self.exp.get_df(result_name).loc[frame_index, time_intervals[i]] \
+                        += food_phi_temp.loc[frame_index, name]
+                    self.exp.get_df(number_name).loc[frame_index, time_intervals[i]] += 1.
+        self.exp.get_data_object(result_name).df /= self.exp.get_df(number_name)
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(3)
+        self.exp.get_df(result_name).index = self.exp.get_index(result_name) / fps
+        self.exp.write(result_name)
+
+    def compute_food_direction_error_entropy_evol_after_first_attachment(self, redo=False):
+
+        error_name = 'mm1s_food_direction_error'
+        result_name = 'food_direction_error_entropy_evol_after_first_attachment'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
 
         dtheta = np.pi / 12.
@@ -441,9 +491,17 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         frame_intervals = np.around(np.arange(-2, 7, dt) * 60 * 100)
         max_entropy = np.log(2*np.pi*len(bins))
 
-        self.__compute_entropy_evol(bins, 'FoodCarrying', first_attachment_name, food_phi_name, frame_intervals, redo,
-                                    'Entropy of the angular coordinate distribution ', 'Food phi entropy over time',
-                                    result_name)
+        result_description = 'Entropy of the food direction error distribution over time before and after the first '\
+                             'attachment of an ant coming from outside, negative times (s) correspond to periods '\
+                             'before the first attachment of an outside ant'
+
+        self.__compute_entropy_evol(bins=bins, category='FoodCarrying',
+                                    first_attachment_name=first_attachment_name, error_name=error_name,
+                                    frame_intervals=frame_intervals,
+                                    redo=redo,
+                                    result_description=result_description,
+                                    result_label='Food direction error entropy over time',
+                                    result_name=result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel='time (s)')
@@ -454,39 +512,29 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         ax.legend(loc=0)
         plotter.save(fig)
 
-        self.exp.operation(result_name, lambda x: max_entropy-x)
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='time (s)')
-        ax.set_xticks(range(-120, 8*60, 60))
-        ax.grid()
-        ax.axhline(max_entropy, ls='--', c='k', label='Max. entropy')
-        ax.axvline(0, ls='--', c='k', label='t = 0')
-        ax.legend(loc=0)
-        plotter.save(fig, suffix='(info)')
+    def compute_food_direction_error_entropy_evol_per_exp(self, redo=False):
 
-    def compute_food_phi_entropy_evol_per_exp(self, redo=False):
-
-        food_phi_name = 'food_phi'
+        error_name = 'mm1s_food_direction_error'
         attachment_name = 'outside_ant_carrying_intervals'
-        result_name = 'food_phi_entropy_evol_per_exp'
+        result_name = 'food_direction_error_entropy_evol_per_exp'
         category = 'FoodCarrying'
 
-        result_label = 'Food phi entropy over time'
-        result_description = 'Entropy of the angular coordinate distribution of the food trajectory ' \
+        result_label = 'Food direction_error over time'
+        result_description = 'Entropy of the food direction error tower the food ' \
                              'over time before and after the first attachment of an ant coming from outside, ' \
                              'negative times (s) correspond to periods before the first attachment of an outside ant'
 
         dtheta = np.pi / 8.
         bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
-        dt = 500
+        dt = 3000
         frame_intervals = range(0, 10*60*100, dt)
 
-        self.__compute_entropy_evol_per_exp(bins, category, food_phi_name, frame_intervals, redo, result_description,
+        self.__compute_entropy_evol_per_exp(bins, category, error_name, frame_intervals, redo, result_description,
                                             result_label, result_name)
 
-        self.exp.load([food_phi_name, attachment_name])
+        self.exp.load([error_name, attachment_name])
         for id_exp in self.exp.id_exp_list:
-            food_phi = self.exp.get_df(food_phi_name).loc[id_exp, :]
+            food_phi = self.exp.get_df(error_name).loc[id_exp, :]
             frames = food_phi.index.get_level_values(id_frame_name)
             frame0 = int(frames.min())
 
@@ -622,24 +670,24 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         ax.legend(loc=0)
         plotter.save(fig)
 
-    def __compute_entropy_evol(self, bins, category, first_attachment_name, food_phi_name, frame_intervals, redo,
+    def __compute_entropy_evol(self, bins, category, first_attachment_name, error_name, frame_intervals, redo,
                                result_description, result_label, result_name):
         if redo:
 
-            self.exp.load([food_phi_name, first_attachment_name])
+            self.exp.load([error_name, first_attachment_name])
 
             new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=food_phi_name, copy_name=new_times)
+            self.exp.add_copy1d(name_to_copy=error_name, copy_name=new_times)
             self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(
                 id_frame_name)
             self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda x, y: x - y)
             self.exp.get_df(new_times).reset_index(inplace=True)
 
-            self.exp.get_df(food_phi_name).reset_index(inplace=True)
-            self.exp.get_df(food_phi_name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(food_phi_name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.get_df(error_name).reset_index(inplace=True)
+            self.exp.get_df(error_name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(error_name).set_index([id_exp_name, id_frame_name], inplace=True)
 
-            food_phi_hist_name = self.exp.hist1d_time_evolution(name_to_hist=food_phi_name,
+            food_phi_hist_name = self.exp.hist1d_time_evolution(name_to_hist=error_name,
                                                                 frame_intervals=frame_intervals, bins=bins)
 
             self.exp.get_data_object(food_phi_hist_name).df /= np.sum(self.exp.get_df(food_phi_hist_name))

@@ -1,6 +1,6 @@
 from DataStructure.DataManager.Deleters.CharacteristicTimeSeriesDeleter import CharacteristicTimeSeries1dDeleter
 from DataStructure.DataManager.Deleters.AntCharacteristicsDeleter import AntCharacteristics1dDeleter
-from DataStructure.DataManager.Deleters.CharacteristicsDeleter import Characteristics1dDeleter
+from DataStructure.DataManager.Deleters.CharacteristicsDeleter import CharacteristicsDeleter
 from DataStructure.DataManager.Deleters.DataSetDeleter import DataSetDeleter
 from DataStructure.DataManager.Deleters.DefinitionDeleter import DefinitionDeleter
 from DataStructure.DataManager.Deleters.EventsDeleter import Events1dDeleter, Events2dDeleter
@@ -14,7 +14,7 @@ class DataDeleter:
         self.timeseries1d_deleter = TimeSeriesDeleter(root, group)
         self.events1d_deleter = Events1dDeleter(root, group)
         self.events2d_deleter = Events2dDeleter(root, group)
-        self.characteristics1d_deleter = Characteristics1dDeleter(root, group)
+        self.characteristics_deleter = CharacteristicsDeleter(root, group)
         self.ant_characteristics1d_deleter = AntCharacteristics1dDeleter(root, group)
         self.characteristic_timeseries1d_deleter = CharacteristicTimeSeries1dDeleter(root, group)
         self.dataset_deleter = DataSetDeleter(root, group)
@@ -26,8 +26,8 @@ class DataDeleter:
             self.events1d_deleter.delete(obj)
         elif obj.object_type == 'Events2d':
             self.events2d_deleter.delete(obj)
-        elif obj.object_type == 'Characteristics1d':
-            self.characteristics1d_deleter.delete(obj)
+        elif obj.object_type in ['Characteristics1d', 'Characteristics2d']:
+            self.characteristics_deleter.delete(obj)
         elif obj.object_type == 'AntCharacteristics1d':
             self.ant_characteristics1d_deleter.delete(obj)
         elif obj.object_type == 'CharacteristicTimeSeries1d':
@@ -35,5 +35,5 @@ class DataDeleter:
         elif obj.object_type == dataset_name:
             self.dataset_deleter.delete(obj)
         else:
-            raise ValueError(obj.name + ' has no defined object type')
+            raise ValueError(obj.name + ' has no defined object type: '+obj.object_type)
         self.definition_deleter.delete(obj.definition)
