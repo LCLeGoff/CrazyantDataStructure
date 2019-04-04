@@ -12,31 +12,40 @@ class DataWriter:
     def __init__(self, root, group):
         self.definition_writer = DefinitionWriter(root, group)
         self.timeseries1d_writer = TimeSeriesWriter(root, group)
+
         self.events1d_writer = Events1dWriter(root, group)
         self.events2d_writer = Events2dWriter(root, group)
+
         self.characteristics1d_writer = Characteristics1dWriter(root, group)
         self.characteristics2d_writer = Characteristics2dWriter(root, group)
+
         self.ant_characteristics1d_writer = AntCharacteristics1dWriter(root, group)
         self.characteristic_timeseries1d_writer = CharacteristicTimeSeries1dWriter(root, group)
+
         self.dataset_writer = DataSetWriter(root, group)
 
     def write(self, obj):
         if obj.object_type == 'TimeSeries1d':
             self.timeseries1d_writer.write(obj)
-        elif obj.object_type == 'Events1d':
+
+        elif obj.object_type in ['Events1d', 'CharacteristicEvents1d']:
             self.events1d_writer.write(obj)
-        elif obj.object_type == 'Events2d':
+        elif obj.object_type in ['Events2d', 'CharacteristicEvents2d']:
             self.events2d_writer.write(obj)
+
         elif obj.object_type == 'Characteristics1d':
             self.characteristics1d_writer.write(obj)
         elif obj.object_type == 'Characteristics2d':
             self.characteristics2d_writer.write(obj)
+
         elif obj.object_type == 'AntCharacteristics1d':
             self.ant_characteristics1d_writer.write(obj)
+
         elif obj.object_type == 'CharacteristicTimeSeries1d':
             self.characteristic_timeseries1d_writer.write(obj)
         elif obj.object_type == 'CharacteristicTimeSeries1d':
             self.characteristic_timeseries1d_writer.write(obj)
+
         elif obj.object_type == dataset_name:
             self.dataset_writer.write(obj)
         else:
