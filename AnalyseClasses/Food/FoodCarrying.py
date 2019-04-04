@@ -452,10 +452,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def __compute_autocorrelation(self, category, first_attachment_name, fps, frame_intervals, name, number_name,
                                   result_description, result_index_values, result_label, result_name, time_intervals):
         self.exp.load([name, first_attachment_name])
-        self.exp.add_new_empty_dataset(name=result_name, index_name='lag', column_names=time_intervals[:-1],
+        self.exp.add_new_empty_dataset(name=result_name, index_names='lag', column_names=time_intervals[:-1],
                                        index_values=result_index_values, fill_value=0, category=category,
                                        label=result_label, description=result_description)
-        self.exp.add_new_empty_dataset(name=number_name, index_name='lag', column_names=time_intervals[:-1],
+        self.exp.add_new_empty_dataset(name=number_name, index_names='lag', column_names=time_intervals[:-1],
                                        index_values=result_index_values, fill_value=0)
         for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
             print(id_exp)
@@ -478,6 +478,95 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(3)
         self.exp.get_df(result_name).index = self.exp.get_index(result_name) / fps
         self.exp.write(result_name)
+
+    def __compute_autocorrelation_indiv(self, name, result_name, first_attachment_name, category, fps, dt,
+                                        frame_intervals, time_intervals, result_label, result_description, redo):
+
+        if redo:
+            lag_list = range(0, int(60 * fps * dt) + 1, 10)
+            result_index_values = np.array([(id_exp, lag) for id_exp in self.exp.id_exp_list for lag in lag_list])
+
+            self.exp.load([name, first_attachment_name])
+            self.exp.add_new_empty_dataset(name=result_name, index_names=[id_exp_name, 'lag'],
+                                           column_names=time_intervals[:-1], index_values=result_index_values,
+                                           category=category, label=result_label, description=result_description)
+
+            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+                print(id_exp)
+
+                data_df = self.exp.get_df(name).loc[id_exp, :]
+                first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+
+                for i in range(len(frame_intervals) - 1):
+                    frame0 = frame_intervals[i] + first_attachment_time
+                    frame1 = frame_intervals[i + 1] + first_attachment_time
+
+                    df_temp = data_df.loc[frame0:frame1]
+                    if len(df_temp) != 0:
+                        df_temp = df_temp.apply(auto_corr)
+                        df_temp = df_temp.iloc[:int(len(df_temp) * 0.95), :]
+
+                        frame_index = df_temp.index.get_level_values(id_frame_name)
+                        frame_index -= frame_index[0]
+                        df_temp.index = frame_index
+                        df_temp = df_temp.reindex(lag_list)
+
+                        index_slice = pd.IndexSlice[id_exp, :]
+                        self.exp.get_df(result_name).loc[index_slice, time_intervals[i]] = np.array(df_temp)
+
+            self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(3)
+
+            id_exp_index = np.array(self.exp.get_index_level_value(result_name, id_exp_name))
+            lag_index = np.array(self.exp.get_index_level_value(result_name, 'lag'))/fps
+            df_index = pd.MultiIndex.from_tuples(list(zip(id_exp_index, lag_index)), names=[id_exp_name, 'lag'])
+
+            self.exp.get_df(result_name).index = df_index
+            self.exp.write(result_name)
+
+        else:
+            self.exp.load(result_name)
+
+    def compute_autocorrelation_food_velocity_phi_indiv(self, redo=False):
+
+        name = 'food_velocity_phi'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = 'autocorrelation_'+name+'_indiv'
+        category = 'FoodCarrying'
+
+        result_label = 'Food velocity phi auto-correlation evolution over time'
+
+        result_description = 'Auto-correlation of the angular coordinate of the velocity of the food trajectory ' \
+                             'at several intervals before and after the first  attachment' \
+                             ' of an ant coming from outside, lags are in second'
+
+        self.exp.load('fps')
+        fps = int(self.exp.fps.df.iloc[0])
+        if int(np.sum(self.exp.fps.df != fps)) == 0:
+
+            dt = 0.5
+            time_intervals = np.around(np.arange(-0.5, 2+2*dt, dt), 1)
+            frame_intervals = np.array(time_intervals*fps*60, dtype=int)
+
+            self.__compute_autocorrelation_indiv(
+                name=name, result_name=result_name, first_attachment_name=first_attachment_name, category=category,
+                fps=fps, dt=dt, frame_intervals=frame_intervals, time_intervals=time_intervals,
+                result_label=result_label, result_description=result_description, redo=redo)
+
+            def plot_autocorrelation4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                df2 = df.set_index('lag')
+
+                self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+
+                fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', marker=None, label_suffix=' min')
+                ax.axhline(0, ls='--', c='k')
+                ax.grid()
+                plotter.save(fig, name=id_exp, sub_folder=result_name)
+
+            self.exp.groupby(result_name, id_exp_name, plot_autocorrelation4each_group)
+        else:
+            raise ValueError('fps not all the same')
 
     def compute_food_direction_error_entropy_evol_after_first_attachment(self, redo=False):
 
@@ -603,7 +692,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         if redo:
 
             self.exp.load(food_phi_name)
-            self.exp.add_new_empty_dataset(name=result_name, index_name='theta', column_names=self.exp.id_exp_list,
+            self.exp.add_new_empty_dataset(name=result_name, index_names='theta', column_names=self.exp.id_exp_list,
                                            index_values=np.array(frame_intervals) / 100, category=category,
                                            label=result_label,
                                            description=result_description)
@@ -695,7 +784,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
             times = np.array(self.exp.get_columns(food_phi_hist_name), dtype=float)
 
-            self.exp.add_new_empty_dataset(name=result_name, index_name='theta', column_names='entropy',
+            self.exp.add_new_empty_dataset(name=result_name, index_names='theta', column_names='entropy',
                                            index_values=times, category=category,
                                            label=result_label, description=result_description)
 
