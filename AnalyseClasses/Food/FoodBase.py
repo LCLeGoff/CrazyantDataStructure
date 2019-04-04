@@ -62,13 +62,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
             self.exp.write(hist_name)
 
-        elif redo_hist is True:
-            self.exp.load(result_name)
-            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
-            self.exp.write(hist_name)
-
-        else:
-            self.exp.load(hist_name)
+        self.compute_hist(name=result_name, bins=bins, hist_name=hist_name,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
@@ -164,7 +159,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-        hist_name = self.compute_hist(result_name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel='distance (mm)', ylabel='PDF', normed=True)

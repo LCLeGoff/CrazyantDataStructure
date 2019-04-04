@@ -273,7 +273,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
                           hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
@@ -297,7 +297,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             )
             self.exp.write(result_name)
 
-        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
                           hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
@@ -321,7 +321,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             )
             self.exp.write(result_name)
 
-        self.compute_hist(hist_name=hist_name, result_name=result_name, bins=bins,
+        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
                           hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
