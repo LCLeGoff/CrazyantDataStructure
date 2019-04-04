@@ -98,6 +98,9 @@ class ExperimentGroups:
     def get_index(self, name):
         return self.get_df(name).index
 
+    def get_index_level_value(self, name, index_name):
+        return self.get_df(name).index.get_level_values(index_name)
+
     def get_index_names(self, name):
         return list(self.get_index(name).names)
 
@@ -109,6 +112,9 @@ class ExperimentGroups:
 
     def change_values(self, name, df):
         self.get_data_object(name).change_values(df)
+
+    def groupby(self, name, index_to_group_with, func):
+        return self.get_df(name).groupby(index_to_group_with).apply(func)
 
     def get_ref_id_exp(self, id_exp):
         return tuple(self.ref_id_exp[self.ref_id_exp[:, 0] == id_exp, 1:][0, :])
@@ -366,6 +372,17 @@ class ExperimentGroups:
             else:
                 raise TypeError(object_type1 + ' can not be gathered in 2d')
 
+    def add_2d_from_2dfs(
+            self, df1, df2, result_name, object_type, xname=None, yname=None,
+            category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
+
+        self.add_new1d_from_df(df1, name='temp1', object_type=object_type)
+        self.add_new1d_from_df(df2, name='temp2', object_type=object_type)
+
+        self.add_2d_from_1ds(name1='temp1', name2='temp2', result_name=result_name,
+                             xname=xname, yname=yname, category=category, label=label,
+                             xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
+
     def add_copy1d(
             self, name_to_copy, copy_name,
             category=None, label=None, description=None, copy_definition=False, replace=False):
@@ -465,18 +482,23 @@ class ExperimentGroups:
         self.add_object(name, obj, replace)
 
     def add_new_empty_dataset(
-            self, name, index_name, column_names, index_values=None, fill_value=np.nan,
+            self, name, index_names, column_names, index_values=None, fill_value=np.nan,
             category=None, label=None, description=None, replace=False):
 
         if index_values is None:
-            df = PandasIndexManager.create_empty_df(index_names=index_name, column_names=column_names)
+            df = PandasIndexManager.create_empty_df(index_names=index_names, column_names=column_names)
         else:
+            index_names = turn_to_list(index_names)
             column_names = turn_to_list(column_names)
-            empty_array = np.zeros((len(index_values), len(column_names)+1), dtype=type(index_values[0]))
-            empty_array[:, 0] = index_values
-            df = pd.DataFrame(empty_array, columns=[index_name]+list(column_names))
-            df.set_index([index_name], inplace=True)
+
+            empty_array = np.zeros((len(index_values), len(column_names)))
+            df = pd.DataFrame(empty_array, columns=column_names)
+
+            indexes = pd.MultiIndex.from_arrays(index_values.T, names=index_names)
+            df.index = indexes
+
             df[:] = fill_value
+
         obj = Builder.build_dataset_from_df(
             df=df, name=name, category=category, label=label, description=description)
         self.add_object(name, obj, replace)

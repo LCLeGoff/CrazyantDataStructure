@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -77,7 +78,7 @@ class Plotter(BasePlotters):
 
     def save(self, fig, name=None, suffix=None, sub_folder=None):
         if self.root is None:
-            raise NameError(self.obj.name+'not properly defined')
+            raise NameError(self.obj.name+' not properly defined')
         else:
             if name is None:
                 name = self.obj.name
@@ -96,3 +97,4 @@ class Plotter(BasePlotters):
             address = self.root + sub_folder + str(name) + suffix + '.png'
             fig.savefig(address)
             fig.clf()
+            plt.close()
