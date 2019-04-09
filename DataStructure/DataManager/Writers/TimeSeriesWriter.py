@@ -13,5 +13,13 @@ class TimeSeriesWriter:
         else:
             add = self.root + ts.category + '/TimeSeries.csv'
             df = pd.read_csv(add, index_col=[id_exp_name, id_ant_name, id_frame_name])
-            df[ts.name] = ts.df
-            df.to_csv(add)
+            type_is_int64 = True
+            for index_name in df.index.names:
+                type_is_int64 *= df.index.get_level_values(index_name).dtype == 'int64'
+
+            if type_is_int64:
+
+                df[ts.name] = ts.df
+                df.to_csv(add)
+            else:
+                raise TypeError('Index are not int')

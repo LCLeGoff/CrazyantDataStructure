@@ -8,12 +8,15 @@ from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments,
 
 
 class Plotter(BasePlotters):
-    def __init__(self, root, obj, column_name=None, **kwargs):
+    def __init__(self, root, obj, column_name=None, category=None, **kwargs):
 
-        if obj.category is not None:
-            self.root = root+obj.category+'/Plots/'
+        if obj.category is None:
+            if category is None:
+                self.root = None
+            else:
+                self.root = root+category+'/Plots/'
         else:
-            self.root = None
+            self.root = root+obj.category+'/Plots/'
 
         self.column_name = column_name
 
@@ -30,12 +33,18 @@ class Plotter(BasePlotters):
         self.arg_tools.change_arg_value('axis', kwargs)
 
     def plot(
-            self, normed=False, title=None, title_prefix=None, label_suffix=None,
+            self, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
             preplot=None, figsize=None, **kwargs):
         if label_suffix is None:
             label_suffix = ''
         else:
             label_suffix = ' '+label_suffix
+
+        if label is None:
+            if self.obj.get_dimension() == 1 or self.column_name is not None:
+                label = self.obj.label
+            else:
+                label = [str(column_name) + label_suffix for column_name in self.obj.get_column_names()]
 
         self.arg_tools.change_arg_value('line', kwargs)
         self.arg_tools.change_arg_value('axis', kwargs)
@@ -48,22 +57,23 @@ class Plotter(BasePlotters):
 
         if self.obj.get_dimension() == 1:
             y = self.__get_y(self.obj.get_array(), normed, x)
-            ax.plot(x, y, label=self.obj.label, **self.line)
+            ax.plot(x, y, label=label, **self.line)
         else:
             if self.column_name is None:
 
                 colors = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
-                for column_name in self.obj.get_column_names():
+
+                for i, column_name in enumerate(self.obj.get_column_names()):
                     y = self.__get_y(self.obj.df[column_name], normed, x)
                     self.line['c'] = colors[str(column_name)]
                     self.line['markeredgecolor'] = colors[str(column_name)]
-                    ax.plot(x, y, label=str(column_name) + label_suffix, **self.line)
+                    ax.plot(x, y, label=label[i], **self.line)
                 ax.legend(loc=0)
             else:
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
                 y = self.__get_y(self.obj.df[self.column_name], normed, x)
-                ax.plot(x, y, label=self.obj.label, **self.line)
+                ax.plot(x, y, label=label, **self.line)
 
         return fig, ax
 

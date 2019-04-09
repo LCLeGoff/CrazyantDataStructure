@@ -25,6 +25,7 @@ class DataWriter:
         self.dataset_writer = DataSetWriter(root, group)
 
     def write(self, obj):
+
         if obj.object_type == 'TimeSeries1d':
             self.timeseries1d_writer.write(obj)
 
@@ -41,8 +42,6 @@ class DataWriter:
         elif obj.object_type == 'AntCharacteristics1d':
             self.ant_characteristics1d_writer.write(obj)
 
-        elif obj.object_type == 'CharacteristicTimeSeries1d':
-            self.characteristic_timeseries1d_writer.write(obj)
         elif obj.object_type == 'CharacteristicTimeSeries1d':
             self.characteristic_timeseries1d_writer.write(obj)
 

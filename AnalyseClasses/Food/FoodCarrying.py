@@ -1,12 +1,15 @@
 import numpy as np
 import pandas as pd
+
 from cv2 import cv2
 from sklearn import svm
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import auto_corr, get_entropy
+from Tools.MiscellaneousTools.ArrayManipulation import auto_corr, get_entropy, get_interval_containing, \
+    get_index_interval_containing
 from Tools.Plotter.Plotter import Plotter
+from Tools.Plotter.ColorObject import ColorObject
 
 
 class AnalyseFoodCarrying(AnalyseClassDecorator):
@@ -456,7 +459,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                        index_values=result_index_values, fill_value=0, category=category,
                                        label=result_label, description=result_description)
         self.exp.add_new_empty_dataset(name=number_name, index_names='lag', column_names=time_intervals[:-1],
-                                       index_values=result_index_values, fill_value=0)
+                                       index_values=result_index_values, fill_value=0, replace=True)
         for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
             print(id_exp)
             food_phi = self.exp.get_df(name).loc[id_exp, :]
@@ -567,82 +570,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.groupby(result_name, id_exp_name, plot_autocorrelation4each_group)
         else:
             raise ValueError('fps not all the same')
-
-    def compute_food_direction_error_entropy_evol_after_first_attachment(self, redo=False):
-
-        error_name = 'mm1s_food_direction_error'
-        result_name = 'food_direction_error_entropy_evol_after_first_attachment'
-        first_attachment_name = 'first_attachment_time_of_outside_ant'
-
-        dtheta = np.pi / 12.
-        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
-        dt = 0.25
-        frame_intervals = np.around(np.arange(-2, 7, dt) * 60 * 100)
-        max_entropy = np.log(2*np.pi*len(bins))
-
-        result_description = 'Entropy of the food direction error distribution over time before and after the first '\
-                             'attachment of an ant coming from outside, negative times (s) correspond to periods '\
-                             'before the first attachment of an outside ant'
-
-        self.__compute_entropy_evol(bins=bins, category='FoodCarrying',
-                                    first_attachment_name=first_attachment_name, error_name=error_name,
-                                    frame_intervals=frame_intervals,
-                                    redo=redo,
-                                    result_description=result_description,
-                                    result_label='Food direction error entropy over time',
-                                    result_name=result_name)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='time (s)')
-        ax.set_xticks(range(-120, 8*60, 60))
-        ax.grid()
-        ax.axhline(max_entropy, ls='--', c='k', label='Max. entropy')
-        ax.axvline(0, ls='--', c='k', label='t = 0')
-        ax.legend(loc=0)
-        plotter.save(fig)
-
-    def compute_food_direction_error_entropy_evol_per_exp(self, redo=False):
-
-        error_name = 'mm1s_food_direction_error'
-        attachment_name = 'outside_ant_carrying_intervals'
-        result_name = 'food_direction_error_entropy_evol_per_exp'
-        category = 'FoodCarrying'
-
-        result_label = 'Food direction_error over time'
-        result_description = 'Entropy of the food direction error tower the food ' \
-                             'over time before and after the first attachment of an ant coming from outside, ' \
-                             'negative times (s) correspond to periods before the first attachment of an outside ant'
-
-        dtheta = np.pi / 8.
-        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
-        dt = 3000
-        frame_intervals = range(0, 10*60*100, dt)
-
-        self.__compute_entropy_evol_per_exp(bins, category, error_name, frame_intervals, redo, result_description,
-                                            result_label, result_name)
-
-        self.exp.load([error_name, attachment_name])
-        for id_exp in self.exp.id_exp_list:
-            food_phi = self.exp.get_df(error_name).loc[id_exp, :]
-            frames = food_phi.index.get_level_values(id_frame_name)
-            frame0 = int(frames.min())
-
-            attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
-            attachments.reset_index(inplace=True)
-            attachments = np.array(attachments)
-
-            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=id_exp)
-            fig, ax = plotter.create_plot(figsize=(6, 4))
-
-            # colors = plotter.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
-            # for id_ant, frame, inter in attachments:
-            #     ax.axvline((frame-frame0)/100, c=colors[str(id_ant)], alpha=0.5)
-
-            ax.plot(np.array((frames-frame0)/100.), food_phi)
-            plotter.plot(preplot=(fig, ax), figsize=(6, 4), xlabel='time (s)', ylabel='entropy')
-
-            ax.legend(loc=1)
-            plotter.save(fig, sub_folder=plotter.obj.name, name=id_exp)
 
     def compute_food_phi_speed_entropy_evol_per_exp(self, redo=False):
 
@@ -796,3 +723,509 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         else:
             self.exp.load(result_name)
+
+    def compute_mm30s_dotproduct_food_velocity_exit_vs_food_velocity_vector_length(self):
+        time = 30
+        vel_length_name = 'mm'+str(time)+'s_food_velocity_vector_length'
+        dotproduct_name = 'mm'+str(time)+'s_dotproduct_food_velocity_exit'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        self.exp.load([vel_length_name, dotproduct_name, first_attachment_name])
+        category = 'FoodCarrying'
+
+        result_name = 'information_trajectory'
+
+        dt = 1.
+        frame_intervals = np.around(np.arange(-2, 4, dt) * 60 * 100)
+        colors = ColorObject.create_cmap('jet', frame_intervals[:-1])
+
+        def plot2d(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            if id_exp >= 0:
+
+                vel = df.loc[id_exp, :]
+                dot_prod = self.exp.get_df(dotproduct_name).loc[id_exp, :]
+                first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+
+                vel.index = vel.index.get_level_values(id_frame_name) - first_attachment_time
+                dot_prod.index = dot_prod.index.get_level_values(id_frame_name) - first_attachment_time
+
+                # vel /= vel.max()
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(first_attachment_name))
+                fig, ax = plotter.create_plot()
+                for frame0, frame1 in zip(frame_intervals[:-1], frame_intervals[1:]):
+
+                    vel2 = vel.loc[frame0:frame1]
+                    dot_prod2 = dot_prod.loc[frame0:frame1]
+                    dot_prod2.index = np.array(vel2).ravel()
+
+                    self.exp.add_new_dataset_from_df(dot_prod2, name=id_exp, category=category, replace=True)
+
+                    plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(id_exp))
+                    fig, ax = plotter.plot(
+                        xlabel='Velocity', ylabel='Dot product', c=colors[str(frame0)],
+                        title_prefix='Exp ' + str(id_exp), preplot=(fig, ax),
+                        label=r'$t\in$['+str(int(frame0/6000))+','+str(int(frame1/6000))+'[ min',
+                        ls='', markeredgecolor=colors[str(frame0)])
+
+                # ax.set_xlim((-0.05, 1.05))
+                ax.set_ylim((-1.05, 1.05))
+                ax.grid()
+                ax.legend()
+                plotter.save(fig, name=id_exp, sub_folder=result_name)
+
+        self.exp.groupby(vel_length_name, id_exp_name, plot2d)
+
+    def compute_mm30s_food_direction_error_vs_food_velocity_vector_length(self):
+        time = 30
+        vel_length_name = 'mm'+str(time)+'s_food_velocity_vector_length'
+        error_name = 'mm'+str(time)+'s_food_direction_error'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        self.exp.load([vel_length_name, error_name, first_attachment_name])
+        category = 'FoodCarrying'
+
+        result_name = 'information_trajectory2'
+
+        dt = 1.
+        frame_intervals = np.around(np.arange(-2, 4, dt) * 60 * 100)
+        colors = ColorObject.create_cmap('jet', frame_intervals[:-1])
+
+        def plot2d(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            if id_exp >= 0:
+
+                vel = df.loc[id_exp, :]
+                error = self.exp.get_df(error_name).loc[id_exp, :]
+                first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+
+                vel.index = vel.index.get_level_values(id_frame_name) - first_attachment_time
+                error.index = error.index.get_level_values(id_frame_name) - first_attachment_time
+
+                # vel /= vel.max()
+                error = error.abs()
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(first_attachment_name))
+                fig, ax = plotter.create_plot()
+                for frame0, frame1 in zip(frame_intervals[:-1], frame_intervals[1:]):
+
+                    vel2 = vel.loc[frame0:frame1]
+                    error2 = error.loc[frame0:frame1]
+                    error2.index = np.array(vel2).ravel()
+
+                    self.exp.add_new_dataset_from_df(error2, name=id_exp, category=category, replace=True)
+
+                    plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(id_exp))
+                    fig, ax = plotter.plot(
+                        xlabel='Velocity', ylabel='Direction error', c=colors[str(frame0)],
+                        title_prefix='Exp ' + str(id_exp), preplot=(fig, ax),
+                        label=r'$t\in$['+str(int(frame0/6000))+','+str(int(frame1/6000))+'[ min',
+                        ls='', markeredgecolor=colors[str(frame0)])
+
+                # ax.set_xlim((-0.05, 1.05))
+                ax.set_ylim((0, np.pi))
+                ax.set_yticks(np.arange(0, np.pi+0.1, np.pi/4.))
+                ax.grid()
+                ax.legend()
+                plotter.save(fig, name=id_exp, sub_folder=result_name)
+
+        self.exp.groupby(vel_length_name, id_exp_name, plot2d)
+
+    def compute_information_trajectory_around_attachment(self):
+        time = 30
+        vel_length_name = 'mm'+str(time)+'s_food_velocity_vector_length'
+        error_name = 'mm'+str(time)+'s_food_direction_error'
+        attachment_name = 'outside_ant_carrying_intervals'
+        self.exp.load([vel_length_name, error_name, attachment_name])
+        category = 'FoodCarrying'
+
+        result_name = 'information_trajectory2_around_attachment'
+
+        dt = np.array([-1, 5]) * 100
+
+        def plot2d(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            print(id_exp)
+
+            vel = df.loc[id_exp, :]
+            attachment = self.exp.get_df(attachment_name).loc[id_exp, :]
+            error = self.exp.get_df(error_name).loc[id_exp, :]
+
+            error = error.abs()
+            attachment_frames = np.array(attachment.index.get_level_values(id_frame_name))
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(attachment_name), category=category)
+            fig, ax = plotter.create_plot()
+            ax.plot(vel, error, c='w')
+
+            for frame in attachment_frames:
+                if frame in vel.index:
+                    frame0 = frame+dt[0]
+                    frame1 = frame+dt[1]
+
+                    vel2 = vel.loc[frame0:frame1]
+                    error2 = error.loc[frame0:frame1]
+                    ax.plot(vel2, error2, c='blue')
+                    ax.plot(vel2.loc[frame], error2.loc[frame], 'o', c='k')
+
+            ax.set_xlabel('Velocity')
+            ax.set_ylabel('Direction error')
+            ax.set_ylim((0, np.pi))
+            ax.set_yticks(np.arange(0, np.pi+0.1, np.pi/4.))
+            ax.grid()
+            plotter.save(fig, name=id_exp, sub_folder=result_name)
+
+        self.exp.groupby(vel_length_name, id_exp_name, plot2d)
+
+    def compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_first_attachment(self, redo=False):
+        result_name = 'w30s_entropy_mm1s_food_velocity_phi_evol_around_first_attachment'
+        category = 'FoodCarrying'
+
+        if redo:
+            entropy_name = 'w30s_entropy_mm1s_food_velocity_phi_indiv_evol'
+            vel_name = 'mm1s_food_velocity_phi'
+            first_attachment_name = 'first_attachment_time_of_outside_ant'
+            self.exp.load([entropy_name, first_attachment_name, vel_name, 'fps'])
+
+            index_values = list(self.exp.get_index(entropy_name))
+            index_values = list(set(list(-np.array(index_values[::-1])) + index_values))
+            index_values.sort()
+
+            self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names='entropy', fill_value=0,
+                                           index_values=index_values, category=category,
+                                           label='Evolution of the entropy of the food velocity phi',
+                                           description='Time evolution of the entropy of the distribution'
+                                                       ' of the angular coordinate'
+                                                       ' of food velocity for each experiment')
+
+            self.exp.add_new_empty_dataset(name='number', index_names='time', column_names='entropy', fill_value=0,
+                                           index_values=index_values, replace=True)
+
+            def compute_entropy4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+
+                first_attachment_time = self.exp.get_value(first_attachment_name, id_exp)
+                first_frame = int(df.index.get_level_values(id_frame_name).min())
+                fps = self.exp.get_value('fps', id_exp)
+
+                f0 = (first_attachment_time-first_frame)/fps
+                f0 = get_interval_containing(f0, index_values)
+
+                df_res = self.exp.get_df(entropy_name).loc[:, str(id_exp)]
+                df_res.dropna(0, inplace=True)
+                df_res.index -= f0
+
+                self.exp.get_df(result_name).loc[df_res.index, 'entropy'] += df_res
+                self.exp.get_df('number').loc[df_res.index, 'entropy'] += 1
+
+            self.exp.groupby(vel_name, id_exp_name, compute_entropy4each_group)
+
+            self.exp.get_data_object(result_name).df /= self.exp.get_df('number')
+            self.exp.get_df(result_name).dropna(inplace=True)
+
+            self.exp.write(result_name)
+
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Entropy average')
+        ax.grid()
+        ax.set_xticks(range(-120, 400, 60))
+        ax.axvline(0, ls='--', c='k')
+        ax.set_ylim((2, 3.8))
+        plotter.save(fig)
+
+    def compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_outside_ant_attachments(self, redo=False):
+        # ToDo: Finish this
+
+        result_name = 'w30s_entropy_mm1s_food_velocity_phi_evol_around_outside_ant_attachments'
+        category = 'FoodCarrying'
+
+        if redo:
+            entropy_name = 'w30s_entropy_mm1s_food_velocity_phi_indiv_evol'
+            vel_name = 'mm1s_food_velocity_phi'
+            attachment_name = 'outside_ant_carrying_intervals'
+            self.exp.load([entropy_name, attachment_name, vel_name, 'fps'])
+
+            index_values = list(self.exp.get_index(entropy_name))
+            index_values = list(set(list(-np.array(index_values[::-1])) + index_values))
+            index_values.sort()
+
+            self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names='entropy', fill_value=0,
+                                           index_values=index_values, category=category,
+                                           label='Evolution of the entropy of the food velocity phi',
+                                           description='Mean of the entropy of the distribution of the angular '
+                                                       'coordinate of food velocity for time periods around times,'
+                                                       ' where ants coming from outside attached to the ood')
+
+            self.exp.add_new_empty_dataset(name='number', index_names='time', column_names='entropy', fill_value=0,
+                                           index_values=index_values, replace=True)
+
+            def compute_entropy4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                frame = df.index.get_level_values(id_frame_name)[0]
+                print((id_exp, frame))
+
+                vel = self.exp.get_df(vel_name).loc[id_exp, :]
+                first_frame = int(vel.index.get_level_values(id_frame_name).min())
+                fps = self.exp.get_value('fps', id_exp)
+
+                f0 = (frame-first_frame)/fps
+                f0 = get_interval_containing(f0, index_values)
+
+                df_res = self.exp.get_df(entropy_name).loc[:, str(id_exp)]
+                df_res.dropna(0, inplace=True)
+                df_res.index -= f0
+
+                self.exp.get_df(result_name).loc[df_res.index, 'entropy'] += df_res
+                self.exp.get_df('number').loc[df_res.index, 'entropy'] += 1
+
+            self.exp.groupby(attachment_name, [id_exp_name, id_frame_name], compute_entropy4each_group)
+
+            self.exp.get_data_object(result_name).df /= self.exp.get_df('number')
+            self.exp.get_df(result_name).dropna(inplace=True)
+
+            self.exp.write(result_name)
+
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Entropy average')
+        ax.grid()
+        ax.set_xticks(range(-120, 400, 60))
+        ax.axvline(0, ls='--', c='k')
+        ax.set_ylim((2, 3.8))
+        plotter.save(fig)
+
+    def compute_mean_food_direction_error_around_outside_ant_attachments(self, redo=False):
+        result_name = 'mean_food_direction_error_around_outside_ant_attachments'
+        variable_name = 'mm30s_food_direction_error'
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        column_name = ['average', '0', 'pi/8', 'pi/4', '3pi/8', 'pi/2', '5pi/8', '3pi/4', '7pi/8']
+        val_intervals = np.arange(0, np.pi, np.pi / 8.)
+
+        result_label = 'Food direction error mean around outside ant attachments'
+        result_description = 'Mean of the food direction error during a time interval around a time an ant coming '\
+                             'from outside attached to the food'
+        category = 'FoodCarrying'
+
+        self.__compute_mean_variable_around_attachments(result_name, variable_name, column_name, val_intervals,
+                                                        attachment_name, category, result_label,
+                                                        result_description, redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(marker='')
+        ax.axvline(0, ls='--', c='k')
+        plotter.save(fig)
+
+        fig, ax = plotter.plot(marker='')
+        ax.axvline(0, ls='--', c='k')
+        ax.set_xlim(-20, 20)
+        plotter.save(fig, suffix='_zoom')
+
+    def compute_mean_food_velocity_vector_length_around_outside_ant_attachments(self, redo=False):
+        variable_name = 'mm30s_food_velocity_vector_length'
+        attachment_name = 'outside_ant_carrying_intervals'
+        result_name = 'mean_food_velocity_vector_length_around_outside_ant_attachments'
+
+        val_intervals = range(0, 6)
+        column_name = ['average']+[str(val) for val in val_intervals]
+
+        result_label = 'Food velocity vector length mean around outside ant attachments'
+        result_description = 'Mean of the food velocity vector length during a time interval around a time' \
+                             ' an ant coming from outside attached to the food'
+        category = 'FoodCarrying'
+
+        self.__compute_mean_variable_around_attachments(result_name, variable_name, column_name, val_intervals,
+                                                        attachment_name, category, result_label,
+                                                        result_description, redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(marker='')
+        ax.axvline(0, ls='--', c='k')
+        plotter.save(fig)
+
+        fig, ax = plotter.plot(marker='')
+        ax.axvline(0, ls='--', c='k')
+        ax.set_xlim(-20, 20)
+        plotter.save(fig, suffix='_zoom')
+
+    def __compute_mean_variable_around_attachments(self, result_name, variable_name, column_name, val_intervals,
+                                                   attachment_name, category, result_label, result_description, redo):
+        if redo:
+            self.exp.load([variable_name, attachment_name, 'fps'])
+            dt = 0.5
+            times = np.arange(-60, 60 + dt, dt)
+            self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names=column_name,
+                                           index_values=times, fill_value=0, category=category,
+                                           label=result_label,
+                                           description=result_description)
+            self.exp.add_new_empty_dataset(name='number', index_names='time', column_names=column_name,
+                                           index_values=times, fill_value=0, replace=True)
+
+            def compute_average4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                frame = df.index.get_level_values(id_frame_name)[0]
+
+                print(id_exp, frame)
+                fps = int(self.exp.get_value('fps', id_exp))
+
+                df2 = self.exp.get_df(variable_name).loc[id_exp, :].abs()
+
+                if frame in df2.index:
+                    error0 = float(np.abs(self.exp.get_value(variable_name, (id_exp, frame))))
+
+                    frame0 = int(frame + times[0] * fps)
+                    frame1 = int(frame + times[-1] * fps)
+
+                    var_df = df2.loc[frame0:frame1]
+                    var_df.index -= frame
+                    var_df.index /= fps
+                    var_df = var_df.reindex(times)
+                    var_df.dropna(inplace=True)
+
+                    self.exp.get_df(result_name).loc[var_df.index, column_name[0]] += var_df[variable_name]
+                    self.exp.get_df('number').loc[var_df.index, column_name[0]] += 1
+
+                    i = get_index_interval_containing(error0, val_intervals)
+                    self.exp.get_df(result_name).loc[var_df.index, column_name[i]] += var_df[variable_name]
+                    self.exp.get_df('number').loc[var_df.index, column_name[i]] += 1
+
+            self.exp.groupby(attachment_name, [id_exp_name, id_frame_name], compute_average4each_group)
+
+            self.exp.get_data_object(result_name).df /= self.exp.get_df('number')
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+    def compute_mean_food_velocity_vector_length_vs_food_direction_error_around_outside_attachments(self, redo=False):
+        vel_name = 'mm30s_food_velocity_vector_length'
+        error_name = 'mm30s_food_direction_error'
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        res_vel_name = 'mean_food_velocity_vector_length_vs_direction_error_around_outside_attachments_X'
+        res_error_name = 'mean_food_velocity_vector_length_vs_direction_error_around_outside_attachments_Y'
+
+        vel_intervals = [0, 2]
+        error_intervals = np.around(np.arange(0, np.pi, np.pi / 2.), 3)
+        dt = 1
+        times = np.around(np.arange(-60, 60 + dt, dt), 1)
+        index_values = np.array([(vel, error) for vel in vel_intervals for error in error_intervals])
+        index_names = ['food_velocity_vector_length', 'food_direction_error']
+
+        result_label_x = 'Food velocity vector length vs direction error around outside attachments (X)'
+        result_description_x = 'X coordinates for the plot food velocity vector length' \
+                               ' vs direction error around outside attachments'
+        result_label_y = 'Food velocity vector length vs direction error around outside attachments (Y)'
+        result_description_y = 'Y coordinates for the plot food velocity vector length' \
+                               ' vs direction error around outside attachments)'
+        category = 'FoodCarrying'
+
+        if redo:
+            self.exp.load([vel_name, error_name, attachment_name, 'fps'])
+
+            self.exp.add_new_empty_dataset(name=res_vel_name,
+                                           index_names=index_names,
+                                           column_names=times, index_values=index_values, fill_value=0, replace=True,
+                                           category=category, label=result_label_x, description=result_description_x)
+
+            self.exp.add_new_empty_dataset(name=res_error_name,
+                                           index_names=index_names,
+                                           column_names=times, index_values=index_values, fill_value=0, replace=True,
+                                           category=category, label=result_label_y, description=result_description_y)
+
+            self.exp.add_new_empty_dataset(name='number',
+                                           index_names=index_names,
+                                           column_names=times, index_values=index_values, fill_value=0, replace=True)
+
+            def compute_average4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                frame = df.index.get_level_values(id_frame_name)[0]
+
+                print(id_exp, frame)
+                fps = int(self.exp.get_value('fps', id_exp))
+
+                df_vel = self.exp.get_df(vel_name).loc[id_exp, :].abs()
+                df_error = self.exp.get_df(error_name).loc[id_exp, :].abs()
+
+                if frame in df_vel.index:
+                    error0 = float(np.abs(self.exp.get_value(error_name, (id_exp, frame))))
+                    vel0 = float(np.abs(self.exp.get_value(vel_name, (id_exp, frame))))
+
+                    frame0 = int(frame + times[0] * fps)
+                    frame1 = int(frame + times[-1] * fps)
+
+                    df_vel2 = df_vel.loc[frame0:frame1]
+                    df_vel2.index -= frame
+                    df_vel2.index /= fps
+                    df_vel2 = df_vel2.reindex(times)
+                    df_vel2.dropna(inplace=True)
+
+                    df_error2 = df_error.loc[frame0:frame1]
+                    df_error2.index -= frame
+                    df_error2.index /= fps
+                    df_error2 = df_error2.reindex(times)
+                    df_error2.dropna(inplace=True)
+
+                    i_error = get_interval_containing(error0, error_intervals)
+                    i_vel = get_interval_containing(vel0, vel_intervals)
+
+                    self.exp.get_df(res_vel_name).loc[(i_vel, i_error), df_vel2.index] += df_vel2[vel_name]
+                    self.exp.get_df(res_error_name).loc[(i_vel, i_error), df_vel2.index] += df_error2[error_name]
+
+                    self.exp.get_df('number').loc[(i_vel, i_error), df_vel2.index] += 1
+
+            self.exp.groupby(attachment_name, [id_exp_name, id_frame_name], compute_average4each_group)
+
+            self.exp.get_data_object(res_vel_name).df /= self.exp.get_df('number')
+            self.exp.get_data_object(res_error_name).df /= self.exp.get_df('number')
+
+            self.exp.get_data_object(res_vel_name).df = np.around(self.exp.get_data_object(res_vel_name).df, 3)
+            self.exp.get_data_object(res_error_name).df = np.around(self.exp.get_data_object(res_error_name).df, 3)
+
+            self.exp.write([res_vel_name, res_error_name])
+        else:
+            self.exp.load([res_vel_name, res_error_name])
+
+            # ToDo: Manage dataset with 2d indexes
+            self.exp.get_df(res_vel_name).reset_index(inplace=True)
+            self.exp.get_df(res_vel_name).set_index(index_names, inplace=True)
+
+            self.exp.get_df(res_error_name).reset_index(inplace=True)
+            self.exp.get_df(res_error_name).set_index(index_names, inplace=True)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(res_vel_name))
+        fig, ax = plotter.create_plot()
+        colors = ColorObject.create_cmap('jet', self.exp.get_index(res_vel_name))
+        for vel, error in self.exp.get_index(res_vel_name):
+
+            c = colors[str((vel, error))]
+
+            df2 = pd.DataFrame(np.array(self.exp.get_df(res_error_name).loc[(vel, error), :'0']),
+                               index=np.array(self.exp.get_df(res_vel_name).loc[(vel, error), :'0']),
+                               columns=['y'])
+            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+            fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', label_suffix=' min', marker='.', ls='',
+                                   preplot=(fig, ax), c=c, markeredgecolor='w')
+
+            df2 = pd.DataFrame(np.array(self.exp.get_df(res_error_name).loc[(vel, error), '0':]),
+                               index=np.array(self.exp.get_df(res_vel_name).loc[(vel, error), '0':]),
+                               columns=['y'])
+            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+            fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', label_suffix=' min', marker='.', ls='',
+                                   preplot=(fig, ax), c=c, markeredgecolor='k')
+
+            ax.plot(self.exp.get_df(res_vel_name).loc[(vel, error), '0'],
+                    self.exp.get_df(res_error_name).loc[(vel, error), '0'], 'o', c=c)
+
+        ax.set_xlim((0, 8))
+        ax.set_ylim((0, np.pi))
+        ax.set_xticks(vel_intervals)
+        ax.set_yticks(error_intervals)
+        ax.grid()
+        plotter.save(fig, name='mean_food_velocity_vector_length_vs_food_direction_error_around_outside_attachments')

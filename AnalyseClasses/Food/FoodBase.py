@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
+from Tools.MiscellaneousTools.ArrayManipulation import get_entropy
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, angle, dot2d_df, \
     distance_between_point_and_line_df, distance_df
 from Tools.Plotter.Plotter import Plotter
@@ -235,9 +235,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         category = 'FoodBase'
 
         result_velocity_phi_name = 'food_velocity_phi'
-
         result_velocity_x_name = 'food_velocity_x'
         result_velocity_y_name = 'food_velocity_y'
+
         hist_name = result_velocity_phi_name+'_hist'
         dtheta = np.pi/25.
         bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
@@ -327,7 +327,6 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = 'food_direction_error'
         category = 'FoodBase'
 
-        hist_name = result_name+'_hist'
         dtheta = np.pi/25.
         bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
 
@@ -347,11 +346,13 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        else:
+            self.exp.load(result_name)
 
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi_{error}$', ylabel='PDF', normed=True)
-        plotter.save(fig)
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        plotter2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig2, ax2 = plotter2.plot(xlabel='Food direction error', ylabel='PDF', normed=True)
+        plotter2.save(fig2)
 
     def compute_food_direction_error_evol(self, redo=False):
         name = 'food_direction_error'
@@ -380,54 +381,111 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
 
-    def compute_mm1s_food_direction_error(self):
+    def compute_mm1s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
+
         name = 'food_direction_error'
-        category = 'FoodBase'
+        result_name = 'mm1s_' + name
+        food_exit_angle_name = 'mm1s_food_exit_angle'
+        vel_name = 'mm1s_food_velocity'
         time_window = 100
+        category = 'FoodBase'
+        self.__compute_food_direction_error(result_name, category, food_exit_angle_name, vel_name,
+                                            time_window, redo, redo_hist, redo_plot_indiv)
 
-        self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm1s_'+name, category=category)
+    def compute_mm10s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 
-        self.exp.write('mm1s_'+name)
+        name = 'food_direction_error'
+        result_name = 'mm10s_' + name
+        food_exit_angle_name = 'mm10s_food_exit_angle'
+        vel_name = 'mm10s_food_velocity'
+        time_window = 1000
+        category = 'FoodBase'
+        self.__compute_food_direction_error(result_name, category, food_exit_angle_name, vel_name,
+                                            time_window, redo, redo_hist, redo_plot_indiv)
 
-    def compute_distance2food(self):
-        name = 'distance2food'
-        print(name)
-        self.exp.load(['food_x', 'food_y', 'x', 'y'])
+    def compute_mm30s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 
-        id_exps = self.exp.x.df.index.get_level_values(id_exp_name)
-        id_ants = self.exp.x.df.index.get_level_values(id_ant_name)
-        frames = self.exp.x.df.index.get_level_values(id_frame_name)
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+        name = 'food_direction_error'
+        result_name = 'mm30s_' + name
+        food_exit_angle_name = 'mm30s_food_exit_angle'
+        vel_name = 'mm30s_food_velocity'
+        time_window = 3000
+        category = 'FoodBase'
+        self.__compute_food_direction_error(result_name, category, food_exit_angle_name, vel_name,
+                                            time_window, redo, redo_hist, redo_plot_indiv)
 
-        self.exp.add_2d_from_1ds(
-            name1='food_x', name2='food_y', result_name='food_xy',
-            xname='x', yname='y'
-        )
+    def __compute_food_direction_error(self, result_name, category, food_exit_angle_name, vel_name, time_window,
+                                       redo, redo_hist, redo_plot_indiv):
+        dtheta = np.pi / 12.
+        bins = np.around(np.arange(-np.pi + dtheta / 2., np.pi + dtheta, dtheta), 3)
+        result_label = 'Food direction error'
+        result_description = 'Angle between the food-exit angle and the angular coordinate of the food trajectory, ' \
+                             'both angles are smoothed by a moving mean of window '+str(time_window)+' frames'
 
-        df_d = self.__reindexing_food_xy(id_ants, idxs)
-        df_d = self.__compute_distance_from_food(df_d)
+        if redo:
+            vel_name_x = vel_name+'_x'
+            vel_name_y = vel_name+'_y'
+            self.exp.load([food_exit_angle_name, vel_name_x, vel_name_y])
 
-        self.exp.add_new1d_from_df(
-            df=df_d, name=name, object_type='TimeSeries1d',
-            category='FoodBase', label='Food to distance', description='Distance between the food and the ants'
-        )
-        self.exp.write(name)
+            vel = pd.DataFrame(index=self.exp.get_index(vel_name_x))
+            vel['x'] = self.exp.get_df(vel_name_x)
+            vel['y'] = self.exp.get_df(vel_name_y)
 
-    def __reindexing_food_xy(self, id_ants, idxs):
-        df_d = self.exp.food_xy.df.copy()
-        df_d = df_d.reindex(idxs)
-        df_d[id_ant_name] = id_ants
-        df_d.reset_index(inplace=True)
-        df_d.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
-        df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
-        return df_d
+            vel_phi = angle_df(vel)
 
-    def __compute_distance_from_food(self, df_f):
-        df_d = np.around(np.sqrt((df_f.x - self.exp.x.df.x) ** 2 + (df_f.y - self.exp.y.df.y) ** 2), 3)
-        df_d = pd.DataFrame(df_d)
-        return df_d
+            tab = self.exp.get_df(food_exit_angle_name)[food_exit_angle_name] - vel_phi
+
+            self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
+                                label=result_label, description=result_description)
+
+            self.exp.change_values(result_name, np.around(tab, 3))
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        if redo or redo_plot_indiv:
+            attachment_name = 'outside_ant_carrying_intervals'
+            self.exp.load(['fps', attachment_name])
+
+            def plot4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                fps = self.exp.get_value('fps', id_exp)
+                df2 = df.loc[id_exp, :]
+                df2.index = df2.index / fps
+
+                self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Food direction error', marker='')
+
+                # self.exp.add_new_dataset_from_df(df=np.cos(df2), name='temp', category=category, replace=True)
+                #
+                # plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+                # fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Food direction error', marker='', preplot=(fig, ax), c='red')
+
+                attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
+                attachments.reset_index(inplace=True)
+                attachments = np.array(attachments)
+
+                colors = plotter.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
+                for id_ant, frame, inter in attachments:
+                    ax.axvline(frame / fps, c=colors[str(id_ant)], alpha=0.5)
+
+                ax.grid()
+                ax.axhline(0, c='k', label='y=0')
+                ax.axhline(np.pi / 2., c='k', ls=':', label='|y|=0.5')
+                ax.axhline(-np.pi / 2., c='k', ls=':')
+                ax.legend(loc=0)
+                ax.set_ylim((-np.pi, np.pi))
+                plotter.save(fig, name=id_exp, sub_folder=result_name)
+
+            self.exp.groupby(result_name, id_exp_name, plot4each_group)
+
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        plotter2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig2, ax2 = plotter2.plot(xlabel='Food direction error', ylabel='PDF', normed=True)
+        plotter2.save(fig2)
 
     def compute_mm10_distance2food(self):
         name = 'distance2food'
@@ -533,6 +591,17 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                normed=True, label_suffix='s', marker='', lw=1)
         ax.set_xlim((0, 80))
         plotter.save(fig)
+
+    def compute_mm1s_food_velocity_phi(self):
+        name = 'food_velocity_phi'
+        category = 'FoodBase'
+        time_window = 100
+
+        self.exp.load(name)
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
+                                                  result_name='mm1s_' + name, category=category)
+
+        self.exp.write('mm1s_' + name)
 
     def compute_mm1s_food_velocity_vector(self):
         name = 'food_velocity'
@@ -649,6 +718,15 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='length (mm)', ylabel='PDF', normed=True)
         plotter.save(fig)
 
+        df_m = self.exp.groupby(result_name, id_exp_name, lambda x: np.max(x))
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name) / df_m
+        self.compute_hist(name=result_name, bins=np.arange(0, 1.1, 0.05), hist_name='temp',
+                          redo=True, redo_hist=True, write=False)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+        fig, ax = plotter.plot(xlabel='length (mm)', ylabel='PDF', normed=True)
+        plotter.save(fig, name=hist_name, suffix='norm')
+
     def compute_mm60s_food_velocity_vector_length(self, redo=False, redo_hist=False, redo_plot_indiv=False):
 
         time = '60'
@@ -682,7 +760,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 # self.exp.get_data_object('temp').df = self.exp.get_df('temp') / m
 
                 plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
-                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Vector length')
+                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Vector length', marke='')
                 # ax.set_ylim((0, 1))
 
                 attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
@@ -716,7 +794,6 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
                 lengths = np.sqrt(x.loc[:, name_x] ** 2 + y.loc[:, name_y] ** 2)
                 self.exp.get_df(result_name).loc[id_exp, :] = np.around(lengths, 3)
-                return lengths
 
             self.exp.groupby(result_name, id_exp_name, compute_length4each_group)
             self.exp.write(result_name)
@@ -725,15 +802,28 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
     def __compute_indiv_dotproduct_food_velocity_exit(self, category, redo, result_name, time):
         if redo:
-            vel_name_x = 'mm' + time + 's_food_velocity_x'
-            vel_name_y = 'mm' + time + 's_food_velocity_y'
-            angle_food_exit_name = 'mm' + time + 's_food_exit_angle'
-            self.exp.load([vel_name_x, vel_name_y, angle_food_exit_name])
+            if time is None:
 
-            self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
-                                label='Dot product between food velocity and food-exit vector',
-                                description='Dot product between the food-exit vector and food velocity vector '
-                                            'smoothed by a moving mean of window' + time + ' seconds')
+                vel_name_x = 'food_velocity_x'
+                vel_name_y = 'food_velocity_y'
+                angle_food_exit_name = 'food_exit_angle'
+                self.exp.load([vel_name_x, vel_name_y, angle_food_exit_name])
+
+                self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
+                                    label='Dot product between food velocity and food-exit vector',
+                                    description='Dot product between the food-exit vector and food velocity vector')
+
+            else:
+
+                vel_name_x = 'mm' + time + 's_food_velocity_x'
+                vel_name_y = 'mm' + time + 's_food_velocity_y'
+                angle_food_exit_name = 'mm' + time + 's_food_exit_angle'
+                self.exp.load([vel_name_x, vel_name_y, angle_food_exit_name])
+
+                self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
+                                    label='Dot product between food velocity and food-exit vector',
+                                    description='Dot product between the food-exit vector and food velocity vector '
+                                                'smoothed by a moving mean of window' + time + ' seconds')
 
             def compute_length4each_group(df: pd.DataFrame):
                 id_exp = df.index.get_level_values(id_exp_name)[0]
@@ -750,7 +840,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 food_exit['x'] = np.cos(food_exit_phi)
                 food_exit['y'] = np.sin(food_exit_phi)
 
-                dot_prod = dot2d_df(vel, food_exit)
+                dot_prod = dot2d_df(vel, food_exit)/distance_df(vel)
                 self.exp.get_df(result_name).loc[id_exp, :] = np.around(dot_prod, 3)
 
             self.exp.groupby(result_name, id_exp_name, compute_length4each_group)
@@ -772,7 +862,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 self.exp.add_new_dataset_from_df(df=df3, name='temp', category=category, replace=True)
 
                 plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
-                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Dot product')
+                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Dot product', marker='')
 
                 attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
                 attachments.reset_index(inplace=True)
@@ -784,34 +874,38 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
                 ax.grid()
                 ax.axhline(0, c='k', label='y=0')
-                ax.axhline(2, c='k', ls=':', label='|y|=2')
-                ax.axhline(-2, c='k', ls=':')
-                m = float(df3.max())
-                ax.axhline(m/2, c='k', ls='--', label='|y|=m/2')
-                ax.axhline(-m/2, c='k', ls='--')
+                ax.axhline(0.5, c='k', ls=':', label='|y|=0.5')
+                ax.axhline(-0.5, c='k', ls=':')
                 ax.legend(loc=0)
+                ax.set_ylim((-1.1, 1.1))
                 plotter.save(fig, name=id_exp, sub_folder=result_name)
 
             self.exp.groupby(result_name, id_exp_name, plot4each_group)
+
+    def compute_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):
+
+        result_name = 'dotproduct_food_velocity_exit'
+        category = 'FoodBase'
+
+        self.__compute_indiv_dotproduct_food_velocity_exit(category, redo, result_name)
+        self.__plot_indiv_dotproduct_food_velocity_exit(result_name, category, redo, redo_plot_indiv)
+        self.__plot_hist_dotproduct_vel_exit(result_name, redo, redo_hist)
 
     def compute_mm1s_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):
 
         time = '1'
         result_name = 'mm' + time + 's_dotproduct_food_velocity_exit'
         category = 'FoodBase'
-        bins = np.arange(0, 20, 0.5)
 
         self.__compute_indiv_dotproduct_food_velocity_exit(category, redo, result_name, time)
-
         self.__plot_indiv_dotproduct_food_velocity_exit(result_name, category, redo, redo_plot_indiv)
+        self.__plot_hist_dotproduct_vel_exit(result_name, redo, redo_hist)
 
+    def __plot_hist_dotproduct_vel_exit(self, result_name,  redo, redo_hist):
+        bins = np.arange(-1, 1.1, 0.1)
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
-
-        self.__plot_hist_dotproduct_vel_exit(hist_name)
-
-    def __plot_hist_dotproduct_vel_exit(self, hist_name):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xscale='log', xlabel='Dot product', ylabel='PDF', normed=True)
+        fig, ax = plotter.plot(xlabel='Dot product', ylabel='PDF', normed=True, xlim=(-1.1, 1.1))
         plotter.save(fig)
 
     def compute_mm10s_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):
@@ -819,70 +913,128 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time = '10'
         result_name = 'mm' + time + 's_dotproduct_food_velocity_exit'
         category = 'FoodBase'
-        bins = np.arange(0, 20, 0.5)
 
         self.__compute_indiv_dotproduct_food_velocity_exit(category, redo, result_name, time)
-
         self.__plot_indiv_dotproduct_food_velocity_exit(result_name, category, redo, redo_plot_indiv)
-
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
-
-        self.__plot_hist_dotproduct_vel_exit(hist_name)
+        self.__plot_hist_dotproduct_vel_exit(result_name, redo, redo_hist)
 
     def compute_mm30s_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):
 
         time = '30'
         result_name = 'mm' + time + 's_dotproduct_food_velocity_exit'
         category = 'FoodBase'
-        bins = np.arange(0, 20, 0.5)
 
         self.__compute_indiv_dotproduct_food_velocity_exit(category, redo, result_name, time)
-
         self.__plot_indiv_dotproduct_food_velocity_exit(result_name, category, redo, redo_plot_indiv)
-
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
-
-        self.__plot_hist_dotproduct_vel_exit(hist_name)
+        self.__plot_hist_dotproduct_vel_exit(result_name, redo, redo_hist)
 
     def compute_mm60s_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):
 
         time = '60'
         result_name = 'mm' + time + 's_dotproduct_food_velocity_exit'
         category = 'FoodBase'
-        bins = np.arange(0, 20, 0.5)
 
         self.__compute_indiv_dotproduct_food_velocity_exit(category, redo, result_name, time)
-
         self.__plot_indiv_dotproduct_food_velocity_exit(result_name, category, redo, redo_plot_indiv)
+        self.__plot_hist_dotproduct_vel_exit(result_name, redo, redo_hist)
 
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+    def compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
+        mm = 1
+        w = 30
 
-        self.__plot_hist_dotproduct_vel_exit(hist_name)
+        result_name = 'w'+str(w)+'s_entropy_mm1s_food_velocity_phi_indiv_evol'
+        category = 'FoodBase'
 
-    def compute_mm30s_dotproduct_food_velocity_exit_vs_food_velocity_vector_length(self):
-        time = 30
-        vel_length_name = 'mm'+str(time)+'s_food_velocity_vector_length'
-        dotproduct_name = 'mm'+str(time)+'s_dotproduct_food_velocity_exit'
-        self.exp.load([vel_length_name, dotproduct_name])
+        time_intervals = np.arange(0, 10*60)
+        dtheta = np.pi / 12.
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
 
-        result_name = 'mm30s_dotproduct_food_velocity_exit_vs_food_velocity_vector_length'
+        self.__compute_food_velocity_entropy(w, bins, category, mm, redo, redo_indiv_plot, result_name, time_intervals)
 
-        def plot2d(df: pd.DataFrame):
-            id_exp = df.index.get_level_values(id_exp_name)[0]
-            vel = df.loc[id_exp, :]
-            dot_prod = self.exp.get_df(dotproduct_name).loc[id_exp, :]
+    def compute_w10s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
+        mm = 1
+        w = 10
 
-            dot_prod[dotproduct_name] /= vel[vel_length_name]
-            vel /= vel.max()
+        result_name = 'w'+str(w)+'s_entropy_mm1s_food_velocity_phi_indiv_evol'
+        category = 'FoodBase'
 
-            plt.plot(vel, dot_prod)
-            # plt.axis('equal')
-            plt.grid()
-            plt.ylim((-1, 1))
-            plt.xlim((0, 1))
-            plt.show()
+        time_intervals = np.arange(0, 10*60, 1)
+        dtheta = np.pi / 12.
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
 
-        self.exp.groupby(vel_length_name, id_exp_name, plot2d)
+        self.__compute_food_velocity_entropy(w, bins, category, mm, redo, redo_indiv_plot, result_name, time_intervals)
+
+    def compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
+        mm = 1
+        w = 1
+
+        result_name = 'w'+str(w)+'s_entropy_mm1s_food_velocity_phi_indiv_evol'
+        category = 'FoodBase'
+
+        time_intervals = np.arange(0, 10*60, 1)
+        dtheta = np.pi / 12.
+        bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
+
+        self.__compute_food_velocity_entropy(w, bins, category, mm, redo, redo_indiv_plot, result_name, time_intervals)
+
+    def __compute_food_velocity_entropy(self,
+                                        w, bins, category, mm, redo, redo_indiv_plot, result_name, time_intervals):
+        if redo:
+            vel_phi_name = 'mm' + str(mm) + 's_food_velocity_phi'
+            self.exp.load([vel_phi_name, 'fps'])
+            self.exp.add_new_empty_dataset(name=result_name, index_names='time',
+                                           column_names=self.exp.id_exp_list, index_values=time_intervals,
+                                           category=category, label='Evolution of the entropy of the food velocity phi',
+                                           description='Time evolution of the entropy of the distribution'
+                                                       ' of the angular coordinate'
+                                                       ' of food velocity for each experiment')
+
+            def compute_entropy4each_group(df: pd.DataFrame):
+                exp = df.index.get_level_values(id_exp_name)[0]
+                print(exp)
+                fps0 = self.exp.get_value('fps', exp)
+                frame0 = df.index.get_level_values(id_frame_name).min()
+
+                w0 = w * fps0
+                for time in time_intervals:
+                    f0 = time * fps0 - w0 + frame0
+                    f1 = time * fps0 + w0 + frame0
+
+                    vel = df.loc[pd.IndexSlice[exp, f0:f1], :]
+                    hist = np.histogram(vel, bins, normed=False)
+                    hist = hist[0] / np.sum(hist[0])
+                    if len(vel) != 0:
+                        entropy = np.around(get_entropy(hist), 3)
+                        self.exp.change_value(result_name, (time, exp), entropy)
+
+            self.exp.groupby(vel_phi_name, id_exp_name, compute_entropy4each_group)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        if redo or redo_indiv_plot:
+
+            attachment_name = 'outside_ant_carrying_intervals'
+            self.exp.load(['fps', attachment_name])
+
+            for id_exp in self.exp.get_df(result_name).columns:
+                id_exp = int(id_exp)
+                fps = self.exp.get_value('fps', id_exp)
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=id_exp)
+                fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Entropy',
+                                       title_prefix='Exp ' + str(id_exp) + ': ')
+
+                attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
+                attachments.reset_index(inplace=True)
+                attachments = np.array(attachments)
+
+                colors = plotter.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
+                for id_ant, frame, inter in attachments:
+                    ax.axvline(frame / fps, c=colors[str(id_ant)], alpha=0.5)
+                ax.grid()
+                ax.set_ylim((0.5, 4))
+                plotter.save(fig, name=id_exp, sub_folder=result_name)
 
     def compute_is_xy_next2food(self):
         name = 'is_xy_next2food'
@@ -1181,6 +1333,15 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         self.exp.operation(name, lambda x: np.around(norm_angle_tab2(x), 3))
 
         self.exp.write(name)
+
+    def __reindexing_food_xy(self, id_ants, idxs):
+        df_d = self.exp.food_xy.df.copy()
+        df_d = df_d.reindex(idxs)
+        df_d[id_ant_name] = id_ants
+        df_d.reset_index(inplace=True)
+        df_d.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
+        df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+        return df_d
 
     def compute_mm5_angle_body_food(self):
         name = 'angle_body_food'

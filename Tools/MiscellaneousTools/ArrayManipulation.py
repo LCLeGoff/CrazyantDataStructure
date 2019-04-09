@@ -34,6 +34,18 @@ def get_interval_containing(value, interval_beginnings):
         return interval_beginnings[i]
 
 
+def get_index_interval_containing(value, interval_beginnings):
+    i = 0
+    while i < len(interval_beginnings) and value >= interval_beginnings[i]:
+        i += 1
+
+    i -= 1
+    if i == -1:
+        return None
+    else:
+        return i
+
+
 def auto_corr(tab):
     x = np.array(tab).ravel()
     variance = x.var()

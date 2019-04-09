@@ -494,8 +494,12 @@ class ExperimentGroups:
             empty_array = np.zeros((len(index_values), len(column_names)))
             df = pd.DataFrame(empty_array, columns=column_names)
 
-            indexes = pd.MultiIndex.from_arrays(index_values.T, names=index_names)
+            if len(index_names) == 1:
+                indexes = index_values
+            else:
+                indexes = pd.MultiIndex.from_arrays(np.array(index_values).T)
             df.index = indexes
+            df.index.names = index_names
 
             df[:] = fill_value
 
