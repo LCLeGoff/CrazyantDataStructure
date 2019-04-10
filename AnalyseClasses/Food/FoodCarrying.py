@@ -1000,7 +1000,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_mean_food_direction_error_around_outside_ant_attachments(self, redo=False):
         result_name = 'mean_food_direction_error_around_outside_ant_attachments'
-        variable_name = 'mm30s_food_direction_error'
+        variable_name = 'mm1s_food_direction_error'
         attachment_name = 'outside_ant_carrying_intervals'
 
         column_name = ['average', '0', 'pi/8', 'pi/4', '3pi/8', 'pi/2', '5pi/8', '3pi/4', '7pi/8']
@@ -1026,7 +1026,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.save(fig, suffix='_zoom')
 
     def compute_mean_food_velocity_vector_length_around_outside_ant_attachments(self, redo=False):
-        variable_name = 'mm30s_food_velocity_vector_length'
+        variable_name = 'mm1s_food_velocity_vector_length'
         attachment_name = 'outside_ant_carrying_intervals'
         result_name = 'mean_food_velocity_vector_length_around_outside_ant_attachments'
 
@@ -1043,7 +1043,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                                         result_description, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(marker='')
+        fig, ax = plotter.plot()
         ax.axvline(0, ls='--', c='k')
         plotter.save(fig)
 
@@ -1057,7 +1057,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         if redo:
             self.exp.load([variable_name, attachment_name, 'fps'])
             dt = 0.5
-            times = np.arange(-60, 60 + dt, dt)
+            times = np.arange(-20, 20 + dt, dt)
             self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names=column_name,
                                            index_values=times, fill_value=0, category=category,
                                            label=result_label,
