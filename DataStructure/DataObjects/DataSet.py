@@ -18,7 +18,7 @@ class DataSet(IndexedDataSetDecorator):
         if description is None:
             description = self.description
 
-        self.rename_df(name)
+        definition = DefinitionBuilder().build_dataset(name=name, object_type=dataset_name, category=category,
         definition = DefinitionBuilder().build1d(
             name=name, object_type=dataset_name, category=category, label=label, description=description)
         DefinitionBuilder.add_definition_to_class(self, definition=definition)
