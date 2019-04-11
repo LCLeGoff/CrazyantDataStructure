@@ -96,6 +96,24 @@ class DataFileManager:
             obj, name=name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
+    def rename_category(self, old_name, new_name):
+        if new_name in self.existing_categories:
+            raise NameError(new_name+' category already exists')
+
+        elif old_name not in self.existing_categories:
+            raise NameError(old_name+' category does not exist')
+
+        else:
+
+            definitions = self.data_loader.definition_loader.definition_dict
+            for name in definitions:
+                if definitions[name]['category'] == old_name:
+                    definitions[name]['category'] = new_name
+
+            write_obj_json(self.root+'definition_dict.json', definitions)
+
+            os.rename(self.root + old_name + '/', self.root + new_name + '/')
+
     def delete(self, obj):
         self.data_deleter.delete(obj)
 

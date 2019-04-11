@@ -53,4 +53,5 @@ class DataWriter:
 
         else:
             raise ValueError(obj.name + ' has no defined object type')
+
         self.definition_writer.write(obj.definition)

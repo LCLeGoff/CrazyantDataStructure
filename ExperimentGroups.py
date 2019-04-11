@@ -294,6 +294,9 @@ class ExperimentGroups:
             self.get_data_object(old_name), name=new_name, xname=xname, yname=yname, category=category,
             label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
+    def rename_category(self, old_name, new_name):
+        self.data_manager.rename_category(old_name, new_name)
+
     def rename(
             self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
