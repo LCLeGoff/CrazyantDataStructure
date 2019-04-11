@@ -15,20 +15,20 @@ from Tools.Plotter.ColorObject import ColorObject
 class AnalyseFoodCarrying(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
+        self.category = 'FoodCarrying'
 
     def compute_food_traj_length_around_first_attachment(self):
         before_result_name = 'food_traj_length_before_first_attachment'
         after_result_name = 'food_traj_length_after_first_attachment'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         food_traj_name = 'food_x'
-        category = 'FoodCarrying'
 
         self.exp.load([food_traj_name, first_attachment_name, 'fps'])
-        self.exp.add_new1d_empty(name=before_result_name, object_type='Characteristics1d', category=category,
+        self.exp.add_new1d_empty(name=before_result_name, object_type='Characteristics1d', category=self.category,
                                  label='Food trajectory length before first outside attachment (s)',
                                  description='Length of the trajectory of the food in second '
                                              'before the first ant coming from outside attached to the food')
-        self.exp.add_new1d_empty(name=after_result_name, object_type='Characteristics1d', category=category,
+        self.exp.add_new1d_empty(name=after_result_name, object_type='Characteristics1d', category=self.category,
                                  label='Food trajectory length after first outside attachment (s)',
                                  description='Length of the trajectory of the food in second '
                                              'after the first ant coming from outside attached to the food')
@@ -69,10 +69,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         carrying_name = 'carrying_intervals'
         outside_ant_name = 'from_outside'
         results_name = 'outside_ant_carrying_intervals'
-        category = 'FoodCarrying'
 
         self.exp.load([carrying_name, outside_ant_name])
-        self.exp.add_copy(old_name=carrying_name, new_name=results_name, category=category,
+        self.exp.add_copy(old_name=carrying_name, new_name=results_name, category=self.category,
                           label='Carrying intervals of outside ants',
                           description='Intervals of the carrying periods for the ants coming from outside')
 
@@ -94,7 +93,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.load(carrying_name)
 
         self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
-                                 category='FoodCarrying', label='First attachment time of a outside ant',
+                                 category=self.category, label='First attachment time of a outside ant',
                                  description='First attachment time of an ant coming from outside')
 
         def compute_first_attachment4each_exp(df):
@@ -142,7 +141,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.exp.add_copy(
             old_name=distance_name, new_name=name_result,
-            category='FoodCarrying', label='Is ant carrying?',
+            category=self.category, label='Is ant carrying?',
             description='Boolean giving if ants are carrying or not, for the ants next to the food (compute with svm)'
         )
         self.exp.__dict__[name_result].df = self.exp.get_df(name_result).reindex(df_to_predict.index)
@@ -192,7 +191,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.load([name, 'x'])
 
         self.exp.add_copy(old_name='x', new_name=result_name,
-                          category='FoodCarrying', label='Is ant carrying?',
+                          category=self.category, label='Is ant carrying?',
                           description='Boolean saying if the ant is carrying or not'
                           ' (data from svm closed and opened in terms of morphological transformation)')
 
@@ -205,7 +204,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_carrying(self):
         name = 'carrying_from_svm'
         result_name = 'carrying'
-        category = 'FoodCarrying'
 
         self.exp.load(name)
         dt = 11
@@ -222,7 +220,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         df_smooth = self.exp.get_df(name).groupby([id_exp_name, id_ant_name]).apply(close_and_open4each_group)
 
-        self.exp.add_copy(old_name=name, new_name=result_name, category=category, label='Is ant carrying?',
+        self.exp.add_copy(old_name=name, new_name=result_name, category=self.category, label='Is ant carrying?',
                           description='Boolean giving if ants are carrying or not')
         self.exp.get_data_object(result_name).df = df_smooth
 
@@ -230,7 +228,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_carried_food(self):
         result_name = 'carried_food'
-        category = 'FoodCarrying'
         name = 'carrying'
 
         self.exp.load(name)
@@ -250,7 +247,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         df_res.index = df_res.index.droplevel('frame')
 
         self.exp.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
-                                   category=category, label='Has the ant carried the food?',
+                                   category=self.category, label='Has the ant carried the food?',
                                    description='Boolean saying if the ant has at least once carried the food')
 
         self.exp.write(result_name)
@@ -267,7 +264,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             name = 'carrying'
             self.exp.load(name)
 
-            self.exp.compute_time_intervals(name_to_intervals=name, category='FoodCarrying',
+            self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
                                             result_name=result_name, label='Carrying time intervals',
                                             description='Time intervals during which ants are carrying (s)')
 
@@ -302,7 +299,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.load(name)
             self.exp.get_data_object(name).df = 1-self.exp.get_data_object(name).df
 
-            self.exp.compute_time_intervals(name_to_intervals=name, category='FoodCarrying',
+            self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
                                             result_name=result_name, label='Not carrying time intervals',
                                             description='Time intervals, while an ant is not carrying the food (s)')
 
@@ -336,7 +333,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_label = 'Food direction error histogram evolution over time'
         result_description = 'Evolution over time of the histogram of food error direction,negative times (s)' \
                              ' correspond to periods before the first attachment of an outside ant'
-        category = 'FoodCarrying'
 
         if redo:
             self.exp.load([name, first_attachment_name])
@@ -354,7 +350,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.operation(name, lambda x: np.abs(x))
 
             self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category=category,
+                                           result_name=result_name, category=self.category,
                                            label=result_label, description=result_description)
             self.exp.write(result_name)
         else:
@@ -374,7 +370,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         result_name = 'autocorrelation_'+name
         number_name = 'number'
-        category = 'FoodCarrying'
 
         result_label = 'Food phi auto-correlation evolution over time'
 
@@ -392,9 +387,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             result_index_values = range(int(60*fps*dt)+1)
 
             if redo:
-                self.__compute_autocorrelation(category, first_attachment_name, fps, frame_intervals, name, number_name,
-                                               result_description, result_index_values, result_label, result_name,
-                                               time_intervals)
+                self.__compute_autocorrelation(self.category, first_attachment_name, fps, frame_intervals, name,
+                                               number_name, result_description, result_index_values,
+                                               result_label, result_name, time_intervals)
 
             else:
                 self.exp.load(result_name)
@@ -416,7 +411,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         result_name = 'autocorrelation_'+name
         number_name = 'number'
-        category = 'FoodCarrying'
 
         result_label = 'Food velocity phi auto-correlation evolution over time'
 
@@ -434,9 +428,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             result_index_values = range(int(60*fps*dt)+1)
 
             if redo:
-                self.__compute_autocorrelation(category, first_attachment_name, fps, frame_intervals, name, number_name,
-                                               result_description, result_index_values, result_label, result_name,
-                                               time_intervals)
+                self.__compute_autocorrelation(self.category, first_attachment_name, fps, frame_intervals, name,
+                                               number_name, result_description, result_index_values, result_label,
+                                               result_name, time_intervals)
 
             else:
                 self.exp.load(result_name)
@@ -534,7 +528,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         name = 'food_velocity_phi'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         result_name = 'autocorrelation_'+name+'_indiv'
-        category = 'FoodCarrying'
 
         result_label = 'Food velocity phi auto-correlation evolution over time'
 
@@ -551,7 +544,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             frame_intervals = np.array(time_intervals*fps*60, dtype=int)
 
             self.__compute_autocorrelation_indiv(
-                name=name, result_name=result_name, first_attachment_name=first_attachment_name, category=category,
+                name=name, result_name=result_name, first_attachment_name=first_attachment_name, category=self.category,
                 fps=fps, dt=dt, frame_intervals=frame_intervals, time_intervals=time_intervals,
                 result_label=result_label, result_description=result_description, redo=redo)
 
@@ -559,7 +552,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                 id_exp = df.index.get_level_values(id_exp_name)[0]
                 df2 = df.set_index('lag')
 
-                self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+                self.exp.add_new_dataset_from_df(df=df2, name='temp', category=self.category, replace=True)
                 plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
 
                 fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', marker=None, label_suffix=' min')
@@ -576,7 +569,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         food_phi_name = 'food_phi_speed'
         attachment_name = 'outside_ant_carrying_intervals'
         result_name = food_phi_name+'_entropy_evol_per_exp'
-        category = 'FoodCarrying'
 
         result_label = 'Food phi speed entropy over time'
         result_description = 'Entropy of the speed of the angular coordinate distribution of the food trajectory ' \
@@ -588,8 +580,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         dt = 500
         frame_intervals = range(0, 10 * 60 * 100, dt)
 
-        self.__compute_entropy_evol_per_exp(bins, category, food_phi_name, frame_intervals, redo, result_description,
-                                            result_label, result_name)
+        self.__compute_entropy_evol_per_exp(bins, self.category, food_phi_name, frame_intervals, redo,
+                                            result_description, result_label, result_name)
 
         self.exp.load([food_phi_name, attachment_name])
         for id_exp in self.exp.id_exp_list:
@@ -662,7 +654,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         food_phi_name = 'food_phi_speed'
         result_name = food_phi_name+'_entropy_evol_after_first_attachment'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
-        category = 'FoodCarrying'
 
         result_label = 'Food phi entropy over time'
         result_description = 'Entropy of the angular coordinate distribution of the food trajectory' \
@@ -674,7 +665,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         frame_intervals = np.around(np.arange(-2, 7, dt) * 60 * 100)
         max_entropy = np.log(2*np.pi*len(bins))
 
-        self.__compute_entropy_evol(bins, category, first_attachment_name, food_phi_name, frame_intervals, redo,
+        self.__compute_entropy_evol(bins, self.category, first_attachment_name, food_phi_name, frame_intervals, redo,
                                     result_description, result_label, result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
@@ -730,7 +721,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         dotproduct_name = 'mm'+str(time)+'s_dotproduct_food_velocity_exit'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         self.exp.load([vel_length_name, dotproduct_name, first_attachment_name])
-        category = 'FoodCarrying'
 
         result_name = 'information_trajectory'
 
@@ -759,7 +749,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                     dot_prod2 = dot_prod.loc[frame0:frame1]
                     dot_prod2.index = np.array(vel2).ravel()
 
-                    self.exp.add_new_dataset_from_df(dot_prod2, name=id_exp, category=category, replace=True)
+                    self.exp.add_new_dataset_from_df(dot_prod2, name=id_exp, category=self.category, replace=True)
 
                     plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(id_exp))
                     fig, ax = plotter.plot(
@@ -782,7 +772,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         error_name = 'mm'+str(time)+'s_food_direction_error'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         self.exp.load([vel_length_name, error_name, first_attachment_name])
-        category = 'FoodCarrying'
 
         result_name = 'information_trajectory2'
 
@@ -812,7 +801,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                     error2 = error.loc[frame0:frame1]
                     error2.index = np.array(vel2).ravel()
 
-                    self.exp.add_new_dataset_from_df(error2, name=id_exp, category=category, replace=True)
+                    self.exp.add_new_dataset_from_df(error2, name=id_exp, category=self.category, replace=True)
 
                     plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(id_exp))
                     fig, ax = plotter.plot(
@@ -836,7 +825,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         error_name = 'mm'+str(time)+'s_food_direction_error'
         attachment_name = 'outside_ant_carrying_intervals'
         self.exp.load([vel_length_name, error_name, attachment_name])
-        category = 'FoodCarrying'
 
         result_name = 'information_trajectory2_around_attachment'
 
@@ -853,7 +841,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             error = error.abs()
             attachment_frames = np.array(attachment.index.get_level_values(id_frame_name))
 
-            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(attachment_name), category=category)
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(attachment_name), category=self.category)
             fig, ax = plotter.create_plot()
             ax.plot(vel, error, c='w')
 
@@ -878,7 +866,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_first_attachment(self, redo=False):
         result_name = 'w30s_entropy_mm1s_food_velocity_phi_evol_around_first_attachment'
-        category = 'FoodCarrying'
 
         if redo:
             entropy_name = 'w30s_entropy_mm1s_food_velocity_phi_indiv_evol'
@@ -891,7 +878,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             index_values.sort()
 
             self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names='entropy', fill_value=0,
-                                           index_values=index_values, category=category,
+                                           index_values=index_values, category=self.category,
                                            label='Evolution of the entropy of the food velocity phi',
                                            description='Time evolution of the entropy of the distribution'
                                                        ' of the angular coordinate'
@@ -939,7 +926,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         # ToDo: Finish this
 
         result_name = 'w30s_entropy_mm1s_food_velocity_phi_evol_around_outside_ant_attachments'
-        category = 'FoodCarrying'
 
         if redo:
             entropy_name = 'w30s_entropy_mm1s_food_velocity_phi_indiv_evol'
@@ -952,7 +938,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             index_values.sort()
 
             self.exp.add_new_empty_dataset(name=result_name, index_names='time', column_names='entropy', fill_value=0,
-                                           index_values=index_values, category=category,
+                                           index_values=index_values, category=self.category,
                                            label='Evolution of the entropy of the food velocity phi',
                                            description='Mean of the entropy of the distribution of the angular '
                                                        'coordinate of food velocity for time periods around times,'
@@ -1009,10 +995,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_label = 'Food direction error mean around outside ant attachments'
         result_description = 'Mean of the food direction error during a time interval around a time an ant coming '\
                              'from outside attached to the food'
-        category = 'FoodCarrying'
 
         self.__compute_mean_variable_around_attachments(result_name, variable_name, column_name, val_intervals,
-                                                        attachment_name, category, result_label,
+                                                        attachment_name, self.category, result_label,
                                                         result_description, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
@@ -1036,10 +1021,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_label = 'Food velocity vector length mean around outside ant attachments'
         result_description = 'Mean of the food velocity vector length during a time interval around a time' \
                              ' an ant coming from outside attached to the food'
-        category = 'FoodCarrying'
 
         self.__compute_mean_variable_around_attachments(result_name, variable_name, column_name, val_intervals,
-                                                        attachment_name, category, result_label,
+                                                        attachment_name, self.category, result_label,
                                                         result_description, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
@@ -1122,23 +1106,21 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_label_y = 'Food velocity vector length vs direction error around outside attachments (Y)'
         result_description_y = 'Y coordinates for the plot food velocity vector length' \
                                ' vs direction error around outside attachments)'
-        category = 'FoodCarrying'
 
         if redo:
             self.exp.load([vel_name, error_name, attachment_name, 'fps'])
 
-            self.exp.add_new_empty_dataset(name=res_vel_name,
-                                           index_names=index_names,
+            self.exp.add_new_empty_dataset(name=res_vel_name, index_names=index_names,
                                            column_names=times, index_values=index_values, fill_value=0, replace=True,
-                                           category=category, label=result_label_x, description=result_description_x)
+                                           category=self.category, label=result_label_x,
+                                           description=result_description_x)
 
-            self.exp.add_new_empty_dataset(name=res_error_name,
-                                           index_names=index_names,
+            self.exp.add_new_empty_dataset(name=res_error_name, index_names=index_names,
                                            column_names=times, index_values=index_values, fill_value=0, replace=True,
-                                           category=category, label=result_label_y, description=result_description_y)
+                                           category=self.category, label=result_label_y,
+                                           description=result_description_y)
 
-            self.exp.add_new_empty_dataset(name='number',
-                                           index_names=index_names,
+            self.exp.add_new_empty_dataset(name='number', index_names=index_names,
                                            column_names=times, index_values=index_values, fill_value=0, replace=True)
 
             def compute_average4each_group(df: pd.DataFrame):
@@ -1207,7 +1189,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             df2 = pd.DataFrame(np.array(self.exp.get_df(res_error_name).loc[(vel, error), :'0']),
                                index=np.array(self.exp.get_df(res_vel_name).loc[(vel, error), :'0']),
                                columns=['y'])
-            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=self.category, replace=True)
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
             fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', label_suffix=' min', marker='.', ls='',
                                    preplot=(fig, ax), c=c, markeredgecolor='w')
@@ -1215,7 +1197,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             df2 = pd.DataFrame(np.array(self.exp.get_df(res_error_name).loc[(vel, error), '0':]),
                                index=np.array(self.exp.get_df(res_vel_name).loc[(vel, error), '0':]),
                                columns=['y'])
-            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=category, replace=True)
+            self.exp.add_new_dataset_from_df(df=df2, name='temp', category=self.category, replace=True)
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
             fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', label_suffix=' min', marker='.', ls='',
                                    preplot=(fig, ax), c=c, markeredgecolor='k')

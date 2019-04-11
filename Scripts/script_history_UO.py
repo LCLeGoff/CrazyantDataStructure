@@ -2,6 +2,8 @@ from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
 from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
+from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
+from AnalyseClasses.Food.FoodVelocityEntropy import AnalyseFoodVelocityEntropy
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
 
@@ -29,6 +31,9 @@ AntFood = AnalyseAntFoodRelation(group, exp=Traj.exp)
 FoodBase = AnalyseFoodBase(group, exp=AntFood.exp)
 # FoodBase.compute_food_traj_length()
 
+# FoodBase.compute_food_speed(redo_hist=True)
+# FoodBase.compute_food_speed_evol()
+
 # FoodBase.compute_food_phi(True)
 
 # FoodBase.compute_food_exit_angle()
@@ -40,39 +45,12 @@ FoodBase = AnalyseFoodBase(group, exp=AntFood.exp)
 # FoodBase.compute_food_exit_distance(True)
 # FoodBase.compute_food_exit_distance_evol(True)
 
-# FoodBase.compute_food_velocity(True)
-# FoodBase.compute_food_velocity_phi_evol()
-
-# FoodBase.compute_dotproduct_food_velocity_exit(True)
-# FoodBase.compute_mm1s_dotproduct_food_velocity_exit(True)
-# FoodBase.compute_mm10s_dotproduct_food_velocity_exit(redo_plot_indiv=True)
-# FoodBase.compute_mm30s_dotproduct_food_velocity_exit(redo_plot_indiv=True)
-# FoodBase.compute_mm60s_dotproduct_food_velocity_exit(redo_plot_indiv=True)
-
-# FoodBase.compute_mm1s_food_velocity_phi()
-
-# FoodBase.compute_mm1s_food_velocity_vector()
-# FoodBase.compute_mm10s_food_velocity_vector()
-# FoodBase.compute_mm30s_food_velocity_vector()
-# FoodBase.compute_mm60s_food_velocity_vector()
-
-# FoodBase.compute_mm1s_food_velocity_vector_length(redo=True)
-# FoodBase.compute_mm10s_food_velocity_vector_length(redo_plot_indiv=True)
-# FoodBase.compute_mm30s_food_velocity_vector_length(redo_plot_indiv=True)
-# FoodBase.compute_mm60s_food_velocity_vector_length(redo_plot_indiv=True)
-
-# FoodBase.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-# FoodBase.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-# FoodBase.compute_w10s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-
 # FoodBase.compute_food_direction_error(True)
 # FoodBase.compute_food_direction_error_evol(True)
 # FoodBase.compute_mm1s_food_direction_error(True)
 # FoodBase.compute_mm10s_food_direction_error(True)
 # FoodBase.compute_mm30s_food_direction_error(True)
 
-# FoodBase.compute_food_speed(redo_hist=True)
-# FoodBase.compute_food_speed_evol()
 
 # ToDo: split this category in two
 # FoodBase.compute_mm10_distance2food()
@@ -110,7 +88,30 @@ FoodBase = AnalyseFoodBase(group, exp=AntFood.exp)
 # FoodBase.compute_mm10_angle_body_food_next2food()
 # FoodBase.compute_mm20_angle_body_food_next2food()
 
-Carrying = AnalyseFoodCarrying(group, exp=FoodBase.exp)
+FoodVelocity = AnalyseFoodVelocity(group, exp=FoodBase.exp)
+# FoodVelocity.compute_food_velocity(True)
+# FoodVelocity.compute_food_velocity_phi_evol(True)
+#
+# FoodVelocity.compute_dotproduct_food_velocity_exit(True)
+# FoodVelocity.compute_mm1s_dotproduct_food_velocity_exit(True)
+# FoodVelocity.compute_mm10s_dotproduct_food_velocity_exit(redo_plot_indiv=True)
+# FoodVelocity.compute_mm30s_dotproduct_food_velocity_exit(redo_plot_indiv=True)
+
+# FoodVelocity.compute_mm1s_food_velocity_phi()
+
+# FoodVelocity.compute_mm1s_food_velocity_vector()
+# FoodVelocity.compute_mm10s_food_velocity_vector()
+# FoodVelocity.compute_mm30s_food_velocity_vector()
+
+# FoodVelocity.compute_mm1s_food_velocity_vector_length(redo=True)
+# FoodVelocity.compute_mm10s_food_velocity_vector_length(redo=True)
+# FoodVelocity.compute_mm30s_food_velocity_vector_length(redo_plot_indiv=True)
+
+FoodVelocityEntropy = AnalyseFoodVelocityEntropy(group, exp=FoodBase.exp)
+# FoodVelocityEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+# FoodVelocityEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+
+Carrying = AnalyseFoodCarrying(group, exp=FoodVelocityEntropy.exp)
 # Carrying.compute_food_traj_length_around_first_attachment()
 # Carrying.compute_outside_ant_attachment()
 # Carrying.compute_first_attachment_time_of_outside_ant()
@@ -136,7 +137,7 @@ Carrying = AnalyseFoodCarrying(group, exp=FoodBase.exp)
 # Carrying.compute_information_trajectory_around_attachment()
 
 # Carrying.compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_first_attachment()
-Carrying.compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_outside_ant_attachments(True)
+# Carrying.compute_w30s_entropy_mm1s_food_velocity_phi_evol_around_outside_ant_attachments(True)
 
 # Carrying.compute_mean_food_direction_error_around_outside_ant_attachments(True)
 # Carrying.compute_mean_food_velocity_vector_length_around_outside_ant_attachments(True)

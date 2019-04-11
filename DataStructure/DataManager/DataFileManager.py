@@ -49,6 +49,7 @@ class DataFileManager:
         if category is not None:
             add = self.root + category + '/'
             if not (os.path.isdir(add)):
+                print('Create category '+category)
                 try:
                     os.mkdir(add)
                     os.mkdir(add+'Plots/')
