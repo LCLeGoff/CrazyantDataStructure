@@ -10,7 +10,9 @@ from DataStructure.VariableNames import dataset_name
 
 class DataDeleter:
     def __init__(self, root, group):
+
         self.definition_deleter = DefinitionDeleter(root, group)
+
         self.timeseries1d_deleter = TimeSeriesDeleter(root, group)
 
         self.events1d_deleter = Events1dDeleter(root, group)
@@ -21,6 +23,7 @@ class DataDeleter:
         self.ant_characteristics1d_deleter = AntCharacteristics1dDeleter(root, group)
 
         self.characteristic_timeseries1d_deleter = CharacteristicTimeSeries1dDeleter(root, group)
+
         self.dataset_deleter = DataSetDeleter(root, group)
 
     def delete(self, obj):

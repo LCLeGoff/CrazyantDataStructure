@@ -13,7 +13,9 @@ from DataStructure.VariableNames import dataset_name
 class DataLoader:
     def __init__(self, root, group):
         self.root = root + group + '/'
+
         self.definition_loader = DefinitionLoader(root, group)
+
         self.timeseries1d_loader = TimeSeries1dLoader(root, group)
 
         self.events1d_loader = Events1dLoader(root, group)
@@ -26,12 +28,14 @@ class DataLoader:
         self.characteristics2d_loader = Characteristics2dLoader(root, group)
 
         self.ant_characteristics1d_loader = AntCharacteristics1dLoader(root, group)
+
         self.characteristic_timeseries1d_loader = CharacteristicTimeSeries1dLoader(root, group)
 
         self.dataset_loader = DataSetLoader(root, group)
 
     def load(self, name):
         definition = self.definition_loader.build(name)
+
         if definition.object_type == 'TimeSeries1d':
             res = self.timeseries1d_loader.load(definition)
 
@@ -55,8 +59,10 @@ class DataLoader:
 
         elif definition.object_type == 'CharacteristicTimeSeries1d':
             res = self.characteristic_timeseries1d_loader.load(definition)
+
         elif definition.object_type == dataset_name:
             res = self.dataset_loader.load(definition)
+
         else:
             raise ValueError(name + ' has no defined object type :')
         return res

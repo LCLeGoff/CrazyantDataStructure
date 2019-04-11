@@ -5,6 +5,7 @@ from DataStructure.DataManager.Deleters.DataDeleter import DataDeleter
 from DataStructure.DataManager.Loaders.DataLoader import DataLoader
 from DataStructure.DataManager.Renamers.DataRenamer import DataRenamer
 from DataStructure.DataManager.Writers.DataWriter import DataWriter
+from DataStructure.VariableNames import dataset_name
 from Tools.MiscellaneousTools.PickleJsonFiles import import_id_exp_list, write_obj_json
 
 
@@ -27,13 +28,13 @@ class DataFileManager:
         self.exp_ant_frame_index = None
         self.exp_frame_index = None
 
-    def get_exp_ant_frame_index(self):
+    def _get_exp_ant_frame_index(self):
         if self.exp_ant_frame_index is None:
             self.data_loader.timeseries1d_loader.load_category('Raw')
             self.exp_ant_frame_index = self.data_loader.timeseries1d_loader.categories['Raw'].index
         return self.exp_ant_frame_index
 
-    def get_exp_frame_index(self):
+    def _get_exp_frame_index(self):
         if self.exp_frame_index is None:
             self.data_loader.characteristic_timeseries1d_loader.load_category('Raw')
             self.exp_frame_index = self.data_loader.characteristic_timeseries1d_loader.categories['Raw'].index
@@ -46,22 +47,30 @@ class DataFileManager:
             raise NameError(name + ' does not exist')
 
     def create_new_category(self, category):
+
         if category is not None:
             add = self.root + category + '/'
+
             if not (os.path.isdir(add)):
                 print('Create category '+category)
+
                 try:
                     os.mkdir(add)
                     os.mkdir(add+'Plots/')
+                    os.mkdir(add+'DataSets/')
                 except FileExistsError:
                     pass
+
                 chara = dict()
                 for id_exp in self.id_exp_list:
                     chara[str(id_exp)] = dict()
+
                 write_obj_json(add + 'Characteristics.json', chara)
-                df = pd.DataFrame(index=self.get_exp_ant_frame_index())
+
+                df = pd.DataFrame(index=self._get_exp_ant_frame_index())
                 df.to_csv(add + 'TimeSeries.csv')
-                df = pd.DataFrame(index=self.get_exp_frame_index())
+
+                df = pd.DataFrame(index=self._get_exp_frame_index())
                 df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
     def write(self, obj):
@@ -72,8 +81,11 @@ class DataFileManager:
         elif obj.description is None:
             raise ValueError(obj.name + ' definition not properly set: description is missing')
         else:
-            self.create_new_category(obj.category)
-            self.data_writer.write(obj)
+            if obj.data_type == dataset_name and 'nb_indexes' not in obj.definition:
+                raise ValueError(obj.name + ' definition not properly set: nb_indexes is missing')
+            else:
+                self.create_new_category(obj.category)
+                self.data_writer.write(obj)
 
     def rename(
             self, obj, name=None, xname=None, yname=None,

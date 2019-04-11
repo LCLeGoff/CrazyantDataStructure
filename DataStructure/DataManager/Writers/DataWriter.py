@@ -10,7 +10,9 @@ from DataStructure.VariableNames import dataset_name
 
 class DataWriter:
     def __init__(self, root, group):
+
         self.definition_writer = DefinitionWriter(root, group)
+
         self.timeseries1d_writer = TimeSeriesWriter(root, group)
 
         self.events1d_writer = Events1dWriter(root, group)
@@ -20,6 +22,7 @@ class DataWriter:
         self.characteristics2d_writer = Characteristics2dWriter(root, group)
 
         self.ant_characteristics1d_writer = AntCharacteristics1dWriter(root, group)
+
         self.characteristic_timeseries1d_writer = CharacteristicTimeSeries1dWriter(root, group)
 
         self.dataset_writer = DataSetWriter(root, group)
@@ -47,6 +50,7 @@ class DataWriter:
 
         elif obj.object_type == dataset_name:
             self.dataset_writer.write(obj)
+
         else:
             raise ValueError(obj.name + ' has no defined object type')
         self.definition_writer.write(obj.definition)

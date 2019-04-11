@@ -8,8 +8,10 @@ class DataSetLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        add = self.root + definition.category + '/' + definition.name + '.csv'
+
+        add = self.root + definition.category + '/DataSets/' + definition.name + '.csv'
         df = pd.read_csv(add)
-        index_name = [df.columns[0]]
-        df.set_index(index_name, inplace=True)
+        index_names = list(df.columns[:definition.nb_indexes])
+        df.set_index(index_names, inplace=True)
+
         return DataSet(df, definition)

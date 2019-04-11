@@ -89,6 +89,9 @@ class ExperimentGroups:
     def get_description(self, name):
         return self.get_data_object(name).definition.description
 
+    def get_nb_indexes(self, name):
+        return self.get_data_object(name).definition.nb_indexes
+
     def get_df(self, name):
         return self.get_data_object(name).df
 
@@ -294,13 +297,17 @@ class ExperimentGroups:
     def rename(
             self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
+
         self.load(old_name)
-        if self.__is_1d(old_name):
+
+        if self.__is_1d(old_name) or self.get_object_type(old_name) == dataset_name:
             self.rename1d(old_name=old_name, new_name=new_name, category=category, label=label, description=description)
+
         else:
             self.rename2d(
                 old_name=old_name, new_name=new_name, xname=xname, yname=yname, category=category,
                 label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
         if old_name == new_name:
             self.add_object(new_name, self.get_data_object(old_name))
             self.remove_object(old_name)
@@ -308,6 +315,7 @@ class ExperimentGroups:
     def rename1d(self, old_name, new_name=None, category=None, label=None, description=None):
         if new_name is None:
             new_name = old_name
+
         self.__dict__[old_name].rename(name=new_name, category=category, label=label, description=description)
 
     def rename2d(
@@ -325,7 +333,7 @@ class ExperimentGroups:
             category=None, label=None, xlabel=None, ylabel=None, description=None,
             replace=False):
 
-        if self.__is_1d(old_name):
+        if self.__is_1d(old_name) or self.get_object_type(old_name) == dataset_name:
             self.add_copy1d(
                 name_to_copy=old_name, copy_name=new_name, copy_definition=copy_definition,
                 category=category, label=label, description=description, replace=replace)
@@ -393,9 +401,11 @@ class ExperimentGroups:
                 category=self.get_category(name_to_copy),
                 label=self.get_label(name_to_copy),
                 description=self.get_description(name_to_copy))
+
         else:
             if category is None:
                 category = self.get_category(name_to_copy)
+
             obj = self.get_data_object(name_to_copy).copy(
                 name=copy_name, category=category, label=label,
                 description=description)
@@ -432,10 +442,13 @@ class ExperimentGroups:
         self.add_object(copy_name, obj, replace)
 
     def add_new1d_empty(self, name, object_type, category=None, label=None, description=None, replace=False):
-        df = self.__create_empty_df(name, object_type)
-        obj = Builder.build1d_from_df(
-            df=df, name=name, object_type=object_type, category=category, label=label, description=description)
-        self.add_object(name, obj, replace=replace)
+        if object_type == dataset_name:
+            raise ValueError('Use add_new_empty_dataset for DataSets')
+        else:
+            df = self.__create_empty_df(name, object_type)
+            obj = Builder.build1d_from_df(
+                df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+            self.add_object(name, obj, replace=replace)
 
     def __create_empty_df(self, name, object_type, xname=None, yname=None, index_names=None):
         # TODO: for all, do like for object type characteristics1d
@@ -467,19 +480,39 @@ class ExperimentGroups:
             self, name, xname, yname, object_type, category=None,
             label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
-        df = self.__create_empty_df(name=name, xname=xname, yname=yname, object_type=object_type)
+        if object_type == dataset_name:
+            raise ValueError('Use add_new_empty_dataset for DataSets')
+        else:
+            df = self.__create_empty_df(name=name, xname=xname, yname=yname, object_type=object_type)
 
-        obj = Builder.build2d_from_df(
-            df=df, name=name, xname=xname, yname=yname,
-            object_type=object_type, category=category,
-            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+            obj = Builder.build2d_from_df(
+                df=df, name=name, xname=xname, yname=yname,
+                object_type=object_type, category=category,
+                label=label, xlabel=xlabel, ylabel=ylabel, description=description)
 
-        self.add_object(name, obj, replace)
+            self.add_object(name, obj, replace)
 
     def add_new1d_from_df(self, df, name, object_type, category=None, label=None, description=None, replace=False):
-        obj = Builder.build1d_from_df(
-            df=df, name=name, object_type=object_type, category=category, label=label, description=description)
-        self.add_object(name, obj, replace)
+        if object_type == dataset_name:
+            raise ValueError('Use add_new_dataset_from_df for DataSets')
+        else:
+            obj = Builder.build1d_from_df(
+                df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+            self.add_object(name, obj, replace)
+
+    def add_new2d_from_df(
+            self, df, name, xname, yname, object_type, category=None,
+            label=None, xlabel=None, ylabel=None, description=None, replace=False):
+
+        if object_type == dataset_name:
+            raise ValueError('Use add_new_dataset_from_df for DataSets')
+        else:
+            obj = Builder.build2d_from_df(
+                df=df, name=name, xname=xname, yname=yname,
+                object_type=object_type, category=category,
+                label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+
+            self.add_object(name, obj, replace=replace)
 
     def add_new_empty_dataset(
             self, name, index_names, column_names, index_values=None, fill_value=np.nan,
@@ -508,20 +541,10 @@ class ExperimentGroups:
         self.add_object(name, obj, replace)
 
     def add_new_dataset_from_df(self, df, name, category=None, label=None, description=None, replace=False):
+
         obj = Builder.build_dataset_from_df(
             df=df, name=name, category=category, label=label, description=description)
         self.add_object(name, obj, replace)
-
-    def add_new2d_from_df(
-            self, df, name, xname, yname, object_type, category=None,
-            label=None, xlabel=None, ylabel=None, description=None, replace=False):
-
-        obj = Builder.build2d_from_df(
-            df=df, name=name, xname=xname, yname=yname,
-            object_type=object_type, category=category,
-            label=label, xlabel=xlabel, ylabel=ylabel, description=description)
-
-        self.add_object(name, obj, replace=replace)
 
     def add_new1d_from_array(
             self, array, name, object_type, category=None, label=None, description=None, replace=False):
@@ -530,6 +553,16 @@ class ExperimentGroups:
 
         obj = Builder.build1d_from_df(
             df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+
+        self.add_object(name, obj, replace=replace)
+
+    def add_new_dataset_from_array(self, array, name, index_names, category=None, label=None, description=None,
+                                   replace=False):
+
+        df = self.__convert_array_to_df(array, name, dataset_name, index_names=index_names)
+
+        obj = Builder.build1d_from_df(
+            df=df, name=name, object_type=dataset_name, category=category, label=label, description=description)
 
         self.add_object(name, obj, replace=replace)
 

@@ -44,7 +44,9 @@ class DefinitionBuilder:
         pass
 
     @staticmethod
-    def create_dict(object_type, category=None, label=None, description=None, xlabel=None, ylabel=None):
+    def create_dict(object_type, category=None, label=None, description=None,
+                    xlabel=None, ylabel=None, nb_indexes=None):
+
         def_dict = dict()
         def_dict['category'] = category
         def_dict['description'] = description
@@ -53,6 +55,8 @@ class DefinitionBuilder:
         if xlabel is not None and ylabel is not None:
             def_dict['xlabel'] = xlabel
             def_dict['ylabel'] = ylabel
+        if nb_indexes is not None:
+            def_dict['nb_indexes'] = nb_indexes
         return def_dict
 
     @staticmethod
@@ -66,17 +70,23 @@ class DefinitionBuilder:
         for key, value in definition.dict.items():
             class_self.__dict__[key] = value
 
+    def build_dataset(self, name, object_type, category=None, label=None, description=None, nb_indexes=None):
+
+        def_dict = self.create_dict(category=category, object_type=object_type, label=label, description=description,
+                                    nb_indexes=nb_indexes)
+
+        return Definitions(name, def_dict)
+
     def build1d(self, name, object_type, category=None, label=None, description=None):
+
         def_dict = self.create_dict(
-            category=category, object_type=object_type,
-            label=label, description=description
-        )
+            category=category, object_type=object_type, label=label, description=description)
+
         return Definitions(name, def_dict)
 
     def build2d(self, name, object_type, category=None, label=None, xlabel=None, ylabel=None, description=None):
-        def_dict = self.create_dict(
-            category=category, object_type=object_type,
-            label=label, description=description,
-            xlabel=xlabel, ylabel=ylabel
-        )
+
+        def_dict = self.create_dict(category=category, object_type=object_type, label=label, description=description,
+                                    xlabel=xlabel, ylabel=ylabel)
+
         return Definitions(name, def_dict)

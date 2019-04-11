@@ -7,11 +7,11 @@ class DataSetRenamer:
 
     def rename(self, dataset, name, category=None, label=None, description=None):
 
-        old_address = self.root + dataset.category + '/' + dataset.name + '.csv'
+        old_address = self.root + dataset.category + '/DataSets/' + dataset.name + '.csv'
 
         dataset.rename(name=name, category=category, label=label, description=description)
 
-        new_address = self.root + dataset.category + '/' + name + '.csv'
+        new_address = self.root + dataset.category + '/DataSets/' + name + '.csv'
         dataset.df.to_csv(new_address)
 
         os.remove(old_address)

@@ -1172,13 +1172,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         else:
             self.exp.load([res_vel_name, res_error_name])
 
-            # ToDo: Manage dataset with 2d indexes
-            self.exp.get_df(res_vel_name).reset_index(inplace=True)
-            self.exp.get_df(res_vel_name).set_index(index_names, inplace=True)
-
-            self.exp.get_df(res_error_name).reset_index(inplace=True)
-            self.exp.get_df(res_error_name).set_index(index_names, inplace=True)
-
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(res_vel_name))
         fig, ax = plotter.create_plot()
         colors = ColorObject.create_cmap('jet', self.exp.get_index(res_vel_name))

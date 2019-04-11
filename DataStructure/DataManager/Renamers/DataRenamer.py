@@ -10,21 +10,24 @@ from DataStructure.VariableNames import dataset_name
 
 class DataRenamer:
     def __init__(self, root, group):
+
         self.definition_renamer = DefinitionRenamer(root, group)
+
         self.timeseries1d_renamer = TimeSeries1dRenamer(root, group)
 
         self.events1d_renamer = Events1dRenamer(root, group)
         self.events2d_renamer = Events2dRenamer(root, group)
 
         self.characteristics1d_renamer = Characteristics1dRenamer(root, group)
+
         self.ant_characteristics1d_renamer = AntCharacteristics1dRenamer(root, group)
 
         self.characteristic_timeseries1d_renamer = CharacteristicTimeSeries1dRenamer(root, group)
+
         self.dataset_renamer = DataSetRenamer(root, group)
 
-    def rename(
-            self, obj, name, xname=None, yname=None, category=None,
-            label=None, description=None, xlabel=None, ylabel=None):
+    def rename(self, obj, name, xname=None, yname=None, category=None, label=None, description=None,
+               xlabel=None, ylabel=None):
 
         old_name = obj.name
         if name is None:
