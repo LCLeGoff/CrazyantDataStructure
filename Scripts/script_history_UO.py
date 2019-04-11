@@ -3,7 +3,7 @@ from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
 from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
 from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
-from AnalyseClasses.Food.FoodVelocityEntropy import AnalyseFoodVelocityEntropy
+from AnalyseClasses.Food.FoodEntropy import AnalyseFoodEntropy
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
 
@@ -107,11 +107,11 @@ FoodVelocity = AnalyseFoodVelocity(group, exp=FoodBase.exp)
 # FoodVelocity.compute_mm10s_food_velocity_vector_length(redo=True)
 # FoodVelocity.compute_mm30s_food_velocity_vector_length(redo_plot_indiv=True)
 
-FoodVelocityEntropy = AnalyseFoodVelocityEntropy(group, exp=FoodBase.exp)
-# FoodVelocityEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-# FoodVelocityEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+FoodEntropy = AnalyseFoodEntropy(group, exp=FoodBase.exp)
+FoodEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+FoodEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
 
-Carrying = AnalyseFoodCarrying(group, exp=FoodVelocityEntropy.exp)
+Carrying = AnalyseFoodCarrying(group, exp=FoodEntropy.exp)
 # Carrying.compute_food_traj_length_around_first_attachment()
 # Carrying.compute_outside_ant_attachment()
 # Carrying.compute_first_attachment_time_of_outside_ant()

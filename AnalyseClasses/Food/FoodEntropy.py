@@ -7,18 +7,18 @@ from Tools.MiscellaneousTools.ArrayManipulation import get_entropy
 from Tools.Plotter.Plotter import Plotter
 
 
-class AnalyseFoodVelocityEntropy(AnalyseClassDecorator):
+class AnalyseFoodEntropy(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'FoodVelocityEntropy'
 
-    def compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
+    def compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
         mm = 1
-        w = 30
+        w = 1
 
         result_name = 'w'+str(w)+'s_entropy_mm1s_food_velocity_phi_indiv_evol'
 
-        time_intervals = np.arange(0, 10*60)
+        time_intervals = np.arange(0, 10*60, 1)
         dtheta = np.pi / 12.
         bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
 
@@ -38,13 +38,13 @@ class AnalyseFoodVelocityEntropy(AnalyseClassDecorator):
         self.__compute_food_velocity_entropy(
             w, bins, self.category, mm, redo, redo_indiv_plot, result_name, time_intervals)
 
-    def compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
+    def compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
         mm = 1
-        w = 1
+        w = 30
 
         result_name = 'w'+str(w)+'s_entropy_mm1s_food_velocity_phi_indiv_evol'
 
-        time_intervals = np.arange(0, 10*60, 1)
+        time_intervals = np.arange(0, 10*60)
         dtheta = np.pi / 12.
         bins = np.around(np.arange(-np.pi + dtheta/2., np.pi + dtheta, dtheta), 3)
 
