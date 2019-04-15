@@ -530,10 +530,11 @@ class ExperimentGroups:
             empty_array = np.zeros((len(index_values), len(column_names)))
             df = pd.DataFrame(empty_array, columns=column_names)
 
-            if len(index_names) == 1:
+            if len(index_names) == 1 or isinstance(index_values, pd.core.indexes.multi.MultiIndex):
                 indexes = index_values
             else:
                 indexes = pd.MultiIndex.from_arrays(np.array(index_values).T)
+
             df.index = indexes
             df.index.names = index_names
 
@@ -849,8 +850,8 @@ class ExperimentGroups:
 
         df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins)
 
-        self.add_new1d_from_df(df=df, name=result_name, object_type=dataset_name,
-                               category=category, label=label, description=description, replace=replace)
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
 
         return result_name
 

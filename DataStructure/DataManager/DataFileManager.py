@@ -81,7 +81,7 @@ class DataFileManager:
         elif obj.description is None:
             raise ValueError(obj.name + ' definition not properly set: description is missing')
         else:
-            if obj.data_type == dataset_name and 'nb_indexes' not in obj.definition:
+            if obj.object_type == dataset_name and 'nb_indexes' not in obj.definition.dict:
                 raise ValueError(obj.name + ' definition not properly set: nb_indexes is missing')
             else:
                 self.create_new_category(obj.category)
