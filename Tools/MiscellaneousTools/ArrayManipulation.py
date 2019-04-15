@@ -58,3 +58,19 @@ def get_entropy(tab):
     tab2 = np.array(tab)
     mask = np.where(tab2 != 0)[0]
     return -np.sum(tab2[mask]*np.log2(tab2[mask]))
+
+
+def get_max_entropy(tab):
+    return -np.log2(1/float(len(tab)))
+
+
+def smooth(tab, window):
+    tab2 = np.zeros(len(tab))
+    nbr = np.zeros(len(tab))
+    for i in range(len(tab)):
+        i0 = max(0, i-window)
+        i1 = min(len(tab), i+window)
+        tab2[i] += np.sum(tab[i0:i1])
+        nbr[i] = len(tab[i0:i1])
+
+    return tab2/nbr

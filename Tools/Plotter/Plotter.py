@@ -3,6 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+from Tools.MiscellaneousTools.ArrayManipulation import smooth
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
 
@@ -73,6 +74,51 @@ class Plotter(BasePlotters):
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
                 y = self.__get_y(self.obj.df[self.column_name], normed, x)
+                ax.plot(x, y, label=label, **self.line)
+
+        return fig, ax
+
+    def plot_smooth(self, window, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
+                    preplot=None, figsize=None, **kwargs):
+
+        if label_suffix is None:
+            label_suffix = ''
+        else:
+            label_suffix = ' ' + label_suffix
+
+        if label is None:
+            if self.obj.get_dimension() == 1 or self.column_name is not None:
+                label = self.obj.label
+            else:
+                label = [str(column_name) + label_suffix for column_name in self.obj.get_column_names()]
+
+        self.arg_tools.change_arg_value('line', kwargs)
+        self.arg_tools.change_arg_value('axis', kwargs)
+
+        fig, ax = self.create_plot(preplot, figsize=figsize)
+        self.display_title(ax=ax, title_prefix=title_prefix, title=title)
+        self.set_axis_scales_and_labels(ax, self.axis)
+
+        x = self.obj.get_index_array()
+
+        if self.obj.get_dimension() == 1:
+            y = smooth(self.__get_y(self.obj.get_array(), normed, x), window)
+            ax.plot(x, y, label=label, **self.line)
+        else:
+            if self.column_name is None:
+
+                colors = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
+
+                for i, column_name in enumerate(self.obj.get_column_names()):
+                    y = smooth(self.__get_y(self.obj.df[column_name], normed, x), window)
+                    self.line['c'] = colors[str(column_name)]
+                    self.line['markeredgecolor'] = colors[str(column_name)]
+                    ax.plot(x, y, label=label[i], **self.line)
+                ax.legend(loc=0)
+            else:
+                if self.column_name not in self.obj.get_column_names():
+                    self.column_name = str(self.column_name)
+                y = smooth(self.__get_y(self.obj.df[self.column_name], normed, x), window)
                 ax.plot(x, y, label=label, **self.line)
 
         return fig, ax

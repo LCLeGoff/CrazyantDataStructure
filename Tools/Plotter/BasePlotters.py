@@ -31,12 +31,28 @@ class BasePlotters:
         fig.set_facecolor(bg_color)
         ax.patch.set_facecolor(bg_color)
 
-    def create_plot(self, preplot=None, figsize=(5, 5), left=0.13, right=0.98, bottom=0.1, top=0.95):
+    def create_plot(self, preplot=None, figsize=(5, 5),
+                    left=0.13, right=0.98, bottom=0.1, top=0.95, wspace=0.2, hspace=0.2,
+                    nrows=1, ncols=1):
         if preplot is None:
-            fig, ax = plt.subplots(figsize=figsize)
-            fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top)
+            fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
+            fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top, wspace=wspace, hspace=hspace)
             # self.black_background(fig, ax)
-            self.grey_background(fig, ax)
+            if nrows == 1:
+                if ncols == 1:
+                    self.grey_background(fig, ax)
+                else:
+                    for ax0 in ax:
+                        self.grey_background(fig, ax0)
+            else:
+                if ncols == 1:
+                    for ax0 in ax:
+                        self.grey_background(fig, ax0)
+                else:
+                    for i in range(ax.shape[0]):
+                        for j in range(ax.shape[1]):
+                            self.grey_background(fig, ax[i, j])
+
             return fig, ax
         else:
             return preplot
