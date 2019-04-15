@@ -107,13 +107,12 @@ FoodVelocity = AnalyseFoodVelocity(group, exp=FoodBase.exp)
 # FoodVelocity.compute_mm10s_food_velocity_vector_length(redo=True)
 # FoodVelocity.compute_mm30s_food_velocity_vector_length(redo_plot_indiv=True)
 
-FoodEntropy = AnalyseFoodEntropy(group, exp=FoodBase.exp)
-FoodEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-FoodEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
 
-Carrying = AnalyseFoodCarrying(group, exp=FoodEntropy.exp)
+Carrying = AnalyseFoodCarrying(group, exp=FoodVelocity.exp)
 # Carrying.compute_food_traj_length_around_first_attachment()
 # Carrying.compute_outside_ant_attachment()
+# Carrying.compute_non_outside_ant_attachment()
+# Carrying.compute_nbr_attachment_per_exp()
 # Carrying.compute_first_attachment_time_of_outside_ant()
 
 # Carrying.compute_carrying_next2food_with_svm()
@@ -143,3 +142,17 @@ Carrying = AnalyseFoodCarrying(group, exp=FoodEntropy.exp)
 # Carrying.compute_mean_food_velocity_vector_length_around_outside_ant_attachments(True)
 
 # Carrying.compute_mean_food_velocity_vector_length_vs_food_direction_error_around_outside_attachments()
+
+FoodEntropy = AnalyseFoodEntropy(group, exp=Carrying.exp)
+# FoodEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+# FoodEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+#
+# FoodEntropy.compute_mm1s_food_direction_error_around_outside_attachments()
+# FoodEntropy.compute_mm1s_food_direction_error_around_non_outside_attachments()
+#
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_outside_attachments(True)
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_attachments(True)
+
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_first_outside_attachments()
+FoodEntropy.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment()
