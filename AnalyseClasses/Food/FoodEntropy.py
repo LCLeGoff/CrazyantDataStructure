@@ -10,7 +10,7 @@ from Tools.Plotter.Plotter import Plotter
 class AnalyseFoodEntropy(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
-        self.category = 'FoodVelocityEntropy'
+        self.category = 'FoodEntropy'
 
     def compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(self, redo=False, redo_indiv_plot=False):
         mm = 1
