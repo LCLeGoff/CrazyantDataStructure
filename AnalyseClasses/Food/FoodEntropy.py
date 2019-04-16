@@ -195,8 +195,9 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
+        ylim_zoom = (0.4, 0.6)
         self.__compute_information_around_attachments(variable_name, hists_result_name, info_result_name, hists_label,
-                                                      hists_description, info_label, info_description,
+                                                      hists_description, info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
 
     def compute_information_mm1s_food_direction_error_around_non_outside_attachments(
@@ -217,8 +218,9 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around non outside ant attachments'
 
+        ylim_zoom = (0.1, 0.2)
         self.__compute_information_around_attachments(variable_name, hists_result_name, info_result_name, hists_label,
-                                                      hists_description, info_label, info_description,
+                                                      hists_description, info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
 
     def compute_information_mm1s_food_direction_error_around_attachments(
@@ -241,12 +243,13 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around ant attachments'
 
+        ylim_zoom = (0.2, 0.3)
         self.__compute_information_around_attachments(variable_name, hists_result_name, info_result_name, hists_label,
-                                                      hists_description, info_label, info_description,
+                                                      hists_description, info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
 
     def __compute_information_around_attachments(self, variable_name, hists_result_name, info_result_name, hists_label,
-                                                 hists_description, info_label, info_description,
+                                                 hists_description, info_label, info_description, ylim_zoom,
                                                  redo, redo_info, redo_plot_hist):
         t0, t1, dt = -60, 60, 0.5
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
@@ -308,6 +311,7 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         plotter.plot(preplot=(fig, ax[1]), title='')
         ax[1].axvline(0, ls='--', c='k')
         ax[1].set_xlim((-2, 8))
+        ax[1].set_ylim(ylim_zoom)
 
         plotter.save(fig)
 
@@ -328,8 +332,10 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         info_description = 'Information of the food (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around first outside ant attachments'
 
-        t0, t1, dt = -60, 60, 1.
+        t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+        t0, t1, dt = -60, 60, 1.
+        time_intervals_to_plot_individually = np.around(np.arange(t0, t1 + dt, dt), 1)
         hists_index_values = [(th, t) for th in range(1, 11) for t in time_intervals]
 
         dtheta = np.pi / 12.
@@ -379,31 +385,33 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
             self.exp.load(info_result_name)
 
         if redo or redo_info or redo_plot_hist:
-            for t in time_intervals:
+            for t in time_intervals_to_plot_individually:
                 plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hists_result_name))
                 fig, ax = plotter.create_plot()
-                colors = ColorObject.create_cmap('jet', range(1, 11))
+                colors = ColorObject.create_cmap('hot', range(1, 11))
 
                 for th in range(1, 11):
                     df = self.exp.get_df(hists_result_name).loc[(th, t)]
-                    df = pd.DataFrame(data=np.array(df), index=df.index, columns=['temp'])
+                    df = pd.DataFrame(data=np.array(df), index=bins2, columns=['temp'])
                     self.exp.add_new_dataset_from_df(df=df, name='temp', category=self.category, replace=True)
 
                     plotter = Plotter(self.exp.root, obj=self.exp.get_data_object('temp'))
                     fig, ax = plotter.plot(preplot=(fig, ax), xlabel='Food direction error', ylabel='Probability',
                                            label=str(th)+'th', c=colors[str(th)])
 
-                ax.set_ylim((0, 0.5))
+                ax.set_title(str(t)+' (s)')
+                ax.set_ylim((0, 0.4))
                 ax.legend()
                 plotter.save(fig, sub_folder=hists_result_name, name=t)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
         fig, ax = plotter.create_plot(figsize=(5, 8), nrows=2)
 
-        plotter.plot_smooth(window=10, preplot=(fig, ax[0]), xlabel='time (s)', ylabel='Information (bit)', title='')
+        plotter.plot_smooth(window=50, preplot=(fig, ax[0]), marker='',
+                            xlabel='time (s)', ylabel='Information (bit)', title='')
         ax[0].axvline(0, ls='--', c='k')
 
-        plotter.plot_smooth(window=10, preplot=(fig, ax[1]), title='')
+        plotter.plot_smooth(window=50, preplot=(fig, ax[1]), title='', marker='',)
         ax[1].axvline(0, ls='--', c='k')
         ax[1].set_xlim((-2, 8))
         ax[1].set_ylim((.35, .75))

@@ -2,6 +2,7 @@ from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
 from AnalyseClasses.Food.FoodCarrying import AnalyseFoodCarrying
+from AnalyseClasses.Food.FoodConfidence import AnalyseFoodConfidence
 from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
 from AnalyseClasses.Food.FoodEntropy import AnalyseFoodEntropy
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
@@ -150,9 +151,20 @@ FoodEntropy = AnalyseFoodEntropy(group, exp=Carrying.exp)
 # FoodEntropy.compute_mm1s_food_direction_error_around_outside_attachments()
 # FoodEntropy.compute_mm1s_food_direction_error_around_non_outside_attachments()
 #
-# FoodEntropy.compute_information_mm1s_food_direction_error_around_outside_attachments(True)
-# FoodEntropy.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
-# FoodEntropy.compute_information_mm1s_food_direction_error_around_attachments(True)
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_outside_attachments()
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_non_outside_attachments()
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_attachments()
 
 # FoodEntropy.compute_information_mm1s_food_direction_error_around_first_outside_attachments()
-FoodEntropy.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment()
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment()
+
+FoodConfidence = AnalyseFoodConfidence(group, exp=FoodEntropy.exp)
+# FoodConfidence.compute_w10s_food_crossed_distance(True)
+# FoodConfidence.compute_w30s_food_crossed_distance(True)
+
+FoodConfidence.compute_w10s_food_total_crossed_distance(redo_plot_indiv=True)
+FoodConfidence.compute_w30s_food_total_crossed_distance(redo_plot_indiv=True)
+
+# FoodConfidence.compute_w10s_food_path_efficiency(True)
+# FoodConfidence.compute_w30s_food_path_efficiency(True)
+

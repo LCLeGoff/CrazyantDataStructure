@@ -40,7 +40,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
     def compute_food_speed(self, redo=False, redo_hist=False):
         name = 'food_speed'
         hist_name = name + '_hist'
-        bins = np.arange(0, 200, 1)
+        bins = np.arange(0, 200, 0.25)
         hist_label = 'Distribution of the food speed (mm/s)'
         hist_description = 'Distribution of the instantaneous speed of the food trajectory (mm/s)'
 
@@ -84,7 +84,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                           hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\dot v (mm/s)$', ylabel='PDF',
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$v (mm/s)$', ylabel='PDF',
                                normed=True, label_suffix='s')
         plotter.save(fig)
 
@@ -107,7 +107,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\dot v (mm/s)$', ylabel='PDF',
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$v (mm/s)$', ylabel='PDF',
                                normed=True, label_suffix='s', marker='', lw=1)
         ax.set_xlim((0, 80))
         plotter.save(fig)
