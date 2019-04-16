@@ -231,20 +231,16 @@ class ExperimentGroups:
         return self.data_manager.is_name_in_data(name)
 
     def load_as_2d(
-            self, name1, name2, result_name,
-            xname=None, yname=None,
-            category=None, label=None, xlabel=None, ylabel=None, description=None):
+            self, name1, name2, result_name, xname=None, yname=None, category=None,
+            label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
         self.load([name1, name2])
 
-        is_name1_time_series_1d = self.get_object_type(name1) == 'TimeSeries1d'
-        is_name2_time_series_1d = self.get_object_type(name2) == 'TimeSeries1d'
-
-        if is_name1_time_series_1d and is_name2_time_series_1d:
+        if self.__is_a_time_series(name1) and self.__is_a_time_series(name2):
             self.add_2d_from_1ds(
                 name1=name1, name2=name2, result_name=result_name,
                 xname=xname, yname=yname, category=category,
-                label=label, xlabel=xlabel, ylabel=ylabel, description=description)
+                label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
 
     def __is_1d(self, name):
         object_type = self.get_object_type(name)

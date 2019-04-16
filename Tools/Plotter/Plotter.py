@@ -9,7 +9,7 @@ from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments,
 
 
 class Plotter(BasePlotters):
-    def __init__(self, root, obj, column_name=None, category=None, **kwargs):
+    def __init__(self, root, obj, column_name=None, category=None, cmap='hot', **kwargs):
 
         if obj.category is None:
             if category is None:
@@ -21,7 +21,7 @@ class Plotter(BasePlotters):
 
         self.column_name = column_name
 
-        BasePlotters.__init__(self, obj)
+        BasePlotters.__init__(self, obj, cmap=cmap)
 
         self.arg_tools = ArgumentsTools(self)
 

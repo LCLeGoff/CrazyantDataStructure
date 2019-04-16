@@ -72,10 +72,14 @@ def squared_distance(p, q=None):
 
 
 def squared_distance_df(p, q=None):
+    p2 = p.copy()
+    p2.columns = ['x', 'y']
     if q is None:
-        return p.x ** 2 + p.y ** 2
+        return p2.x ** 2 + p2.y ** 2
     else:
-        return (p.x - q.x) ** 2 + (p.y - q.y) ** 2
+        q2 = q.copy()
+        q2.columns = ['x', 'y']
+        return (p2.x - q2.x) ** 2 + (p2.y - q2.y) ** 2
 
 
 def distance(p, q=None):
