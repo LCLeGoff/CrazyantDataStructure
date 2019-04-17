@@ -6,7 +6,7 @@ class Events1dWriter:
         if event.category == 'Raw':
             raise OSError('not allowed to modify Events of the category Raw')
         else:
-            add = self.root + event.category + '/' + event.name + '.csv'
+            add = self.root + event.category + '/DataSets/' + event.name + '.csv'
             event.df.to_csv(add)
 
 
@@ -18,5 +18,5 @@ class Events2dWriter:
         if event2d.category == 'Raw':
             raise OSError('not allowed to modify Events2d of the category Raw')
         else:
-            add = self.root + event2d.category + '/' + event2d.name + '.csv'
+            add = self.root + event2d.category + '/DataSets/' + event2d.name + '.csv'
             event2d.df.to_csv(add)

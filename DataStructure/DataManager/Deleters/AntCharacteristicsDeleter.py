@@ -9,5 +9,5 @@ class AntCharacteristics1dDeleter:
         if ant_chara.category == 'Raw':
             raise OSError('not allowed to delete AntCharacteristics of the category Raw')
         else:
-            address = self.root + ant_chara.category + '/' + ant_chara.name + '.csv'
+            address = self.root + ant_chara.category + '/DataSets/' + ant_chara.name + '.csv'
             os.remove(address)

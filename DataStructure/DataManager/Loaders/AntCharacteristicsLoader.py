@@ -9,6 +9,6 @@ class AntCharacteristics1dLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        address = self.root + definition.category + '/' + definition.name + '.csv'
+        address = self.root + definition.category + '/DataSets/' + definition.name + '.csv'
         df = pd.read_csv(address, index_col=[id_exp_name, id_ant_name])
         return AntCharacteristics1d(df, definition)

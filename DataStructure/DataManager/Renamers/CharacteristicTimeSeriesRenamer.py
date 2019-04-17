@@ -1,6 +1,6 @@
 import pandas as pd
 
-from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name
 
 
 class CharacteristicTimeSeries1dRenamer:

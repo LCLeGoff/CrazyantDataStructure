@@ -10,7 +10,7 @@ class CharacteristicEvents1dLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        add = self.root + definition.category + '/' + definition.name + '.csv'
+        add = self.root + definition.category + '/DataSets/' + definition.name + '.csv'
         df = pd.read_csv(add)
         df.set_index([id_exp_name, id_frame_name], inplace=True)
         return CharacteristicEvents1d(df, definition)
@@ -21,5 +21,5 @@ class CharacteristicEvents2dLoader:
         self.root = root + group + '/'
 
     def load(self, definition):
-        add = self.root + definition.category + '/' + definition.name + '.csv'
+        add = self.root + definition.category + '/DataSets/' + definition.name + '.csv'
         return CharacteristicEvents2d(pd.read_csv(add, index_col=[id_exp_name, id_frame_name]), definition)

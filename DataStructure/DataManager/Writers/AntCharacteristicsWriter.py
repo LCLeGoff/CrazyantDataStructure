@@ -6,5 +6,5 @@ class AntCharacteristics1dWriter:
         if ant_chara.category == 'Raw':
             raise OSError('not allowed to modify AntCharacteristics of the category Raw')
         else:
-            add = self.root + ant_chara.category + '/' + ant_chara.name + '.csv'
+            add = self.root + ant_chara.category + '/DataSets/' + ant_chara.name + '.csv'
             ant_chara.df.to_csv(add)
