@@ -22,13 +22,15 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
 
     def __compute_crossed_distance(self, w, redo, redo_plot_indiv, redo_hist):
         result_name = 'w' + str(w) + 's_food_crossed_distance'
-        hist_name = result_name + '_hist'
-        bins = range(200)
+        hist_name = result_name+'_hist'
+
+        bins = 'fd'
         label = 'Food crossed distance (mm/s)'
         description = 'Distance crossed by te food during ' + str(w) + ' s (mm/s)'
         if redo:
-            name_x = 'food_x'
-            name_y = 'food_y'
+            name_x = 'mm10_food_x'
+            name_y = 'mm10_food_y'
+
             name_xy = 'food_xy'
             self.exp.load_as_2d(name1=name_x, name2=name_y, result_name=name_xy, replace=True)
             self.exp.load('fps')
@@ -76,7 +78,7 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
 
                 dist = distance_df(xy1, xy2)/norm
                 dist = dist.reindex(df.index.get_level_values(id_frame_name))
-                self.exp.get_df(result_name).loc[id_exp, :] = np.array(np.around(dist, 3))
+                self.exp.get_df(result_name).loc[id_exp, :] = np.array(np.around(dist, 5))
 
             self.exp.groupby(name_xy, id_exp_name, compute_crossed_distance4each_group)
 
@@ -84,20 +86,8 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
 
-        if redo or redo_plot_indiv:
-
-            def plot_indiv(df: pd.DataFrame):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                self.exp.add_new_dataset_from_df(df=df.loc[id_exp, :], name=str(id_exp),
-                                                 category=self.category, replace=True)
-
-                plotter2 = Plotter(self.exp.root, self.exp.get_data_object(str(id_exp)))
-                fig2, ax2 = plotter2.plot(xlabel='Time (s)', ylabel='Crossed distance')
-                ax2.set_title(id_exp)
-
-                plotter2.save(fig2, sub_folder=result_name)
-
-            self.exp.groupby(result_name, id_exp_name, plot_indiv)
+        ylabel = 'Crossed Distance'
+        self.__plot_indiv(result_name, ylabel, redo, redo_plot_indiv)
 
         self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
@@ -116,15 +106,16 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
 
         result_name = 'w' + str(w) + 's_food_total_crossed_distance'
         hist_name = result_name + '_hist'
-        bins = range(200)
+        bins = np.arange(40)
         label = 'Food total crossed distance (mm/s)'
         description = 'Distance total crossed by te food during ' + str(w) + ' s (mm/s)'
 
         if redo:
-            name_x = 'food_x'
-            name_y = 'food_y'
+            name_x = 'mm10_food_x'
+            name_y = 'mm10_food_y'
+
             name_xy = 'food_xy'
-            self.exp.load_as_2d(name1=name_x, name2=name_y, result_name=name_xy)
+            self.exp.load_as_2d(name1=name_x, name2=name_y, result_name=name_xy, replace=True)
             self.exp.load('fps')
 
             self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
@@ -147,14 +138,14 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
                 xy2 = df2.loc[:frame1-1]
                 xy1.index -= 1
                 xy2.index += 1
-                dist = distance_df(xy1, xy2)*fps
+                dist = distance_df(xy1, xy2)*fps/2.
                 dist2 = dist.copy()
 
                 for frame in dist.index:
-                    dist2.loc[frame] = np.mean(dist.loc[frame-w_in_f2:frame+w_in_f2])
+                    dist2.loc[frame] = np.nanmean(dist.loc[frame-w_in_f2:frame+w_in_f2])
 
                 dist2 = dist2.reindex(df.index.get_level_values(id_frame_name))
-                self.exp.get_df(result_name).loc[id_exp, :] = np.array(np.around(dist2, 3))
+                self.exp.get_df(result_name).loc[id_exp, :] = np.array(np.around(dist2, 5))
 
             self.exp.groupby(name_xy, id_exp_name, compute_crossed_distance4each_group)
 
@@ -162,24 +153,43 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
 
-        if redo or redo_plot_indiv:
-            def plot_indiv(df: pd.DataFrame):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                self.exp.add_new_dataset_from_df(df=df.loc[id_exp, :], name=str(id_exp),
-                                                 category=self.category, replace=True)
-
-                plotter2 = Plotter(self.exp.root, self.exp.get_data_object(str(id_exp)))
-                fig2, ax2 = plotter2.plot(xlabel='Time (s)', ylabel='Total crossed distance')
-                ax2.set_title(id_exp)
-
-                plotter2.save(fig2, sub_folder=result_name)
-
-            self.exp.groupby(result_name, id_exp_name, plot_indiv)
+        ylabel = 'Total crossed Distance'
+        self.__plot_indiv(result_name, ylabel, redo, redo_plot_indiv)
 
         self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot()
         plotter.save(fig)
+
+    def __plot_indiv(self, result_name, ylabel, redo, redo_plot_indiv):
+        if redo or redo_plot_indiv:
+            attachment_name = 'outside_ant_carrying_intervals'
+            self.exp.load(['fps', attachment_name])
+
+            def plot_indiv(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                fps = self.exp.get_value('fps', id_exp)
+
+                df2 = df.loc[id_exp, :]
+                df2.index /= fps
+                self.exp.add_new_dataset_from_df(df=df2, name=str(id_exp),
+                                                 category=self.category, replace=True)
+
+                plotter2 = Plotter(self.exp.root, self.exp.get_data_object(str(id_exp)))
+                fig2, ax2 = plotter2.plot(xlabel='Time (s)', ylabel=ylabel, marker='',
+                                          title_prefix='Exp ' + str(id_exp) + ': ')
+
+                attachments = self.exp.get_df(attachment_name).loc[id_exp, :]
+                attachments.reset_index(inplace=True)
+                attachments = np.array(attachments) / fps
+
+                colors = plotter2.color_object.create_cmap('hot_r', set(list(attachments[:, 0])))
+                for id_ant, frame, inter in attachments:
+                    ax2.axvline(frame, c=colors[str(id_ant)], alpha=0.5)
+
+                plotter2.save(fig2, name=id_exp, sub_folder=result_name)
+
+            self.exp.groupby(result_name, id_exp_name, plot_indiv)
 
     def compute_w10s_food_path_efficiency(self, redo=False, redo_hist=False, redo_plot_indiv=False):
         w = 10
@@ -193,6 +203,7 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         dist_name = 'w' + str(w) + 's_food_crossed_distance'
         total_dist_name = 'w' + str(w) + 's_food_total_crossed_distance'
         result_name = 'w' + str(w) + 's_food_path_efficiency'
+
         hist_name = result_name + '_hist'
         bins = np.arange(0, 1, 0.01)
         label = 'Food path efficiency'
@@ -205,24 +216,15 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
                               label=label, description=description)
 
             self.exp.get_data_object(result_name).df /= np.array(self.exp.get_df(total_dist_name))
-            self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(3)
+            self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).round(5)
 
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
-        if redo or redo_plot_indiv:
-            def plot_indiv(df: pd.DataFrame):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                self.exp.add_new_dataset_from_df(df=df.loc[id_exp, :], name=str(id_exp),
-                                                 category=self.category, replace=True)
 
-                plotter2 = Plotter(self.exp.root, self.exp.get_data_object(str(id_exp)))
-                fig2, ax2 = plotter2.plot(xlabel='Time (s)', ylabel='Path efficiency')
-                ax2.set_title(id_exp)
+        ylabel = 'Path efficiency'
+        self.__plot_indiv(result_name, ylabel, redo, redo_plot_indiv)
 
-                plotter2.save(fig2, sub_folder=result_name)
-
-            self.exp.groupby(result_name, id_exp_name, plot_indiv)
         self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot()
