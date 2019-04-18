@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_entropy
+from DataStructure.VariableNames import id_exp_name
 from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df
 from Tools.Plotter.Plotter import Plotter
 
@@ -14,8 +13,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         self.category = 'FoodVelocity'
 
     def compute_food_velocity(self, redo=False, redo_hist=False):
-        name_x = 'food_x'
-        name_y = 'food_y'
+        name_x = 'mm10_food_x'
+        name_y = 'mm10_food_y'
 
         result_velocity_phi_name = 'food_velocity_phi'
         result_velocity_x_name = 'food_velocity_x'
@@ -50,14 +49,14 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
                 fps = self.exp.get_value('fps', id_exp)
 
-                dx = np.array(self.exp.food_x.df.loc[id_exp, :]).ravel()
+                dx = np.array(self.exp.get_df(name_x).loc[id_exp, :]).ravel()
                 dx1 = dx[1].copy()
                 dx2 = dx[-2].copy()
                 dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
                 dx[0] = dx1 - dx[0]
                 dx[-1] = dx[-1] - dx2
 
-                dy = np.array(self.exp.food_y.df.loc[id_exp, :]).ravel()
+                dy = np.array(self.exp.get_df(name_y).loc[id_exp, :]).ravel()
                 dy1 = dy[1].copy()
                 dy2 = dy[-2].copy()
                 dy[1:-1] = (dy[2:] - dy[:-2]) / 2.

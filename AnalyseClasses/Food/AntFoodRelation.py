@@ -14,17 +14,17 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
     def compute_distance2food(self):
         name = 'distance2food'
         print(name)
-        self.exp.load(['food_x', 'food_y', 'x', 'y'])
+        food_name_x = 'mm10_food_x'
+        food_name_y = 'mm10_food_y'
+        name_x = 'mm10_x'
+        name_y = 'mm10_y'
+        self.exp.load_as_2d(name_x, name_y, result_name='xy', xname='x', yname='y', replace=True)
+        self.exp.load_as_2d(food_name_x, food_name_y, result_name='food_xy', xname='x', yname='y', replace=True)
 
-        id_exps = self.exp.x.df.index.get_level_values(id_exp_name)
-        id_ants = self.exp.x.df.index.get_level_values(id_ant_name)
-        frames = self.exp.x.df.index.get_level_values(id_frame_name)
+        id_exps = self.exp.get_df(name_x).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name_x).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name_x).index.get_level_values(id_frame_name)
         idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
-
-        self.exp.add_2d_from_1ds(
-            name1='food_x', name2='food_y', result_name='food_xy',
-            xname='x', yname='y'
-        )
 
         df_d = self.__reindexing_food_xy(id_ants, idxs)
         df_d = self.__compute_distance_from_food(df_d)
@@ -36,7 +36,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.write(name)
 
     def __reindexing_food_xy(self, id_ants, idxs):
-        df_d = self.exp.food_xy.df.copy()
+        df_d = self.exp.get_df('food_xy').copy()
         df_d = df_d.reindex(idxs)
         df_d[id_ant_name] = id_ants
         df_d.reset_index(inplace=True)
@@ -45,7 +45,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         return df_d
 
     def __compute_distance_from_food(self, df_f):
-        df_d = np.around(np.sqrt((df_f.x - self.exp.x.df.x) ** 2 + (df_f.y - self.exp.y.df.y) ** 2), 3)
+        df_d = np.around(np.sqrt((df_f.x - self.exp.xy.df.x) ** 2 + (df_f.y - self.exp.xy.df.y) ** 2), 3)
         df_d = pd.DataFrame(df_d)
         return df_d
 
@@ -90,11 +90,9 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
     def compute_xy_next2food(self):
         name = 'xy_next2food'
 
-        self.exp.load(['x', 'y', 'is_xy_next2food'])
+        self.exp.load('is_xy_next2food')
 
-        self.exp.add_2d_from_1ds(
-            name1='x', name2='y', result_name='xy'
-        )
+        self.exp.load_as_2d(name1='mm10_x', name2='mm10_y', xname='x', yname='y', result_name='xy', replace=True)
 
         self.exp.filter_with_values(
             name_to_filter='xy', filter_name='is_xy_next2food', result_name=name,
@@ -321,20 +319,21 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
     def compute_angle_body_food(self):
         name = 'angle_body_food'
 
-        self.exp.load(['food_x', 'food_y', 'x', 'y', 'orientation'])
+        name_x = 'mm10_x'
+        name_y = 'mm10_y'
+        food_name_x = 'mm10_food_x'
+        food_name_y = 'mm10_food_y'
 
-        self.exp.add_2d_from_1ds(
-            name1='x', name2='y', result_name='xy',
-            xname='x', yname='y', replace=True
-        )
+        self.exp.load([food_name_x, food_name_y, 'orientation'])
+        self.exp.load_as_2d(name1=name_x, name2=name_y, result_name='xy', xname='x', yname='y', replace=True)
+        self.exp.load_as_2d(name1=food_name_x, name2=food_name_y, result_name='food_xy',
+                            xname='x', yname='y', replace=True)
+
         id_exps = self.exp.xy.df.index.get_level_values(id_exp_name)
         id_ants = self.exp.xy.df.index.get_level_values(id_ant_name)
         frames = self.exp.xy.df.index.get_level_values(id_frame_name)
         idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
-        self.exp.add_2d_from_1ds(
-            name1='food_x', name2='food_y', result_name='food_xy',
-            xname='x_ant', yname='y_ant', replace=True
-        )
+
         df_food = self.__reindexing_food_xy(id_ants, idxs)
 
         df_ant_vector = df_food.copy()
@@ -350,6 +349,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.get_data_object(name).change_values(norm_angle_tab(
             self.exp.ant_food_orientation.df.ant_food_orientation
             - self.exp.orientation.df.orientation))
+
         self.exp.operation(name, lambda x: np.around(norm_angle_tab2(x), 3))
 
         self.exp.write(name)

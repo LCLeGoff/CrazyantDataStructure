@@ -12,6 +12,36 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'FoodBase'
 
+    def compute_mm10_food_traj(self):
+        name_x = 'food_x'
+        name_y = 'food_y'
+        self.exp.load([name_x, name_y])
+        time_window = 10
+
+        result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
+                                                                category=self.category)
+        self.exp.write(result_name)
+
+        result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
+                                                                category=self.category)
+        self.exp.write(result_name)
+
+    def compute_mm1s_food_traj(self):
+        name_x = 'food_x'
+        name_y = 'food_y'
+        time_window = 100
+
+        result_name_x = 'mm1s_'+name_x
+        result_name_y = 'mm1s_'+name_y
+
+        self.exp.load([name_x, name_y])
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, result_name=result_name_x,
+                                                  time_window=time_window, category=self.category)
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, result_name=result_name_y,
+                                                  time_window=time_window, category=self.category)
+
+        self.exp.write([result_name_x, result_name_y])
+
     def compute_food_traj_length(self):
         result_name = 'food_traj_length'
         food_traj_name = 'food_x'
@@ -44,22 +74,24 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         hist_description = 'Distribution of the instantaneous speed of the food trajectory (mm/s)'
 
         if redo:
-            self.exp.load(['food_x', 'food_y', 'fps'])
+            name_x = 'mm10_food_x'
+            name_y = 'mm10_food_y'
+            self.exp.load([name_x, name_y, 'fps'])
 
             self.exp.add_copy1d(
-                name_to_copy='food_x', copy_name=name, category=self.category, label='Food speed',
+                name_to_copy=name_x, copy_name=name, category=self.category, label='Food speed',
                 description='Instantaneous speed of the food'
             )
 
             for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
-                dx = np.array(self.exp.food_x.df.loc[id_exp, :])
+                dx = np.array(self.exp.get_df(name_x).loc[id_exp, :])
                 dx1 = dx[1, :]
                 dx2 = dx[-2, :]
                 dx[1:-1, :] = (dx[2:, :] - dx[:-2, :]) / 2.
                 dx[0, :] = dx1 - dx[0, :]
                 dx[-1, :] = dx[-1, :] - dx2
 
-                dy = np.array(self.exp.food_y.df.loc[id_exp, :])
+                dy = np.array(self.exp.get_df(name_y).loc[id_exp, :])
                 dy1 = dy[1, :]
                 dy2 = dy[-2, :]
                 dy[1:-1, :] = (dy[2:, :] - dy[:-2, :]) / 2.
@@ -115,7 +147,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = 'food_phi'
         hist_name = result_name+'_hist'
         print(result_name)
-        self.exp.load(['food_x', 'food_y'])
+        name_x = 'mm10_food_x'
+        name_y = 'mm10_food_y'
+        self.exp.load([name_x, name_y])
 
         dtheta = np.pi/10.
         bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
@@ -123,9 +157,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         hist_description = 'Histogram of the angular coordinate of the food trajectory (in the food system)'
 
         if redo is True:
-            self.exp.add_2d_from_1ds(name1='food_x', name2='food_y', result_name='food_xy')
+            self.exp.add_2d_from_1ds(name1=name_x, name2=name_y, result_name='food_xy', replace=True)
 
-            self.exp.add_copy1d(name_to_copy='food_x', copy_name=result_name, category=self.category,
+            self.exp.add_copy1d(name_to_copy=name_x, copy_name=result_name, category=self.category,
                                 label='food trajectory phi', description='angular coordinate of the food trajectory'
                                                                          ' (in the food system)')
 
@@ -148,15 +182,16 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = 'food_exit_angle'
         print(result_name)
 
-        food_x_name = 'food_x'
-        food_y_name = 'food_y'
+        food_x_name = 'mm10_food_x'
+        food_y_name = 'mm10_food_y'
         food_name = 'food_xy'
         exit_name1 = 'exit1'
         exit_name2 = 'exit2'
 
         self.exp.load([food_x_name, food_y_name, exit_name1, exit_name2])
 
-        self.exp.add_2d_from_1ds(name1=food_x_name, name2=food_y_name, result_name=food_name, xname='x', yname='y')
+        self.exp.add_2d_from_1ds(name1=food_x_name, name2=food_y_name, result_name=food_name,
+                                 xname='x', yname='y', replace=True)
 
         self.exp.add_copy(old_name=food_x_name, new_name=result_name, category=self.category, label='Food exit angle',
                           description='Angular coordinate of the vector formed by the food position'
@@ -233,8 +268,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         bins = np.arange(0, 500, 5.)
 
         if redo:
-            food_x_name = 'food_x'
-            food_y_name = 'food_y'
+            food_x_name = 'mm10_food_x'
+            food_y_name = 'mm10_food_y'
             food_name = 'food_xy'
             exit_name1 = 'exit1'
             exit_name2 = 'exit2'

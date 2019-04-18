@@ -179,10 +179,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_carrying_next2food_with_svm(self):
         name_result = 'carrying_next2food_from_svm'
 
-        speed_name = 'mm20_speed_next2food'
-        orientation_name = 'mm20_angle_body_food_next2food'
-        distance_name = 'mm20_distance2food_next2food'
-        distance_diff_name = 'mm20_distance2food_next2food_diff'
+        speed_name = 'speed_next2food'
+        orientation_name = 'angle_body_food_next2food'
+        distance_name = 'distance2food_next2food'
+        distance_diff_name = 'distance2food_next2food_diff'
         training_set_name = 'carrying_training_set'
 
         self.exp.load(

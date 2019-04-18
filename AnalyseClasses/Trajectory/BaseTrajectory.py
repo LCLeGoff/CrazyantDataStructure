@@ -185,6 +185,21 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             description='coordinates of ant positions'
         )
 
+    def compute_mm10_traj(self):
+        name_x = 'x'
+        name_y = 'y'
+        self.exp.load([name_x, name_y])
+        time_window = 10
+
+        category = 'TrajMM'
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
+                                                                    category=category)
+        self.exp.write(result_name)
+
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
+                                                                    category=category)
+        self.exp.write(result_name)
+
     def compute_speed(self, redo=False, redo_hist=False):
         name = 'speed'
         hist_name = 'speed_hist'
@@ -193,8 +208,10 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)'
 
         if redo:
-            self.exp.load(['x', 'y', 'fps'])
-            self.exp.load_timeseries_exp_ant_frame_index()
+            name_x = 'mm10_x'
+            name_y = 'mm10_y'
+            self.exp.load_as_2d(name_x, name_y, result_name='xy', xname='x', yname='y', replace=True)
+            self.exp.load('fps')
 
             self.exp.add_copy1d(
                 name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
