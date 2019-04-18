@@ -48,7 +48,7 @@ class DataFileManager:
 
     def create_new_category(self, category):
 
-        if category is not None:
+        if category is not None and category not in self.existing_categories:
             add = self.root + category + '/'
 
             if not (os.path.isdir(add)):

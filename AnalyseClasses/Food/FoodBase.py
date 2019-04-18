@@ -316,8 +316,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         name = 'food_exit_distance'
         result_name = name+'_hist_evol'
 
-        bins = np.arange(0, 500, 10.)
-        frame_intervals = np.arange(0, 5., 0.5)*60*100
+        bins = np.arange(0, 500, 25.)
+        frame_intervals = np.arange(0, 4.5, 0.5)*60*100
 
         if redo:
             self.exp.load(name)

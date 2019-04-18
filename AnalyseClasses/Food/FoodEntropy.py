@@ -263,7 +263,7 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
                                            category=self.category, label=hists_label, description=hists_description)
 
             for t in time_intervals:
-                values = self.exp.get_df(variable_name)[str(t)]
+                values = self.exp.get_df(variable_name)[str(t)].dropna()
                 hist = np.histogram(values, bins=bins, normed=False)[0]
                 s = float(np.sum(hist))
                 hist = hist / s
@@ -332,11 +332,13 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         info_description = 'Information of the food (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around first outside ant attachments'
 
+        rank_list = np.arange(1., 11.)
+
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
         t0, t1, dt = -60, 60, 1.
         time_intervals_to_plot_individually = np.around(np.arange(t0, t1 + dt, dt), 1)
-        hists_index_values = [(th, t) for th in range(1, 11) for t in time_intervals]
+        hists_index_values = [(th, t) for th in rank_list for t in time_intervals]
 
         dtheta = np.pi / 12.
         bins = np.arange(0, np.pi + dtheta, dtheta)
@@ -344,21 +346,21 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
 
         if redo:
 
-            first_attach_name = 'first_attachments'
-            self.__extract_10first_attachments(first_attach_name, variable_name)
-
             self.exp.add_new_empty_dataset(name=hists_result_name, index_names=['rank', 'time'],
                                            column_names=bins2, index_values=hists_index_values,
                                            category=self.category, label=hists_label, description=hists_description)
 
-            for th in range(1, 11):
-                for t in time_intervals:
-                    values = self.exp.get_df(first_attach_name).loc[pd.IndexSlice[:, th], str(t)]
-                    hist = np.histogram(values, bins=bins, density=False)[0]
-                    s = float(np.sum(hist))
-                    hist = hist / s
+            first_attach_name = 'first_attachments'
+            self.__extract_10first_attachments(first_attach_name, variable_name)
 
-                    self.exp.get_df(hists_result_name).loc[(th, t), :] = hist
+            for (th, t) in self.exp.get_index(hists_result_name):
+
+                values = self.exp.get_df(first_attach_name).loc[pd.IndexSlice[:, th], str(t)].dropna()
+                hist = np.histogram(values, bins=bins, density=False)[0]
+                s = float(np.sum(hist))
+                hist = hist / s
+
+                self.exp.get_df(hists_result_name).loc[(th, t), :] = hist
 
             self.exp.write(hists_result_name)
         else:
@@ -366,18 +368,17 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
 
         if redo or redo_info:
 
-            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names=range(1, 11),
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names=rank_list,
                                            index_values=time_intervals, category=self.category,
                                            label=info_label, description=info_description)
 
             max_entropy = get_max_entropy(bins2)
 
-            for th in range(1, 11):
-                for t in time_intervals:
-                    hist = self.exp.get_df(hists_result_name).loc[(th, t)]
-                    entropy = get_entropy(hist)
+            for (th, t) in self.exp.get_index(hists_result_name):
+                hist = self.exp.get_df(hists_result_name).loc[(th, t)]
+                entropy = get_entropy(hist)
 
-                    self.exp.get_df(info_result_name).loc[t, th] = np.around(max_entropy - entropy, 2)
+                self.exp.get_df(info_result_name).loc[t, th] = np.around(max_entropy - entropy, 2)
 
             self.exp.write(info_result_name)
 
@@ -388,9 +389,9 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
             for t in time_intervals_to_plot_individually:
                 plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hists_result_name))
                 fig, ax = plotter.create_plot()
-                colors = ColorObject.create_cmap('hot', range(1, 11))
+                colors = ColorObject.create_cmap('hot', rank_list)
 
-                for th in range(1, 11):
+                for th in rank_list:
                     df = self.exp.get_df(hists_result_name).loc[(th, t)]
                     df = pd.DataFrame(data=np.array(df), index=bins2, columns=['temp'])
                     self.exp.add_new_dataset_from_df(df=df, name='temp', category=self.category, replace=True)
@@ -455,7 +456,7 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
 
         if redo:
             self.exp.add_new_empty_dataset(name='temp', index_names='time', column_names=self.exp.id_exp_list,
-                                           index_values=time_intervals)
+                                           index_values=time_intervals, replace=True)
 
             def get_variable_around_first_attachment(df1: pd.DataFrame):
                 id_exp = df1.index.get_level_values(id_exp_name)[0]
@@ -477,7 +478,7 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
 
             max_entropy = get_max_entropy(bins2)
             for t in time_intervals:
-                values = self.exp.get_df('temp').loc[t]
+                values = self.exp.get_df('temp').loc[t].dropna()
                 hist = np.histogram(values, bins=bins, density=False)[0]
                 s = float(np.sum(hist))
                 hist = hist / s

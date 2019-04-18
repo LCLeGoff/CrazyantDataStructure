@@ -37,4 +37,4 @@ class DataSetBuilder:
 
         definition = DefinitionBuilder().build_dataset(name=name, category=category, object_type=dataset_name,
                                                        label=label, description=description, nb_indexes=nb_indexes)
-        return DataSet(df.sort_index(), definition)
+        return DataSet(df, definition)
