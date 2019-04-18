@@ -153,7 +153,7 @@ FoodConfidence = AnalyseFoodConfidence(group)
 # FoodConfidence.compute_w10s_food_total_crossed_distance(True)
 # FoodConfidence.compute_w30s_food_total_crossed_distance(True)
 #
-# FoodConfidence.compute_w10s_food_path_efficiency(True)
+# FoodConfidence.compute_w10s_food_path_efficiency(True)g
 # FoodConfidence.compute_w30s_food_path_efficiency(True)
 
 FoodVeracity = AnalyseFoodVeracity(group)
@@ -170,4 +170,5 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_velocity()
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_velocity()
 #
-FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_field()
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_field()
+FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_field()

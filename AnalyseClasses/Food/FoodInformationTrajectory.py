@@ -121,40 +121,39 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
     def w10s_food_direction_error_vs_path_efficiency_field(self):
         time = 10
-        name_confidence = 'w'+str(time)+'s_food_path_efficiency'
-        name_veracity = 'mm'+str(time)+'s_food_direction_error'
-        name_x = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_x'
-        name_y = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_y'
+        self.__compute_field(time)
+
+    def w30s_food_direction_error_vs_path_efficiency_field(self):
+        time = 30
+        self.__compute_field(time)
+
+    def __compute_field(self, time):
+        name_confidence = 'w' + str(time) + 's_food_path_efficiency'
+        name_veracity = 'mm' + str(time) + 's_food_direction_error'
+        name_x = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_x'
+        name_y = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_y'
         self.exp.load([name_x, name_y, name_confidence, name_veracity])
-
-        result_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_field'
-        result_name_x = result_name+'_x'
-        result_name_y = result_name+'_y'
-
+        result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_field'
+        result_name_x = result_name + '_x'
+        result_name_y = result_name + '_y'
         label_x = 'X of the vector field food path efficiency vs food direction error'
         label_y = 'Y of the vector field food path efficiency vs food direction error'
-
         description_x = 'X coordinates of the vector field of the process taking the food path efficiency as X and' \
                         ' food direction error as Y'
         description_y = 'Y coordinates of the vector field of the process taking the food path efficiency as X and' \
                         ' food direction error as Y'
-
         dc = 0.1
-        confidence_intervals = np.arange(0, 1+dc, dc)
-        confidence_intervals2 = np.around((confidence_intervals[1:]+confidence_intervals[:-1])/2., 2)
-
+        confidence_intervals = np.arange(0, 1 + dc, dc)
+        confidence_intervals2 = np.around((confidence_intervals[1:] + confidence_intervals[:-1]) / 2., 2)
         dv = 0.1
-        veracity_intervals = np.arange(0, 1+dv, dv)
-        veracity_intervals2 = np.around((veracity_intervals[1:]+veracity_intervals[:-1])/2., 2)
-
+        veracity_intervals = np.arange(0, 1 + dv, dv)
+        veracity_intervals2 = np.around((veracity_intervals[1:] + veracity_intervals[:-1]) / 2., 2)
         self.exp.add_new_empty_dataset(name=result_name_x, index_names='confidence', fill_value=0,
                                        column_names=veracity_intervals2, index_values=confidence_intervals2,
                                        category=self.category, label=label_x, description=description_x)
-
         self.exp.add_new_empty_dataset(name=result_name_y, index_names='confidence', fill_value=0,
                                        column_names=veracity_intervals2, index_values=confidence_intervals2,
                                        category=self.category, label=label_y, description=description_y)
-
         self.exp.add_new_empty_dataset(name='norm', index_names='confidence', fill_value=0,
                                        column_names=veracity_intervals2, index_values=confidence_intervals2)
 
@@ -168,22 +167,19 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
             veracity = np.abs(self.exp.get_value(name_veracity, (id_exp, frame)))
 
             if not np.isnan(confidence) and not np.isnan(veracity) and not np.isnan(x) and not np.isnan(y):
-
-                i_c = min(get_index_interval_containing(confidence, confidence_intervals), len(confidence_intervals2)-1)
-                i_v = min(get_index_interval_containing(veracity, veracity_intervals), len(veracity_intervals2)-1)
+                i_c = min(get_index_interval_containing(confidence, confidence_intervals),
+                          len(confidence_intervals2) - 1)
+                i_v = min(get_index_interval_containing(veracity, veracity_intervals), len(veracity_intervals2) - 1)
 
                 self.exp.get_df(result_name_x).loc[confidence_intervals2[i_c], veracity_intervals2[i_v]] += x
                 self.exp.get_df(result_name_y).loc[confidence_intervals2[i_c], veracity_intervals2[i_v]] += y
                 self.exp.get_df('norm').loc[confidence_intervals2[i_c], veracity_intervals2[i_v]] += 1
 
         self.exp.groupby(name_x, [id_exp_name, id_frame_name], compute_field4each_group)
-
         self.exp.get_data_object(result_name_x).df /= self.exp.get_df('norm')
         self.exp.get_data_object(result_name_y).df /= self.exp.get_df('norm')
-
         self.exp.write(result_name_x)
         self.exp.write(result_name_y)
-
         plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name_x))
         fig, ax = plotter.create_plot()
         mat_x, mat_y = np.meshgrid(confidence_intervals2, veracity_intervals2)
