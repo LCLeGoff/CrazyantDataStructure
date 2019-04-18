@@ -168,6 +168,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         def compute_first_attachment4each_exp(df):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             frames = df.index.get_level_values(id_frame_name)
+            print(id_exp)
 
             min_time = int(frames.min())
             self.exp.change_value(result_name, id_exp, min_time)

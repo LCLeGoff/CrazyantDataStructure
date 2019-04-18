@@ -139,7 +139,8 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name, label='speed next to food',
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category=self.category, label='speed next to food',
             description='Moving mean (time window of 10 frames) of the instantaneous speed of ant close to the food'
         )
 
@@ -152,7 +153,8 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name, label='speed next to food',
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category=self.category, label='speed next to food',
             description='Moving mean (time window of 20 frames) of the instantaneous speed of ant close to the food'
         )
 
@@ -180,7 +182,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            label='Food distance next to food',
+            category=self.category, label='Food distance next to food',
             description='Moving mean (time window of 10 frames) '
                         'of the distance between the food and the ants next to the food'
         )
@@ -195,7 +197,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            label='Food distance next to food',
+            category=self.category, label='Food distance next to food',
             description='Moving mean (time window of 20 frames) '
                         'of the distance between the food and the ants next to the food'
         )
@@ -282,7 +284,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            name_to_filter=name, filter_name='is_xy_next2food', category=self.category, result_name=res_name,
             label='orientation next to food', description='Body orientation of ant next to food'
         )
 
@@ -295,7 +297,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.load([name, 'is_xy_next2food'])
 
         self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            name_to_filter=name, filter_name='is_xy_next2food', category=self.category, result_name=res_name,
             label='orientation next to food',
             description='Moving mean (time window of 10 frames) of the body orientation of ant next to food'
         )
@@ -310,7 +312,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         self.exp.filter_with_values(
             name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            label='orientation next to food',
+            label='orientation next to food', category=self.category,
             description='Moving mean (time window of 20 frames) of the body orientation of ant next to food'
         )
 

@@ -168,9 +168,6 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
-            self.exp.write(hist_name)
-
         self.compute_hist(name=result_name, bins=bins, hist_name=hist_name,
                           hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 

@@ -332,10 +332,10 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
         df_m = self.exp.groupby(result_name, id_exp_name, lambda x: np.max(x))
         self.exp.get_data_object(result_name).df = self.exp.get_df(result_name) / df_m
-        self.compute_hist(name=result_name, bins=np.arange(0, 1.1, 0.05), hist_name='temp',
+        self.compute_hist(name=result_name, bins=np.arange(0, 1.1, 0.05), hist_name='temp0',
                           redo=True, redo_hist=True, write=False)
 
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp0'))
         fig, ax = plotter.plot(xlabel='length (mm)', ylabel='PDF', normed=True)
         plotter.save(fig, name=hist_name, suffix='norm')
 

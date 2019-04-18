@@ -3,6 +3,7 @@ import pandas as pd
 from matplotlib.path import Path
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
+from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import pts2vect, angle, distance, norm_angle_tab
 from math import pi
 
@@ -12,6 +13,7 @@ from Tools.Plotter.Plotter import Plotter
 class AnalyseTrajectory(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
+        self.category = 'Trajectory'
 
     def initialize_xy_orientation_food(self, dynamic_food=False):
         print('x, y')
@@ -35,27 +37,27 @@ class AnalyseTrajectory(AnalyseClassDecorator):
     def __copy_xy0_to_xy(self, dynamic_food):
         print('coping xy0, absoluteOrientation and food0')
         self.exp.add_copy2d(
-            name_to_copy='exit0_1', copy_name='exit1', category='Trajectory',
+            name_to_copy='exit0_1', copy_name='exit1', category=self.category,
             label='Exit position 1 (setup system)',
             xlabel='x coordinates', ylabel='y coordinates',
             description='Coordinates of one of the points defining the exit in the setup system')
         self.exp.add_copy2d(
-            name_to_copy='exit0_2', copy_name='exit2', category='Trajectory',
+            name_to_copy='exit0_2', copy_name='exit2', category=self.category,
             label='Exit position 2 (setup system)',
             xlabel='x coordinates', ylabel='y coordinates',
             description='Coordinates of one of the points defining the exit in the setup system')
 
         self.exp.add_copy1d(
-            name_to_copy='x0', copy_name='x', category='Trajectory',
+            name_to_copy='x0', copy_name='x', category=self.category,
             label='x (mm)', description='x coordinate (mm, in the initial food system)'
         )
         self.exp.add_copy1d(
-            name_to_copy='y0', copy_name='y', category='Trajectory',
+            name_to_copy='y0', copy_name='y', category=self.category,
             label='y (mm)', description='y coordinate (mm, in the initial food system)'
         )
 
         self.exp.add_copy1d(
-            name_to_copy='absoluteOrientation', copy_name='orientation', category='Trajectory',
+            name_to_copy='absoluteOrientation', copy_name='orientation', category=self.category,
             label='orientation (rad)', description='ant orientation (in the initial food system)'
         )
         self.exp.operation('orientation', lambda z: round(z, 3))
@@ -100,7 +102,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         print('orientation in same direction')
         self.exp.add_copy1d(
             name_to_copy='mm2px', copy_name='traj_reoriented',
-            category='Trajectory', label='trajectory reoriented',
+            category=self.category, label='trajectory reoriented',
             description='Trajectories reoriented to be in the same orientation of the other experiments'
         )
         for id_exp in id_exp_list:
@@ -166,13 +168,13 @@ class AnalyseTrajectory(AnalyseClassDecorator):
     def __copy_xy_to_r_phi(self):
         self.exp.add_copy1d(
             name_to_copy='x', copy_name='r',
-            category='Trajectory',
+            category=self.category,
             label='r',
             description='radial coordinate (in the food system)'
         )
         self.exp.add_copy1d(
             name_to_copy='x', copy_name='phi',
-            category='Trajectory',
+            category=self.category,
             label='phi',
             description='angular coordinate (in the food system)'
         )
@@ -181,7 +183,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         self.exp.add_2d_from_1ds(
             name1='x', name2='y',
             result_name='xy', xname='x', yname='y',
-            category='Trajectory', label='coordinates', xlabel='x', ylabel='y',
+            category=self.category, label='coordinates', xlabel='x', ylabel='y',
             description='coordinates of ant positions'
         )
 
@@ -214,48 +216,52 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             self.exp.load('fps')
 
             self.exp.add_copy1d(
-                name_to_copy='x', copy_name=name, category='Trajectory', label='Speed',
+                name_to_copy=name_x, copy_name=name, category=self.category, label='Speed',
                 description='Instantaneous speed of the ants'
             )
             self.exp.add_copy1d(
-                name_to_copy='x', copy_name=name+'_x', category='Trajectory', label='X speed',
+                name_to_copy=name_x, copy_name=name + '_x', category=self.category, label='X speed',
                 description='X coordinate of the instantaneous speed of the ants'
             )
             self.exp.add_copy1d(
-                name_to_copy='x', copy_name=name+'_y', category='Trajectory', label='Y speed',
+                name_to_copy=name_x, copy_name=name + '_y', category=self.category, label='Y speed',
                 description='Y coordinate of the instantaneous speed of the ants'
             )
 
-            for id_exp in self.exp.timeseries_exp_ant_frame_index:
-                for id_ant in self.exp.timeseries_exp_ant_frame_index[id_exp]:
-                    print(id_exp, id_ant)
+            def compute_speed4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+                frames = df.index.get_level_values(id_frame_name)
+                print(id_exp, id_ant)
 
-                    dx = np.array(self.exp.x.df.loc[id_exp, id_ant, :])
-                    dx1 = dx[1, :].copy()
-                    dx2 = dx[-2, :].copy()
-                    dx[1:-1, :] = (dx[2:, :]-dx[:-2, :])/2.
-                    dx[0, :] = dx1-dx[0, :]
-                    dx[-1, :] = dx[-1, :]-dx2
+                dx = np.array(df.x)
+                dx1 = dx[1].copy()
+                dx2 = dx[-2].copy()
+                dx[1:-1] = (dx[2:]-dx[:-2])/2.
+                dx[0] = dx1-dx[0]
+                dx[-1] = dx[-1]-dx2
 
-                    dy = np.array(self.exp.y.df.loc[id_exp, id_ant, :])
-                    dy1 = dy[1, :].copy()
-                    dy2 = dy[-2, :].copy()
-                    dy[1:-1, :] = (dy[2:, :]-dy[:-2, :])/2.
-                    dy[0, :] = dy1-dy[0, :]
-                    dy[-1, :] = dy[-1, :]-dy2
+                dy = np.array(df.y)
+                dy1 = dy[1].copy()
+                dy2 = dy[-2].copy()
+                dy[1:-1] = (dy[2:]-dy[:-2])/2.
+                dy[0] = dy1-dy[0]
+                dy[-1] = dy[-1]-dy2
 
-                    dt = np.array(self.exp.timeseries_exp_ant_frame_index[id_exp][id_ant], dtype=float)
-                    dt.sort()
-                    dt[1:-1] = dt[2:]-dt[:-2]
-                    dt[0] = 1
-                    dt[-1] = 1
-                    dx[dt > 2] = np.nan
-                    dy[dt > 2] = np.nan
+                dt = np.array(frames, dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:]-dt[:-2]
+                dt[0] = 1
+                dt[-1] = 1
+                dx[dt > 2] = np.nan
+                dy[dt > 2] = np.nan
 
-                    self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.around(dx*self.exp.fps.df.loc[id_exp].fps)
-                    self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.around(dy*self.exp.fps.df.loc[id_exp].fps)
-                    self.exp.speed.df.loc[id_exp, id_ant, :] =\
-                        np.around(np.sqrt(dx**2+dy**2)*self.exp.fps.df.loc[id_exp].fps, 3)
+                fps = self.exp.get_value('fps', id_exp)
+                self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.c_[np.around(dx * fps, 3)]
+                self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.c_[np.around(dy * fps, 3)]
+                self.exp.speed.df.loc[id_exp, id_ant, :] = np.c_[np.around(np.sqrt(dx**2+dy**2) * fps, 3)]
+
+            self.exp.groupby('xy', [id_exp_name, id_ant_name], compute_speed4each_group)
 
             self.exp.write([name, name+'_x', name+'_y'])
 
@@ -333,8 +339,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
                            ' smoothed with a moving mean of window length 1 second'
         if redo:
             self.exp.load(name)
-            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=name, time_window=time_window, category=category
+            self.exp.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average=name, time_window=time_window, result_name=result_name, category=category
             )
             self.exp.write(result_name)
 
@@ -371,7 +377,6 @@ class AnalyseTrajectory(AnalyseClassDecorator):
 
     def compute_is_from_outside(self):
         result_name = 'from_outside'
-        category = 'Trajectory'
 
         self.exp.load(['entrance1', 'entrance2', 'traj_reoriented', 'food_center', 'traj_translation', 'mm2px'])
         self.exp.load_as_2d('x', 'y', 'xy')
@@ -396,7 +401,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         df_res = df_res.drop(columns='y')
 
         self.exp.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
-                                   category=category, label='Is the ant from outside?',
+                                   category=self.category, label='Is the ant from outside?',
                                    description='Boolean saying if the ant is coming from outside or not')
 
         self.exp.write(result_name)
