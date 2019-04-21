@@ -2,8 +2,10 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import colors
 
-from Tools.MiscellaneousTools.ArrayManipulation import smooth
+import Tools.MiscellaneousTools.ArrayManipulation as array_manip
+
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
 
@@ -36,50 +38,80 @@ class Plotter(BasePlotters):
     def plot(
             self, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
             preplot=None, figsize=None, **kwargs):
-        if label_suffix is None:
-            label_suffix = ''
-        else:
-            label_suffix = ' '+label_suffix
 
-        if label is None:
-            if self.obj.get_dimension() == 1 or self.column_name is not None:
-                label = self.obj.label
-            else:
-                label = [str(column_name) + label_suffix for column_name in self.obj.get_column_names()]
-
-        self.arg_tools.change_arg_value('line', kwargs)
-        self.arg_tools.change_arg_value('axis', kwargs)
-
-        fig, ax = self.create_plot(preplot, figsize=figsize)
-        self.display_title(ax=ax, title_prefix=title_prefix, title=title)
-        self.set_axis_scales_and_labels(ax, self.axis)
+        fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
 
         x = self.obj.get_index_array()
 
-        if self.obj.get_dimension() == 1:
-            y = self.__get_y(self.obj.get_array(), normed, x)
-            ax.plot(x, y, label=label, **self.line)
-        else:
-            if self.column_name is None:
-
-                colors = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
-
-                for i, column_name in enumerate(self.obj.get_column_names()):
-                    y = self.__get_y(self.obj.df[column_name], normed, x)
-                    self.line['c'] = colors[str(column_name)]
-                    self.line['markeredgecolor'] = colors[str(column_name)]
-                    ax.plot(x, y, label=label[i], **self.line)
-                ax.legend(loc=0)
-            else:
-                if self.column_name not in self.obj.get_column_names():
-                    self.column_name = str(self.column_name)
-                y = self.__get_y(self.obj.df[self.column_name], normed, x)
-                ax.plot(x, y, label=label, **self.line)
+        y = self.__get_y(normed, x)
+        self.__plot_xy(ax, x, y, label)
 
         return fig, ax
 
     def plot_smooth(self, window, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
                     preplot=None, figsize=None, **kwargs):
+
+        fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
+
+        x = self.obj.get_index_array()
+        y = self.__get_y(normed, x, window, smooth=True)
+        self.__plot_xy(ax, x, y, label)
+
+        return fig, ax
+
+    def plot_heatmap(self, normed=False, title=None, title_prefix=None, preplot=None, figsize=None,
+                     v_min=None, v_max=None, cmap_scale_log=False, colorbar_ticks=None, cbar_ticks_size=15,
+                     cbar_label=None, cbar_label_size=15, **kwargs):
+
+        fig, ax, label = self.__prepare_plot(preplot=preplot, figsize=figsize,
+                                             title=title, title_prefix=title_prefix, kwargs=kwargs)
+
+        tab_x = list(self.obj.get_index_array())
+        tab_x.append(2*tab_x[-1]-tab_x[-2])
+        tab_x = np.array(tab_x)
+
+        tab_y = list(np.array(self.obj.get_column_names(), dtype=float))
+        tab_y.append(2*tab_y[-1]-tab_y[-2])
+        tab_y = np.array(tab_y)
+
+        tab_h = self.obj.get_array()
+        h = np.ma.array(tab_h, mask=np.isnan(tab_h))
+
+        if h.size <= 1e5:
+
+            y, x = np.meshgrid(tab_y + 1e-5 * (ax.get_yscale == 'log'), tab_x + 1e-5 * (ax.get_xscale == 'log'))
+            if normed is True:
+                s = np.sum(h)
+                h = h/s
+            elif normed == 'conditional_x':
+                l1, l2 = h.shape
+                for i in range(l2):
+                    h[:, i] /= np.sum(h[:, i])
+            elif normed == 'conditional_y':
+                l1, l2 = h.shape
+                for i in range(l1):
+                    h[i, :] /= np.sum(h[i, :])
+
+            if cmap_scale_log:
+                img = ax.pcolor(x, y, h, vmin=v_min, vmax=v_max, norm=colors.LogNorm(), cmap=self.cmap)
+            else:
+                img = ax.pcolor(x, y, h, vmin=v_min, vmax=v_max, cmap=self.cmap)
+
+            if colorbar_ticks is None:
+                cbar = fig.colorbar(img)
+            else:
+                cbar = fig.colorbar(img, ticks=colorbar_ticks[0])
+                cbar.ax.set_yticklabels(colorbar_ticks[1], fontsize=cbar_ticks_size)
+
+            cbar.set_label(cbar_label, fontsize=cbar_label_size, va='center', fontweight='bold')
+
+            return fig, ax, cbar
+
+        else:
+            print('Matrix too big: ' + str(h.size))
+
+    def __prepare_plot(self, preplot=None, figsize=None, label=None, label_suffix=None,
+                       title=None, title_prefix=None, kwargs=None):
 
         if label_suffix is None:
             label_suffix = ''
@@ -94,15 +126,13 @@ class Plotter(BasePlotters):
 
         self.arg_tools.change_arg_value('line', kwargs)
         self.arg_tools.change_arg_value('axis', kwargs)
-
         fig, ax = self.create_plot(preplot, figsize=figsize)
         self.display_title(ax=ax, title_prefix=title_prefix, title=title)
         self.set_axis_scales_and_labels(ax, self.axis)
+        return fig, ax, label
 
-        x = self.obj.get_index_array()
-
+    def __plot_xy(self, ax, x, y, label):
         if self.obj.get_dimension() == 1:
-            y = smooth(self.__get_y(self.obj.get_array(), normed, x), window)
             ax.plot(x, y, label=label, **self.line)
         else:
             if self.column_name is None:
@@ -110,21 +140,38 @@ class Plotter(BasePlotters):
                 colors = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
 
                 for i, column_name in enumerate(self.obj.get_column_names()):
-                    y = smooth(self.__get_y(self.obj.df[column_name], normed, x), window)
                     self.line['c'] = colors[str(column_name)]
                     self.line['markeredgecolor'] = colors[str(column_name)]
-                    ax.plot(x, y, label=label[i], **self.line)
+                    ax.plot(x, y[i], label=label[i], **self.line)
                 ax.legend(loc=0)
             else:
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
-                y = smooth(self.__get_y(self.obj.df[self.column_name], normed, x), window)
                 ax.plot(x, y, label=label, **self.line)
 
-        return fig, ax
+    def __get_y(self, normed, x, window=None, smooth=False):
+
+        if smooth is False:
+            smooth = lambda w: w
+        else:
+            smooth = array_manip.smooth
+
+        if self.obj.get_dimension() == 1:
+            y = smooth(self.__norm_y(self.obj.get_array(), normed, x), window)
+        else:
+            if self.column_name is None:
+                y = []
+                for i, column_name in enumerate(self.obj.get_column_names()):
+                    y.append(smooth(self.__norm_y(self.obj.df[column_name], normed, x), window))
+            else:
+                if self.column_name not in self.obj.get_column_names():
+                    self.column_name = str(self.column_name)
+                y = smooth(self.__norm_y(self.obj.df[self.column_name], normed, x), window)
+
+        return y
 
     @staticmethod
-    def __get_y(y, normed, x):
+    def __norm_y(y, normed, x):
         y0 = y.ravel()
         if normed is True:
             dx = float(np.mean(x[1:] - x[:-1]))
