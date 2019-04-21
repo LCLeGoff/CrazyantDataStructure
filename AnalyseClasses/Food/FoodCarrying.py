@@ -65,6 +65,49 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         ax.set_xticks(range(0, 430, 60))
         plotter.save(fig)
 
+    def compute_non_outside_ant_attachment_frames(self):
+        result_name = 'non_outside_ant_attachment_frames'
+        carrying_name = 'non_outside_ant_carrying_intervals'
+
+        self.__get_attachment_frames(carrying_name, result_name)
+
+    def compute_outside_ant_attachment_frames(self):
+        result_name = 'outside_ant_attachment_frames'
+        carrying_name = 'outside_ant_carrying_intervals'
+
+        self.__get_attachment_frames(carrying_name, result_name)
+
+    def __get_attachment_frames(self, carrying_name, result_name):
+        self.exp.load(carrying_name)
+        nb_attach = len(self.exp.get_df(carrying_name))
+        self.exp.get_data_object(carrying_name).df[:] = np.c_[range(nb_attach)]
+        res = np.full((nb_attach, 3), -1)
+        label = 'Attachment frames of outside ants'
+        description = 'Frames when an ant from outside attached to the food, data is indexed by the experiment index' \
+                      ' and the number of the attachment'
+
+        def get_attachment_frame4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            frames = list(set(df.index.get_level_values(id_frame_name)))
+
+            frames.sort()
+
+            inters = np.array(df, dtype=int).ravel()
+            lg = len(frames)
+
+            res[inters[0]:inters[0] + lg, 0] = id_exp
+            res[inters[0]:inters[0] + lg, 1] = range(1, lg + 1)
+            res[inters[0]:inters[0] + lg, 2] = frames
+
+            return df
+
+        self.exp.groupby(carrying_name, id_exp_name, get_attachment_frame4each_group)
+        res = res[res[:, -1] != -1, :]
+        self.exp.add_new_dataset_from_array(array=res, name=result_name, index_names=[id_exp_name, 'th'],
+                                            column_names=result_name, category=self.category,
+                                            label=label, description=description)
+        self.exp.write(result_name)
+
     def compute_outside_ant_attachment(self):
         carrying_name = 'carrying_intervals'
         outside_ant_name = 'from_outside'

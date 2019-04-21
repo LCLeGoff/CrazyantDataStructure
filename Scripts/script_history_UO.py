@@ -95,9 +95,12 @@ Carrying = AnalyseFoodCarrying(group)
 #
 # Carrying.compute_outside_ant_attachment()
 # Carrying.compute_non_outside_ant_attachment()
+
 # Carrying.compute_nbr_attachment_per_exp()
 # Carrying.compute_first_attachment_time_of_outside_ant()
 # Carrying.compute_food_traj_length_around_first_attachment()
+# Carrying.compute_outside_ant_attachment_frames()
+# Carrying.compute_non_outside_ant_attachment_frames()
 
 # Carrying.compute_food_direction_error_evol_around_first_attachment(True)
 # Carrying.compute_autocorrelation_food_phi(True)
@@ -170,5 +173,8 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_velocity()
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_velocity()
 #
-# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_field()
-FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_field()
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_vector_field()
+# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_vector_field()
+
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d(True)
+FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d(True)
