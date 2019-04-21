@@ -556,13 +556,17 @@ class ExperimentGroups:
 
         self.add_object(name, obj, replace=replace)
 
-    def add_new_dataset_from_array(self, array, name, index_names, category=None, label=None, description=None,
-                                   replace=False):
+    def add_new_dataset_from_array(self, array, name, index_names, column_names=None, category=None, label=None,
+                                   description=None, replace=False):
 
-        df = self.__convert_array_to_df(array, name, dataset_name, index_names=index_names)
+        if column_names is None:
+            column_names = name
 
-        obj = Builder.build1d_from_df(
-            df=df, name=name, object_type=dataset_name, category=category, label=label, description=description)
+        df = self.__convert_array_to_df(array=array, name=column_names,
+                                        object_type=dataset_name, index_names=index_names)
+
+        obj = Builder.build_dataset_from_df(
+            df=df, name=name, category=category, label=label, description=description)
 
         self.add_object(name, obj, replace=replace)
 
