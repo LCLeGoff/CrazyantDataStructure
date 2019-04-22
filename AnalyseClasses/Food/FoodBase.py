@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from matplotlib.path import Path
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
@@ -65,6 +66,61 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         ax.grid()
         ax.set_xticks(range(0, 430, 60))
         plotter.save(fig)
+
+    def compute_food_exit_frames(self):
+        result_name = 'food_exit_frames'
+        name_x = 'food_x'
+        name_y = 'food_y'
+        self.exp.load([name_x, name_y])
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category=self.category,
+                                 label='Food trajectory length (s)',
+                                 description='Length of the trajectory of the food in second')
+
+        self.__compute_exit_pts()
+
+        for id_exp in self.exp.id_exp_list:
+            exit_path = Path([self.exp.exit1.df.loc[id_exp], self.exp.exit2.df.loc[id_exp],
+                              self.exp.exit3.df.loc[id_exp], self.exp.exit4.df.loc[id_exp]])
+
+            df_x = self.exp.get_df(name_x).loc[id_exp, :]
+            df_y = self.exp.get_df(name_y).loc[id_exp, :]
+            xys = np.array(df_x.join(df_y))
+
+            is_outside = exit_path.contains_points(xys)
+            id_frame = np.where(is_outside == 1)[0][0]
+            frame = int(df_x.index[id_frame])
+
+            self.exp.change_value(name=result_name, idx=id_exp, value=frame)
+
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
+        self.exp.write(result_name)
+
+    def __compute_exit_pts(self):
+        self.exp.load(['entrance1', 'entrance2', 'mm2px'])
+        self.exp.add_copy('entrance1', 'exit1')
+        self.exp.add_copy('entrance1', 'exit2')
+        self.exp.add_copy('entrance1', 'exit3')
+        self.exp.add_copy('entrance1', 'exit4')
+        for id_exp in self.exp.id_exp_list:
+            mm2px = self.exp.get_value('mm2px', id_exp)
+            xmin = min(self.exp.entrance1.df.loc[id_exp].x, self.exp.entrance2.df.loc[id_exp].x)
+            ymin = min(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
+            ymax = max(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
+            xmax = max(self.exp.entrance1.df.loc[id_exp].x, self.exp.entrance2.df.loc[id_exp].x)
+            dl = 20*mm2px
+            self.exp.exit1.df.x.loc[id_exp] = xmin - dl
+            self.exp.exit1.df.y.loc[id_exp] = ymin - dl
+            self.exp.exit2.df.x.loc[id_exp] = xmin - dl
+            self.exp.exit2.df.y.loc[id_exp] = ymax + dl
+            self.exp.exit3.df.x.loc[id_exp] = xmax + dl
+            self.exp.exit3.df.y.loc[id_exp] = ymax + dl
+            self.exp.exit4.df.x.loc[id_exp] = xmax + dl
+            self.exp.exit4.df.y.loc[id_exp] = ymin - dl
+
+        self.exp.exit1.df = self.exp.exit1.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit2.df = self.exp.exit2.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit3.df = self.exp.exit3.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit4.df = self.exp.exit4.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
 
     def compute_food_speed(self, redo=False, redo_hist=False):
         name = 'food_speed'
