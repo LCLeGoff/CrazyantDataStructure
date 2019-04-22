@@ -128,62 +128,93 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         self.__plot_heatmap_info_traj(time, redo)
 
     def __plot_heatmap_info_traj(self, time, redo):
+        w = 10
+
         result_name_all = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_hist2d'
         result_name_start = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_hist2d_start'
-        result_names = [result_name_all, result_name_start]
+        result_name_end = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_hist2d_end'
+
+        result_names = [result_name_all, result_name_start, result_name_end]
+
         dc = 0.1
         x_intervals = np.arange(0, 1 + dc, dc)
         dv = 0.1
         y_intervals = np.arange(0, 1 + dv, dv)
+
         name_x = 'w' + str(time) + 's_food_path_efficiency'
         name_y = 'mm' + str(time) + 's_food_direction_error'
         name_attachments = 'outside_ant_attachment_frames'
+        name_last_frame = 'food_exit_frames'
+
+        label = '2D histogram of food path efficiency vs food direction error'
+        description = 'Two-D histogram of the 2 variables food path efficiency and food direction error'
+
         if redo:
 
-            self.exp.load([name_x, name_y, name_attachments])
-            self.exp.operation(name_y, lambda df: np.abs(df) / np.pi)
+            self.exp.load([name_x, name_y, name_attachments, name_last_frame, 'fps'])
+            self.exp.operation(name_y, lambda df: 1-(np.abs(df) / np.pi))
 
-            label = '2D histogram of food path efficiency vs food direction error'
-            description = 'Two-D histogram of the 2 variables food path efficiency and food direction error'
             x = self.exp.get_df(name_x)[name_x]
             y = self.exp.get_df(name_y)[name_y]
-            self.__compute_hist2d(x, y, x_intervals, y_intervals, result_name_all, label, description)
 
-            label2 = label+' for the first 30s'
-            description2 = description+' for the first 30s'
-            df = 3000
-            x = self.exp.get_df(name_x)[name_x]
-            y = self.exp.get_df(name_y)[name_y]
-            indexes = []
-            for id_exp in self.exp.id_exp_list:
-                frame0 = x.loc[id_exp, :].index.get_level_values(id_frame_name)[0]
-                frames = list(x.loc[id_exp, frame0:frame0 + df].index.get_level_values(id_frame_name))
-                indexes += [(id_exp, frame) for frame in frames]
-            x = x.reindex(indexes)
-            y = y.reindex(indexes)
-            self.__compute_hist2d(x, y, x_intervals, y_intervals, result_name_start, label2, description2)
+            self.__compute_hist2d_info_traj_all_times(
+                x, result_name_all, y, x_intervals, y_intervals, label, description)
 
-            label2 = label+' during the 10 second before first attachment'
-            description2 = description+' for the first 30s'
-            df = 3000
-            x = self.exp.get_df(name_x)[name_x]
-            y = self.exp.get_df(name_y)[name_y]
-            indexes = []
-            for id_exp in self.exp.id_exp_list:
-                frame0 = x.loc[id_exp, :].index.get_level_values(id_frame_name)[0]
-                frames = list(x.loc[id_exp, frame0:frame0 + df].index.get_level_values(id_frame_name))
-                indexes += [(id_exp, frame) for frame in frames]
-            x = x.reindex(indexes)
-            y = y.reindex(indexes)
-            self.__compute_hist2d(x, y, x_intervals, y_intervals, result_name_start, label2, description2)
+            self.__compute_hist2d_info_traj_at_start(
+                x, y, result_name_start, w, x_intervals, y_intervals, label, description)
+
+            self.__compute_hist2d_info_traj_at_end(
+                x, y, name_last_frame, result_name_end, w, x_intervals, y_intervals, label, description)
 
             self.exp.write(result_names)
         else:
             self.exp.load(result_names)
-        for result_name_all in result_names:
-            plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name_all))
+
+        for result_name in result_names:
+            plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
             fig, ax, cbar = plotter.plot_heatmap(xlabel='Confidence', ylabel='Veracity', cbar_label='Proportion')
             plotter.save(fig)
+
+    def __compute_hist2d_info_traj_at_end(
+            self, x, y, name_variable, result_name, w, x_intervals, y_intervals, label, description):
+
+        label_end = label + ' for the last ' + str(w) + 's'
+        description_end = description + ' for the last ' + str(w) + 's'
+
+        def func_end(df, id_exp, dframe):
+            frame = self.exp.get_value(name_variable, id_exp)
+            return list(df.loc[id_exp, frame - dframe:frame].index.get_level_values(id_frame_name))
+
+        self.__compute_info_traj_hist2d_at_specific_times(
+            result_name, x, y, x_intervals, y_intervals, func_end, w, label_end, description_end)
+
+    def __compute_hist2d_info_traj_at_start(self, x, y, result_name, w, x_intervals, y_intervals, label, description):
+
+        label_start = label + ' for the first ' + str(w) + 's'
+        description_start = description + ' for the first ' + str(w) + 's'
+
+        def func_start(df, id_exp, dframe):
+            frame = df.loc[id_exp, :].index.get_level_values(id_frame_name)[0]
+            return list(df.loc[id_exp, frame:frame + dframe].index.get_level_values(id_frame_name))
+
+        self.__compute_info_traj_hist2d_at_specific_times(
+            result_name, x, y, x_intervals, y_intervals, func_start, w, label_start, description_start)
+
+    def __compute_hist2d_info_traj_all_times(self, x, result_name_all, y, x_intervals, y_intervals, label, description):
+        self.__compute_hist2d(x, y, x_intervals, y_intervals, result_name_all, label, description)
+
+    def __compute_info_traj_hist2d_at_specific_times(
+            self, result_name, x, y, x_intervals, y_intervals, func, w, label, description):
+
+        indexes = []
+        for id_exp in self.exp.id_exp_list:
+            fps = self.exp.get_value('fps', id_exp)
+            dframe = w * fps
+            frames = func(x, id_exp, dframe)
+            indexes += [(id_exp, frame) for frame in frames]
+        x2 = x.reindex(indexes)
+        y2 = y.reindex(indexes)
+        self.__compute_hist2d(x2, y2, x_intervals, y_intervals, result_name, label, description)
 
     def __compute_hist2d(self, x, y, x_intervals, y_intervals, result_name, label, description):
         h, xedges, yedges = np.histogram2d(x=x, y=y, bins=[x_intervals, y_intervals])
@@ -194,6 +225,202 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
                                             column_names=yedges[:-1], category=self.category, label=label,
                                             description=description)
         self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int, inplace=True)
+
+    def w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(self, redo=False):
+        time = 10
+        self.__plot_heatmap_info_traj_around_first_outside_attachment(time, redo)
+
+    def w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(self, redo=False):
+        time = 30
+        self.__plot_heatmap_info_traj_around_first_outside_attachment(time, redo)
+
+    def __plot_heatmap_info_traj_around_first_outside_attachment(self, time, redo):
+        result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_hist2d_w'
+        label = '2D histogram of food path efficiency vs food direction error'
+        description = 'Two-D histogram of the 2 variables food path efficiency and food direction error'
+
+        dt_before_attach = [-30, -10, -5]
+        dt_after_attach = [0, 5, 10, 20, 30, 60]
+        dt_attach = dt_before_attach+dt_after_attach
+
+        result_names = []
+        labels = []
+        descriptions = []
+
+        for i in range(len(dt_before_attach)-1):
+            t0 = dt_before_attach[i]
+            t1 = dt_before_attach[i+1]
+            result_names.append(result_name+str(-t0)+'_'+str(-t1)+'s_before_first_outside_attachment')
+            labels.append(label+' between '+str(t0)+' and '+str(t1)+' s')
+            descriptions.append(description+' between '+str(t0)+' and '+str(t1)+' s')
+
+        t0 = dt_before_attach[-1]
+        t1 = dt_after_attach[0]
+        result_names.append(result_name+str(-t0)+'_'+str(t1)+'s_before_first_outside_attachment')
+        labels.append(label+' between '+str(t0)+' and '+str(t1)+' s')
+        descriptions.append(description+' between '+str(t0)+' and '+str(t1)+' s')
+
+        for i in range(len(dt_after_attach)-1):
+            t0 = dt_after_attach[i]
+            t1 = dt_after_attach[i+1]
+            result_names.append(result_name+str(t0)+'_'+str(t1)+'s_after_first_outside_attachment')
+            labels.append(label+' between '+str(t0)+' and '+str(t1)+' s')
+            descriptions.append(description+' between '+str(t0)+' and '+str(t1)+' s')
+
+        dc = 0.1
+        x_intervals = np.arange(0, 1 + dc, dc)
+        dv = 0.1
+        y_intervals = np.arange(0, 1 + dv, dv)
+
+        name_x = 'w' + str(time) + 's_food_path_efficiency'
+        name_y = 'mm' + str(time) + 's_food_direction_error'
+        name_attachments = 'outside_ant_attachment_frames'
+
+        if redo:
+
+            self.exp.load([name_x, name_y, name_attachments, 'fps'])
+            self.exp.operation(name_y, lambda df: 1 - (np.abs(df) / np.pi))
+
+            x = self.exp.get_df(name_x)[name_x]
+            y = self.exp.get_df(name_y)[name_y]
+
+            for i in range(len(dt_attach)-1):
+                print(i)
+                indexes = []
+
+                for id_exp in self.exp.id_exp_list:
+                    fps = self.exp.get_value('fps', id_exp)
+                    frame_attach = self.exp.get_value(name_attachments, (id_exp, 1))
+                    frame0 = self.exp.get_df(name_y).loc[id_exp, :].index.get_level_values(id_frame_name)[0]
+
+                    f0 = frame_attach+dt_attach[i]*fps+frame0
+                    f1 = frame_attach+dt_attach[i+1]*fps+frame0
+
+                    frames = list(x.loc[id_exp, f0:f1].index.get_level_values(id_frame_name))
+                    indexes += [(id_exp, frame) for frame in frames]
+
+                x2 = x.reindex(indexes)
+                y2 = y.reindex(indexes)
+                self.__compute_hist2d(x2, y2, x_intervals, y_intervals, result_names[i], labels[i], descriptions[i])
+
+            self.exp.write(result_names)
+        else:
+            self.exp.load(result_names)
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_names[0]))
+        nr = 3
+        nc = 3
+        fig, ax = plotter.create_plot(figsize=(10, 10), nrows=nr, ncols=nc, left=0.05)
+        for i in range(len(dt_attach)-1):
+            name = result_names[i]
+            t0 = dt_attach[i]
+            t1 = dt_attach[i+1]
+            title = '['+str(t0)+', '+str(t1)+'] s'
+            r = int(i/nc)
+            c = i % nc
+
+            plotter = Plotter(self.exp.root, self.exp.get_data_object(name))
+            plotter.plot_heatmap(
+                preplot=(fig, ax[r, c]), xlabel='', ylabel='', cbar_label='', title=title, normed=True)
+        ax[1, 0].set_ylabel('Veracity')
+        ax[-1, 1].set_xlabel('Confidence')
+        plotter.save(fig, name=result_name)
+
+    def w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(self, redo=False):
+        time = 10
+        self.__plot_scatter_info_traj_around_first_outside_attachment(time, redo)
+
+    def __plot_scatter_info_traj_around_first_outside_attachment(self, time, redo):
+        result_name = 'w' + str(time) + \
+                      's_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment'
+        label = 'Scatter plot of food path efficiency vs food direction error per experiment'
+        description = 'Scatter plot of the 2 variables food path efficiency and food direction error per experiment ' \
+                      'at different times'
+
+        t_attach = range(-60, 120, 15)
+
+        name_x = 'w' + str(time) + 's_food_path_efficiency'
+        name_y = 'mm' + str(time) + 's_food_direction_error'
+        name_attachments = 'outside_ant_attachment_frames'
+        name_last_frame = 'food_exit_frames'
+
+        if redo:
+
+            self.exp.load([name_x, name_y, name_attachments, name_last_frame, 'fps'])
+            self.exp.operation(name_y, lambda tab: 1 - (np.abs(tab) / np.pi))
+
+            index_values = [(id_exp, t) for id_exp in self.exp.id_exp_list for t in t_attach]
+            self.exp.add_new_empty_dataset(name=result_name, index_names=['id_exp', 'time'],
+                                           column_names=[name_x, name_y], index_values=index_values,
+                                           category=self.category, label=label, description=description)
+
+            for id_exp in self.exp.id_exp_list:
+                print(id_exp)
+
+                x = self.exp.get_df(name_x).loc[id_exp, :]
+                y = self.exp.get_df(name_y).loc[id_exp, :]
+                frame_attach = self.exp.get_value(name_attachments, (id_exp, 1))
+                last_frame = self.exp.get_value(name_last_frame, id_exp)
+                fps = self.exp.get_value('fps', id_exp)
+
+                x.index -= frame_attach
+                y.index -= frame_attach
+                x.index /= fps
+                y.index /= fps
+
+                for i in range(len(t_attach)-1):
+                    t0 = t_attach[i]
+                    t1 = t_attach[i+1]
+                    x2 = np.around(np.mean(x.loc[t0:t1]), 5)
+                    y2 = np.around(np.mean(y.loc[t0:t1]), 5)
+                    self.exp.change_value(result_name, (id_exp, t0), [x2, y2])
+
+                t0 = t_attach[-1]
+                x2 = np.around(np.mean(x.loc[t0:last_frame]), 5)
+                y2 = np.around(np.mean(y.loc[t0:last_frame]), 5)
+                self.exp.change_value(result_name, (id_exp, t0), [x2, y2])
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
+        nr = int(round(np.sqrt(len(t_attach))))
+        nc = int(round(len(t_attach)/nr))
+        fig, ax = plotter.create_plot(figsize=(10, 10), nrows=nr, ncols=nc, left=0.05)
+        for i in range(len(t_attach) - 1):
+            t0 = t_attach[i]
+            t1 = t_attach[i+1]
+            title = '[' + str(t0) + ', ' + str(t1) + '] s'
+            r = int(i/nc)
+            c = i % nc
+
+            df = self.exp.get_df(result_name).loc[pd.IndexSlice[:, t0], :]
+            df.reset_index(inplace=True)
+            df = df.drop(columns=['time', 'id_exp'])
+            df.set_index(name_x, inplace=True)
+            self.exp.add_new_dataset_from_df(df=df, name='to_plot', category=self.category, replace=True)
+
+            plotter = Plotter(self.exp.root, self.exp.get_data_object('to_plot'))
+            plotter.plot(preplot=(fig, ax[r, c]), xlabel='', ylabel='', ls='', title=title)
+            ax[r, c].set_xlim((0, 1))
+            ax[r, c].set_ylim((0, 1))
+
+        t0 = t_attach[-1]
+        title = '[' + str(t0) + ', inf[ s'
+        df = self.exp.get_df(result_name).loc[pd.IndexSlice[:, t0], :]
+        df.reset_index(inplace=True)
+        df = df.drop(columns=['time', 'id_exp'])
+        df.set_index(name_x, inplace=True)
+        self.exp.add_new_dataset_from_df(df=df, name='to_plot', category=self.category, replace=True)
+        plotter = Plotter(self.exp.root, self.exp.get_data_object('to_plot'))
+        plotter.plot(preplot=(fig, ax[-1, -1]), xlabel='', ylabel='', ls='', title=title)
+        ax[-1, -1].set_xlim((0, 1))
+        ax[-1, -1].set_ylim((0, 1))
+
+        ax[1, 0].set_ylabel('Veracity')
+        ax[-1, 1].set_xlabel('Confidence')
+        plotter.save(fig, name=result_name)
 
     def w10s_food_direction_error_vs_path_efficiency_vector_field(self, redo=False):
         time = 10

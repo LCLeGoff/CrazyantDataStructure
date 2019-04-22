@@ -35,6 +35,7 @@ FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_mm1s_food_traj()
 
 # FoodBase.compute_food_traj_length()
+# FoodBase.compute_food_exit_frames()
 
 # FoodBase.compute_food_speed(True)
 # FoodBase.compute_food_speed_evol(True)
@@ -156,7 +157,7 @@ FoodConfidence = AnalyseFoodConfidence(group)
 # FoodConfidence.compute_w10s_food_total_crossed_distance(True)
 # FoodConfidence.compute_w30s_food_total_crossed_distance(True)
 #
-# FoodConfidence.compute_w10s_food_path_efficiency(True)g
+# FoodConfidence.compute_w10s_food_path_efficiency(True)
 # FoodConfidence.compute_w30s_food_path_efficiency(True)
 
 FoodVeracity = AnalyseFoodVeracity(group)
@@ -177,4 +178,9 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_vector_field()
 
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d(True)
-FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d(True)
+# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d(True)
+
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
+# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
+
+FoodInfoTraj.w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(True)
