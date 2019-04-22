@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import matplotlib as mlt
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
@@ -60,8 +61,8 @@ class Plotter(BasePlotters):
         return fig, ax
 
     def plot_heatmap(self, normed=False, title=None, title_prefix=None, preplot=None, figsize=None,
-                     v_min=None, v_max=None, cmap_scale_log=False, colorbar_ticks=None, cbar_ticks_size=15,
-                     cbar_label=None, cbar_label_size=15, **kwargs):
+                     vmin=None, vmax=None, display_cbar=True, cmap_scale_log=False, colorbar_ticks=None,
+                     cbar_ticks_size=15, cbar_label=None, cbar_label_size=15, nan_color='grey', **kwargs):
 
         fig, ax, label = self.__prepare_plot(preplot=preplot, figsize=figsize,
                                              title=title, title_prefix=title_prefix, kwargs=kwargs)
@@ -93,17 +94,23 @@ class Plotter(BasePlotters):
                     h[i, :] /= np.sum(h[i, :])
 
             if cmap_scale_log:
-                img = ax.pcolor(x, y, h, vmin=v_min, vmax=v_max, norm=colors.LogNorm(), cmap=self.cmap)
+                img = ax.pcolor(x, y, h, vmin=vmin, vmax=vmax, norm=colors.LogNorm(), cmap=self.cmap)
             else:
-                img = ax.pcolor(x, y, h, vmin=v_min, vmax=v_max, cmap=self.cmap)
+                img = ax.pcolor(x, y, h, vmin=vmin, vmax=vmax, cmap=self.cmap)
 
-            if colorbar_ticks is None:
-                cbar = fig.colorbar(img)
+            cmap = mlt.cm.get_cmap()
+            cmap.set_bad(color=nan_color)
+
+            if display_cbar:
+                if colorbar_ticks is None:
+                    cbar = fig.colorbar(img, ax=ax)
+                else:
+                    cbar = fig.colorbar(img, ticks=colorbar_ticks[0], ax=ax)
+                    cbar.ax.set_yticklabels(colorbar_ticks[1], fontsize=cbar_ticks_size)
+
+                cbar.set_label(cbar_label, fontsize=cbar_label_size, va='center', fontweight='bold')
             else:
-                cbar = fig.colorbar(img, ticks=colorbar_ticks[0])
-                cbar.ax.set_yticklabels(colorbar_ticks[1], fontsize=cbar_ticks_size)
-
-            cbar.set_label(cbar_label, fontsize=cbar_label_size, va='center', fontweight='bold')
+                cbar = None
 
             return fig, ax, cbar
 
@@ -152,7 +159,7 @@ class Plotter(BasePlotters):
     def __get_y(self, normed, x, window=None, smooth=False):
 
         if smooth is False:
-            smooth = lambda w: w
+            smooth = lambda w, q: w
         else:
             smooth = array_manip.smooth
 
