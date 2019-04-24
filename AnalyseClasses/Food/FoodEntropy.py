@@ -141,9 +141,13 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
 
     def __gather_variable_around_attachments(self, variable_name, attachment_name, result_name, result_label,
                                              result_description):
+
+        last_frame_name = 'food_exit_frames'
+        self.exp.load([attachment_name, variable_name, last_frame_name, 'fps'])
+
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
-        self.exp.load([attachment_name, variable_name, 'fps'])
+
         index_names = self.exp.get_df(attachment_name).reset_index()
         index_names = index_names.set_index([id_exp_name, id_frame_name])
         index_names = index_names.sort_index()
@@ -156,24 +160,26 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         def get_variable4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             fps = self.exp.get_value('fps', id_exp)
+            last_frame = self.exp.get_value(last_frame_name, id_exp)
 
             attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :]
             attachment_frames = list(set(attachment_frames.index.get_level_values(id_frame_name)))
             attachment_frames.sort()
 
             for attach_frame in attachment_frames:
-                print(id_exp, attach_frame)
-                f0 = int(attach_frame + time_intervals[0] * fps)
-                f1 = int(attach_frame + time_intervals[-1] * fps)
+                if attach_frame < last_frame:
+                    print(id_exp, attach_frame)
+                    f0 = int(attach_frame + time_intervals[0] * fps)
+                    f1 = int(attach_frame + time_intervals[-1] * fps)
 
-                var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
-                var_df = var_df.loc[id_exp, :]
-                var_df.index -= attach_frame
-                var_df.index /= fps
+                    var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
+                    var_df = var_df.loc[id_exp, :]
+                    var_df.index -= attach_frame
+                    var_df.index /= fps
 
-                var_df = var_df.reindex(time_intervals)
+                    var_df = var_df.reindex(time_intervals)
 
-                self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
+                    self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
 
         self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
         self.exp.write(result_name)
@@ -408,11 +414,11 @@ class AnalyseFoodEntropy(AnalyseClassDecorator):
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
         fig, ax = plotter.create_plot(figsize=(5, 8), nrows=2)
 
-        plotter.plot_smooth(window=50, preplot=(fig, ax[0]), marker='',
+        plotter.plot_smooth(window=150, preplot=(fig, ax[0]), marker='',
                             xlabel='time (s)', ylabel='Information (bit)', title='')
         ax[0].axvline(0, ls='--', c='k')
 
-        plotter.plot_smooth(window=50, preplot=(fig, ax[1]), title='', marker='',)
+        plotter.plot_smooth(window=150, preplot=(fig, ax[1]), title='', marker='',)
         ax[1].axvline(0, ls='--', c='k')
         ax[1].set_xlim((-2, 8))
         ax[1].set_ylim((.35, .75))

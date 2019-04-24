@@ -107,7 +107,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             ymin = min(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
             ymax = max(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
             xmax = max(self.exp.entrance1.df.loc[id_exp].x, self.exp.entrance2.df.loc[id_exp].x)
-            dl = 20*mm2px
+            dl = 50*mm2px
             self.exp.exit1.df.x.loc[id_exp] = xmin - dl
             self.exp.exit1.df.y.loc[id_exp] = ymin - dl
             self.exp.exit2.df.x.loc[id_exp] = xmin - dl

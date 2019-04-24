@@ -120,15 +120,15 @@ Carrying = AnalyseFoodCarrying(group)
 FoodEntropy = AnalyseFoodEntropy(group)
 # FoodEntropy.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
 # FoodEntropy.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-#
+
 # FoodEntropy.compute_mm1s_food_direction_error_around_outside_attachments()
 # FoodEntropy.compute_mm1s_food_direction_error_around_non_outside_attachments()
-#
+
 # FoodEntropy.compute_information_mm1s_food_direction_error_around_outside_attachments(True)
 # FoodEntropy.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
 # FoodEntropy.compute_information_mm1s_food_direction_error_around_attachments(True)
-#
-# FoodEntropy.compute_information_mm1s_food_direction_error_around_first_outside_attachments(True)
+
+# FoodEntropy.compute_information_mm1s_food_direction_error_around_first_outside_attachments()
 # FoodEntropy.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
 
 FoodVelocity = AnalyseFoodVelocity(group)
@@ -168,8 +168,8 @@ FoodVeracity = AnalyseFoodVeracity(group)
 # FoodVeracity.compute_mm30s_food_direction_error(True)
 
 FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
-# FoodInfoTraj.compute_w10s_food_direction_error_vs_path_efficiency_indiv()
-# FoodInfoTraj.compute_w30s_food_direction_error_vs_path_efficiency_indiv()
+# FoodInfoTraj.compute_w10s_food_direction_error_vs_path_efficiency()
+# FoodInfoTraj.compute_w30s_food_direction_error_vs_path_efficiency()
 
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_velocity()
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_velocity()
@@ -183,4 +183,7 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
 
-FoodInfoTraj.w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(True)
+FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
+FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
+
+# FoodInfoTraj.w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(True)
