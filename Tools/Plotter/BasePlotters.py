@@ -31,7 +31,7 @@ class BasePlotters:
         fig.set_facecolor(bg_color)
         ax.patch.set_facecolor(bg_color)
 
-    def create_plot(self, preplot=None, figsize=(5, 5),
+    def create_plot(self, preplot=None, figsize=(8, 8),
                     left=0.13, right=0.98, bottom=0.1, top=0.95, wspace=0.2, hspace=0.2,
                     nrows=1, ncols=1):
         if preplot is None:
