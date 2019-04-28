@@ -67,6 +67,19 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         ax.set_xticks(range(0, 430, 60))
         plotter.save(fig)
 
+    def compute_food_first_frame(self):
+        result_name = 'food_first_frame'
+        food_traj_name = 'food_x'
+        self.exp.load([food_traj_name, 'fps'])
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category=self.category,
+                                 label='First frame of food trajectory',
+                                 description='First frame of the trajectory of the food')
+        for id_exp in self.exp.id_exp_list:
+            frame0 = self.exp.get_index(food_traj_name).get_level_values(id_frame_name)[0]
+            self.exp.change_value(name=result_name, idx=id_exp, value=frame0)
+
+        self.exp.write(result_name)
+
     def compute_food_exit_frames(self):
         result_name = 'food_exit_frames'
         name_x = 'food_x'
@@ -121,6 +134,43 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         self.exp.exit2.df = self.exp.exit2.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
         self.exp.exit3.df = self.exp.exit3.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
         self.exp.exit4.df = self.exp.exit4.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
+
+    def compute_norm_time2frame(self, redo=False, redo_hist=False):
+        result_name = 'norm_time2frame'
+
+        label = 'Unit conversion normalized time to frame'
+        description = 'Unit conversion from normalized time to frame'
+
+        hist_label = 'seconds for 0.1 unit of normalized time'
+        hist_description = 'Number of seconds corresponding of 0.1 unit of normalized time'
+
+        bins = range(0, 40, 4)
+
+        if redo:
+            first_frame_name = 'food_first_frame'
+            last_frame_name = 'food_exit_frames'
+
+            self.exp.load([first_frame_name, last_frame_name])
+
+            self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category=self.category,
+                                     label=label, description=description)
+
+            for id_exp in self.exp.id_exp_list:
+                first_frame = self.exp.get_value(first_frame_name, id_exp)
+                last_frame = self.exp.get_value(last_frame_name, id_exp)
+
+                frame2norm_time = last_frame-first_frame
+                self.exp.change_value(result_name, id_exp, frame2norm_time)
+
+            self.exp.write(result_name)
+
+        self.exp.operation(result_name, lambda x: x/1000.)
+        hist_name = self.compute_hist(name=result_name, bins=bins, hist_label=hist_label,
+                                      hist_description=hist_description, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel='time (s)', ylabel='Occurrences')
+        plotter.save(fig)
 
     def compute_food_speed(self, redo=False, redo_hist=False):
         name = 'food_speed'

@@ -35,7 +35,9 @@ FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_mm1s_food_traj()
 
 # FoodBase.compute_food_traj_length()
+# FoodBase.compute_food_first_frame()
 # FoodBase.compute_food_exit_frames()
+# FoodBase.compute_norm_time2frame(True)
 
 # FoodBase.compute_food_speed(True)
 # FoodBase.compute_food_speed_evol(True)
