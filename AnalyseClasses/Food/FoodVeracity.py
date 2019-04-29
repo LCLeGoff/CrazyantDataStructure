@@ -3,7 +3,7 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
-from Tools.MiscellaneousTools.Geometry import angle_df
+from Tools.MiscellaneousTools.Geometry import angle_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -27,8 +27,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         if redo:
             self.exp.load([food_exit_angle_name, food_phi_name])
 
-            tab = self.exp.get_df(food_exit_angle_name)[food_exit_angle_name] \
-                - self.exp.get_df(food_phi_name)[food_phi_name]
+            tab = angle_distance(self.exp.get_df(food_exit_angle_name)[food_exit_angle_name],
+                                 self.exp.get_df(food_phi_name)[food_phi_name])
 
             self.exp.add_copy1d(name_to_copy=food_phi_name, copy_name=result_name, category=self.category,
                                 label=result_label, description=result_description)
@@ -122,7 +122,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
             vel_phi = angle_df(vel)
 
-            tab = self.exp.get_df(food_exit_angle_name)[food_exit_angle_name] - vel_phi
+            tab = angle_distance(self.exp.get_df(food_exit_angle_name)[food_exit_angle_name], vel_phi)
 
             self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
                                 label=result_label, description=result_description)
