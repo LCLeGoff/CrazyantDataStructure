@@ -95,6 +95,9 @@ class ExperimentGroups:
     def get_df(self, name):
         return self.get_data_object(name).df
 
+    def get_array(self, name):
+        return self.get_data_object(name).get_array()
+
     def get_level_values(self, name, id_name):
         return self.get_index(name).get_level_values(id_name)
 
@@ -535,6 +538,7 @@ class ExperimentGroups:
             df.index.names = index_names
 
             df[:] = fill_value
+            df = df.astype(type(fill_value))
 
         obj = Builder.build_dataset_from_df(
             df=df, name=name, category=category, label=label, description=description)

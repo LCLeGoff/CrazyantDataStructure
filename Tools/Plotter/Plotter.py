@@ -5,7 +5,7 @@ import matplotlib as mlt
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-import Tools.MiscellaneousTools.ArrayManipulation as array_manip
+import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -144,11 +144,11 @@ class Plotter(BasePlotters):
         else:
             if self.column_name is None:
 
-                colors = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
+                cols = self.color_object.create_cmap(self.cmap, self.obj.get_column_names())
 
                 for i, column_name in enumerate(self.obj.get_column_names()):
-                    self.line['c'] = colors[str(column_name)]
-                    self.line['markeredgecolor'] = colors[str(column_name)]
+                    self.line['c'] = cols[str(column_name)]
+                    self.line['markeredgecolor'] = cols[str(column_name)]
                     ax.plot(x, y[i], label=label[i], **self.line)
                 ax.legend(loc=0)
             else:
@@ -161,7 +161,7 @@ class Plotter(BasePlotters):
         if smooth is False:
             smooth = lambda w, q: w
         else:
-            smooth = array_manip.smooth
+            smooth = ArrayManip.smooth
 
         if self.obj.get_dimension() == 1:
             y = smooth(self.__norm_y(self.obj.get_array(), normed, x), window)
