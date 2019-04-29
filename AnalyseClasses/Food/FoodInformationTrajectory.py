@@ -3,7 +3,6 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -86,169 +85,6 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
             plotter.save(fig, name=id_exp, sub_folder=result_name)
 
         self.exp.groupby(confidence_name, id_exp_name, plot2d)
-
-    def w10s_food_direction_error_vs_path_efficiency_velocity(self):
-        time = 10
-        name_x = 'w'+str(time)+'s_food_path_efficiency'
-        name_y = 'mm'+str(time)+'s_food_direction_error'
-
-        result_velocity_x_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_x'
-        result_velocity_y_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_y'
-
-        self.__compute_velocity_for_field_vector(name_x, name_y, result_velocity_x_name, result_velocity_y_name)
-
-    def w30s_food_direction_error_vs_path_efficiency_velocity(self):
-        time = 30
-        name_x = 'w'+str(time)+'s_food_path_efficiency'
-        name_y = 'mm'+str(time)+'s_food_direction_error'
-
-        result_velocity_x_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_x'
-        result_velocity_y_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_y'
-
-        self.__compute_velocity_for_field_vector(name_x, name_y, result_velocity_x_name, result_velocity_y_name)
-
-    def __compute_velocity_for_field_vector(self, name_x, name_y, result_velocity_x_name, result_velocity_y_name):
-        label_x = 'X of food direction error vs path efficiency velocity'
-        label_y = 'Y of food direction error vs path efficiency velocity'
-        description_x = 'X coordinates of the velocity of the trajectory' \
-                        ' taking food direction error as X and path efficiency velocity as Y'
-        description_y = 'Y coordinates of the velocity of the trajectory' \
-                        ' taking food direction error as X and path efficiency velocity as Y'
-        self.exp.load([name_x, name_y, 'fps'])
-        self.exp.add_copy1d(name_to_copy=name_x, copy_name=result_velocity_x_name, category=self.category,
-                            label=label_x, description=description_x)
-        self.exp.add_copy1d(name_to_copy=name_y, copy_name=result_velocity_y_name, category=self.category,
-                            label=label_y, description=description_y)
-        for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
-            fps = self.exp.get_value('fps', id_exp)
-
-            dx = np.array(self.exp.get_df(name_x).loc[id_exp, :]).ravel()
-            dx1 = dx[1].copy()
-            dx2 = dx[-2].copy()
-            dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
-            dx[0] = dx1 - dx[0]
-            dx[-1] = dx[-1] - dx2
-
-            dy = np.array(self.exp.get_df(name_y).loc[id_exp, :]).ravel()
-            dy1 = dy[1].copy()
-            dy2 = dy[-2].copy()
-            dy[1:-1] = (dy[2:] - dy[:-2]) / 2.
-            dy[0] = dy1 - dy[0]
-            dy[-1] = dy[-1] - dy2
-
-            self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx * fps, 3)
-            self.exp.get_df(result_velocity_y_name).loc[id_exp, :] = np.around(dy * fps, 3)
-        self.exp.write(result_velocity_x_name)
-        self.exp.write(result_velocity_y_name)
-
-    def w10s_food_direction_error_vs_path_efficiency_vector_field(self, redo=False):
-        time = 10
-
-        dc = 0.1
-        confidence_intervals = np.arange(0, 1 + dc, dc)
-
-        dv = 0.1
-        veracity_intervals = np.arange(0, 1 + dv, dv)
-
-        self.__compute_field(time, confidence_intervals, veracity_intervals, redo)
-
-    def w30s_food_direction_error_vs_path_efficiency_vector_field(self, redo=False):
-        time = 30
-
-        dc = 0.1
-        confidence_intervals = np.arange(0, 1 + dc, dc)
-
-        dv = 0.1
-        veracity_intervals = np.arange(0, 1 + dv, dv)
-
-        self.__compute_field(time, confidence_intervals, veracity_intervals, redo)
-
-    def __compute_field(self, time, confidence_intervals, veracity_intervals, redo):
-        result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency'
-        result_name_x = result_name + '_vector_field_x'
-        result_name_y = result_name + '_vector_field_y'
-        result_name_hist2d = result_name + '_hist2d'
-
-        if redo:
-
-            confidence_intervals2 = np.around((confidence_intervals[1:] + confidence_intervals[:-1]) / 2., 2)
-            veracity_intervals2 = np.around((veracity_intervals[1:] + veracity_intervals[:-1]) / 2., 2)
-
-            name_confidence = 'w' + str(time) + 's_food_path_efficiency'
-            name_veracity = 'mm' + str(time) + 's_food_direction_error'
-            name_x = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_x'
-            name_y = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_y'
-            self.exp.load([name_x, name_y, name_confidence, name_veracity])
-
-            label_x = 'X of the vector field food path efficiency vs food direction error'
-            label_y = 'Y of the vector field food path efficiency vs food direction error'
-            label_hist2d = '2D histogram of food path efficiency vs food direction error'
-
-            description_x = 'X coordinates of the vector field of the process taking the food path efficiency as X and'\
-                            ' food direction error as Y'
-            description_y = 'Y coordinates of the vector field of the process taking the food path efficiency as X and'\
-                            ' food direction error as Y'
-            description_hist2d = 'Two-D histogram of the 2 variables food path efficiency and food direction error'
-
-            self.exp.add_new_empty_dataset(name=result_name_x, index_names='confidence', fill_value=0,
-                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
-                                           category=self.category, label=label_x, description=description_x)
-
-            self.exp.add_new_empty_dataset(name=result_name_y, index_names='confidence', fill_value=0,
-                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
-                                           category=self.category, label=label_y, description=description_y)
-
-            self.exp.add_new_empty_dataset(name=result_name_hist2d, index_names='confidence', fill_value=0,
-                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
-                                           category=self.category, label=label_hist2d, description=description_hist2d)
-
-            def compute_field4each_group(df):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                frame = df.index.get_level_values(id_frame_name)[0]
-
-                vect_x = float(df.loc[id_exp, frame])
-                vect_y = self.exp.get_value(name_y, (id_exp, frame))
-                confidence = self.exp.get_value(name_confidence, (id_exp, frame))
-                veracity = np.abs(self.exp.get_value(name_veracity, (id_exp, frame)))
-
-                if not np.isnan(confidence) and not np.isnan(veracity) \
-                        and not np.isnan(vect_x) and not np.isnan(vect_y):
-
-                    i_c = min(
-                        get_index_interval_containing(confidence, confidence_intervals), len(confidence_intervals2)-1)
-                    i_v = min(get_index_interval_containing(veracity, veracity_intervals), len(veracity_intervals2)-1)
-
-                    x = confidence_intervals2[i_c]
-                    y = veracity_intervals2[i_v]
-
-                    self.exp.get_df(result_name_x).loc[x, y] += vect_x
-                    self.exp.get_df(result_name_y).loc[x, y] += vect_y
-                    self.exp.get_df(result_name_hist2d).loc[x, y] += 1
-
-            self.exp.groupby(name_x, [id_exp_name, id_frame_name], compute_field4each_group)
-
-            self.exp.get_data_object(result_name_x).df /= self.exp.get_df(result_name_hist2d)
-            self.exp.get_data_object(result_name_y).df /= self.exp.get_df(result_name_hist2d)
-
-            self.exp.write([result_name_x, result_name_y, result_name_hist2d])
-
-        else:
-            self.exp.load([result_name_x, result_name_y, result_name_hist2d])
-
-        tab_x = np.around(self.exp.get_index(result_name_x), 2)
-        tab_y = np.array(self.exp.get_columns(result_name_x), dtype='float')
-
-        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name_x))
-        fig, ax = plotter.create_plot()
-
-        mat_x, mat_y = np.meshgrid(tab_x, tab_y)
-        mat_u = self.exp.get_data_object(result_name_x).get_array()
-        mat_v = self.exp.get_data_object(result_name_y).get_array()
-        ax.quiver(mat_x, mat_y, mat_u, mat_v)
-
-        ax.set_xlim((0, 1))
-        ax.set_ylim((0, 1))
-        plotter.save(fig, name=result_name)
 
     def w10s_food_direction_error_vs_path_efficiency_hist2d(self, redo=False):
         time = 10
@@ -669,3 +505,329 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         ax[1, 0].set_ylabel('Veracity')
         ax[-1, 1].set_xlabel('Confidence')
         plotter.save(fig, name=result_name)
+
+    def w10s_food_direction_error_vs_path_efficiency_velocity(self):
+        time = 10
+        name_x = 'w'+str(time)+'s_food_path_efficiency'
+        name_y = 'mm'+str(time)+'s_food_direction_error'
+
+        result_velocity_x_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_x'
+        result_velocity_y_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_y'
+
+        self.__compute_velocity_for_field_vector(name_x, name_y, result_velocity_x_name, result_velocity_y_name)
+
+    def w30s_food_direction_error_vs_path_efficiency_velocity(self):
+        time = 30
+        name_x = 'w'+str(time)+'s_food_path_efficiency'
+        name_y = 'mm'+str(time)+'s_food_direction_error'
+
+        result_velocity_x_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_x'
+        result_velocity_y_name = 'w'+str(time)+'s_food_direction_error_vs_path_efficiency_velocity_y'
+
+        self.__compute_velocity_for_field_vector(name_x, name_y, result_velocity_x_name, result_velocity_y_name)
+
+    def __compute_velocity_for_field_vector(self, name_x, name_y, result_velocity_x_name, result_velocity_y_name):
+        label_x = 'X of food direction error vs path efficiency velocity'
+        label_y = 'Y of food direction error vs path efficiency velocity'
+        description_x = 'X coordinates of the velocity of the trajectory' \
+                        ' taking food direction error as X and path efficiency velocity as Y'
+        description_y = 'Y coordinates of the velocity of the trajectory' \
+                        ' taking food direction error as X and path efficiency velocity as Y'
+
+        self.exp.load([name_x, name_y, 'fps'])
+
+        self.exp.add_copy1d(name_to_copy=name_x, copy_name=result_velocity_x_name, category=self.category,
+                            label=label_x, description=description_x)
+        self.exp.add_copy1d(name_to_copy=name_y, copy_name=result_velocity_y_name, category=self.category,
+                            label=label_y, description=description_y)
+
+        for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+            fps = self.exp.get_value('fps', id_exp)
+
+            dx = np.array(self.exp.get_df(name_x).loc[id_exp, :]).ravel()
+            dx1 = dx[1].copy()
+            dx2 = dx[-2].copy()
+            dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
+            dx[0] = dx1 - dx[0]
+            dx[-1] = dx[-1] - dx2
+
+            dy = np.array(self.exp.get_df(name_y).loc[id_exp, :]).ravel()
+            dy1 = dy[1].copy()
+            dy2 = dy[-2].copy()
+            dy[1:-1] = (dy[2:] - dy[:-2]) / 2.
+            dy[0] = dy1 - dy[0]
+            dy[-1] = dy[-1] - dy2
+
+            self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx * fps, 3)
+            self.exp.get_df(result_velocity_y_name).loc[id_exp, :] = np.around(dy * fps, 3)
+
+        self.exp.write(result_velocity_x_name)
+        self.exp.write(result_velocity_y_name)
+
+    def w10s_food_direction_error_vs_path_efficiency_vector_field(self, redo=False):
+        time = 10
+        dc = 0.1
+        dv = 0.1
+        self.__compute_field(time, dc, dv, redo)
+
+    def w30s_food_direction_error_vs_path_efficiency_vector_field(self, redo=False):
+        time = 30
+        dc = 0.1
+        dv = 0.1
+        self.__compute_field(time, dc, dv, redo)
+
+    def __compute_field(self, time, dc, dv, redo):
+        result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency'
+        result_name_x = result_name + '_vector_field_x'
+        result_name_y = result_name + '_vector_field_y'
+        result_name_norm = result_name + '_norm'
+
+        confidence_intervals = np.arange(0, 1 + dc, dc)
+        veracity_intervals = np.arange(0, 1 + dv, dv)
+
+        if redo:
+
+            confidence_intervals2 = np.around((confidence_intervals[1:] + confidence_intervals[:-1]) / 2., 2)
+            veracity_intervals2 = np.around((veracity_intervals[1:] + veracity_intervals[:-1]) / 2., 2)
+
+            name_confidence = 'w' + str(time) + 's_food_path_efficiency'
+            name_veracity = 'mm' + str(time) + 's_food_direction_error'
+            name_vect_x = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_x'
+            name_vect_y = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_velocity_y'
+            self.exp.load([name_vect_x, name_vect_y, name_confidence, name_veracity])
+
+            label_x = 'X of the vector field food path efficiency vs food direction error'
+            label_y = 'Y of the vector field food path efficiency vs food direction error'
+            label_hist2d = '2D histogram of food path efficiency vs food direction error'
+
+            description_x = 'X coordinates of the vector field of the process taking the food path efficiency as X and'\
+                            ' food direction error as Y'
+            description_y = 'Y coordinates of the vector field of the process taking the food path efficiency as X and'\
+                            ' food direction error as Y'
+            description_hist2d = 'Two-D histogram of the 2 variables food path efficiency and food direction error'
+
+            self.exp.add_new_empty_dataset(name=result_name_x, index_names='confidence', fill_value=0,
+                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
+                                           category=self.category, label=label_x, description=description_x)
+
+            self.exp.add_new_empty_dataset(name=result_name_y, index_names='confidence', fill_value=0,
+                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
+                                           category=self.category, label=label_y, description=description_y)
+
+            self.exp.add_new_empty_dataset(name=result_name_norm, index_names='confidence', fill_value=0,
+                                           column_names=veracity_intervals2, index_values=confidence_intervals2,
+                                           category=self.category, label=label_hist2d, description=description_hist2d)
+
+            tab_x, tab_y = self.__get_confidence_and_veracity_tab(
+                name_confidence, name_veracity, confidence_intervals2, veracity_intervals2, dc, dv)
+
+            tab_vect_x = self.exp.get_array(name_vect_x)
+            tab_vect_y = self.exp.get_array(name_vect_y)
+
+            for x in confidence_intervals2:
+                mask = np.where(tab_x == x)[0]
+                tab_y2 = tab_y[mask]
+                tab_vect_x2 = tab_vect_x[mask]
+                tab_vect_y2 = tab_vect_y[mask]
+                for y in veracity_intervals2:
+                    mask = np.where(tab_y2 == y)[0]
+                    tab_vect_x3 = tab_vect_x2[mask]
+                    tab_vect_y3 = tab_vect_y2[mask]
+
+                    self.exp.get_df(result_name_x).loc[x, y] = np.nansum(tab_vect_x3)
+                    self.exp.get_df(result_name_y).loc[x, y] = np.nansum(tab_vect_y3)
+                    self.exp.get_df(result_name_norm).loc[x, y] = np.nansum(tab_vect_y3*0+1)
+
+            self.exp.get_data_object(result_name_x).df /= self.exp.get_df(result_name_norm)
+            self.exp.get_data_object(result_name_y).df /= self.exp.get_df(result_name_norm)
+
+            self.exp.write([result_name_x, result_name_y, result_name_norm])
+
+        else:
+            self.exp.load([result_name_x, result_name_y, result_name_norm])
+        tab_x = np.around(self.exp.get_index(result_name_x), 2)
+        tab_y = np.array(self.exp.get_columns(result_name_x), dtype='float')
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name_x))
+        fig, ax = plotter.create_plot()
+
+        self.exp.get_df(result_name_norm).index -= dc/2
+        self.exp.get_df(result_name_norm).columns = np.array(self.exp.get_columns(result_name_norm), dtype=float) - dv/2
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name_norm))
+        plotter.plot_heatmap(preplot=(fig, ax), cbar_label='N. Data')
+
+        mat_x, mat_y = np.meshgrid(tab_x, tab_y)
+        mat_u = self.exp.get_data_object(result_name_x).get_array().T
+        mat_v = self.exp.get_data_object(result_name_y).get_array().T
+        # mat_norm = np.sqrt(mat_u ** 2 + mat_v ** 2)
+        # mat_norm = np.sqrt(mat_norm)/mat_norm
+        # mat_norm = np.minimum(mat_norm, 0.1)/mat_norm
+        # mat_norm = (mat_norm)**(1/3.)/mat_norm
+        mat_norm = 1
+        ax.quiver(mat_x, mat_y, mat_u*mat_norm, mat_v*mat_norm, color='grey')
+        ax.set_xlabel('Confidence')
+        ax.set_ylabel('Veracity')
+        ax.set_xlim((0, 1))
+        ax.set_ylim((0, 1))
+        ax.set_xticks(confidence_intervals)
+        ax.set_yticks(veracity_intervals)
+        plotter.save(fig, name=result_name)
+
+    def w10s_food_direction_error_vs_path_efficiency_probability_matrix(self, redo=False):
+        time = 10
+        dc = 0.2
+        dv = 0.2
+        self.__compute_probability_matrix(time, dc, dv, redo)
+
+    def w30s_food_direction_error_vs_path_efficiency_probability_matrix(self, redo=False):
+        time = 30
+        dc = 0.2
+        dv = 0.2
+        self.__compute_probability_matrix(time, dc, dv, redo)
+
+    def __compute_probability_matrix(self, time, dc, dv, redo):
+        result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_probability_matrix'
+
+        confidence_intervals = np.arange(0, 1 + dc, dc)
+        veracity_intervals = np.arange(0, 1 + dv, dv)
+
+        if redo:
+
+            confidence_intervals2 = np.around((confidence_intervals[1:] + confidence_intervals[:-1]) / 2., 2)
+            veracity_intervals2 = np.around((veracity_intervals[1:] + veracity_intervals[:-1]) / 2., 2)
+
+            name_confidence = 'w' + str(time) + 's_food_path_efficiency'
+            name_veracity = 'mm' + str(time) + 's_food_direction_error'
+            self.exp.load([name_confidence, name_veracity, 'fps'])
+
+            label = 'Probability transition of the markov process food direction error vs food path_efficiency '
+            description = 'The trajectory (food direction error, food path_efficiency) ' \
+                          'is considered as a Markov process. For each couple (confidence, veracity), is given ' \
+                          'the probability to go to the North, i.e. to (confidence, veracity+dv), ' \
+                          'the probability to go to the South, i.e. to (confidence, veracity-dv), ' \
+                          'the probability to go to the East, i.e. to (confidence-dc, veracity), ' \
+                          'the probability to go to the West, i.e. to (confidence+dc, veracity) and ' \
+                          'the mean real time spend in this state (in seconds).'
+
+            index_values = [(c, v) for c in confidence_intervals2 for v in veracity_intervals2]
+
+            self.exp.add_new_empty_dataset(name=result_name, index_names=['confidence', 'veracity'], fill_value=0,
+                                           column_names=['N', 'S', 'W', 'E', 'T'], index_values=index_values,
+                                           category=self.category, label=label, description=description)
+
+            tab_confidence, tab_veracity = self.__get_confidence_and_veracity_tab(
+                name_confidence, name_veracity, confidence_intervals, veracity_intervals, dc, dv)
+
+            for confidence in confidence_intervals2:
+                for veracity in veracity_intervals2:
+                    mask = np.where((tab_confidence == confidence) & (tab_veracity == veracity))[0]
+                    t = len(mask)
+                    self.exp.get_df(result_name).loc[(confidence, veracity)]['T'] = t
+
+            tab_dconfidence = np.around(tab_confidence[1:]-tab_confidence[:-1], 2)
+            tab_dveracity = np.around(tab_veracity[1:]-tab_veracity[:-1], 2)
+
+            to_keep = ~np.isnan(tab_confidence[:-1]*tab_veracity[:-1]*tab_dconfidence*tab_dveracity) \
+                & ((tab_dconfidence != 0) | (tab_dveracity != 0))
+
+            mask = np.where(to_keep)[0]
+            tab_confidence = tab_confidence[mask]
+            tab_veracity = tab_veracity[mask]
+            tab_dconfidence = tab_dconfidence[mask]
+            tab_dveracity = tab_dveracity[mask]
+
+            for confidence, veracity, dconfidence, dveracity \
+                    in zip(tab_confidence, tab_veracity, tab_dconfidence, tab_dveracity):
+
+                confidence = max(min(confidence,confidence_intervals2[-1]), confidence_intervals2[0])
+                veracity = max(min(veracity, veracity_intervals2[-1]), veracity_intervals2[0])
+
+                if dconfidence == 0 and dveracity > 0:
+                    self.exp.get_df(result_name).loc[(confidence, veracity)]['N'] += 1
+                elif dconfidence == 0 and dveracity < 0:
+                    self.exp.get_df(result_name).loc[(confidence, veracity)]['S'] += 1
+                elif dconfidence < 0 and dveracity == 0:
+                    self.exp.get_df(result_name).loc[(confidence, veracity)]['W'] += 1
+                elif dconfidence > 0 and dveracity == 0:
+                    self.exp.get_df(result_name).loc[(confidence, veracity)]['E'] += 1
+
+            self.exp.get_df(result_name)['T'] /= 100.
+
+            self.exp.write(result_name)
+
+        else:
+            self.exp.load(result_name)
+
+        df_norm = self.exp.get_df(result_name).copy()
+        df_norm.drop(columns='T', inplace=True)
+        df_norm = df_norm.sum(axis=1)
+
+        for col in self.exp.get_columns(result_name):
+            self.exp.get_data_object(result_name).df[col] /= df_norm
+
+        tab_index = np.around(np.asarray(list(self.exp.get_index(result_name))), 2)
+        tab_confidence = list(set(tab_index[:, 0]))
+        tab_veracity = list(set(tab_index[:, 1]))
+        tab_confidence.sort()
+        tab_veracity.sort()
+        mat_x, mat_y = np.meshgrid(tab_confidence, tab_veracity)
+
+        mat_north = np.zeros((len(tab_confidence), len(tab_veracity)))
+        mat_south = np.zeros((len(tab_confidence), len(tab_veracity)))
+        mat_west = np.zeros((len(tab_confidence), len(tab_veracity)))
+        mat_east = np.zeros((len(tab_confidence), len(tab_veracity)))
+        self.exp.add_new_empty_dataset(name='time', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
+                                       index_values=np.array(tab_confidence)-dv/2., replace=True)
+
+        for i, confidence in enumerate(tab_confidence):
+            for j, veracity in enumerate(tab_veracity):
+                mat_north[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['N']
+                mat_south[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['S']
+                mat_west[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['W']
+                mat_east[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['E']
+                self.exp.get_df('time').loc[confidence-dc/2.][veracity-dv/2.] \
+                    = self.exp.get_df(result_name).loc[(confidence, veracity)]['T']
+                #     = df_norm.loc[(confidence, veracity)]
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object('time'))
+        fig, ax = plotter.create_plot()
+        plotter.plot_heatmap(preplot=(fig, ax), cbar_label='Mean time (s)', vmin=0)
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
+
+        mat_zero = np.zeros(mat_north.shape)
+        scale = 7
+        headwidth = 1
+        headlength = 1
+        width = 0.01
+        ax.quiver(mat_x, mat_y, mat_zero.T, mat_north.T, color='0', scale=scale, headwidth=headwidth,
+                  width=width, headlength=headlength)
+        ax.quiver(mat_x, mat_y, mat_zero.T, -mat_south.T, color='0.7', scale=scale, headwidth=headwidth,
+                  width=width, headlength=headlength)
+        ax.quiver(mat_x, mat_y, -mat_west.T, mat_zero.T, color='0.5', scale=scale, headwidth=headwidth,
+                  width=width, headlength=headlength)
+        ax.quiver(mat_x, mat_y, mat_east.T, mat_zero.T, color='0.3', scale=scale, headwidth=headwidth,
+                  width=width, headlength=headlength)
+        ax.quiver(mat_x, mat_y, mat_zero.T, mat_zero.T, color='k', scale=scale, minlength=2)
+        ax.set_xlim((0, 1))
+        ax.set_ylim((0, 1))
+        ax.set_xticks(confidence_intervals)
+        ax.set_yticks(veracity_intervals)
+        ax.set_xlabel('Confidence')
+        ax.set_ylabel('Veracity')
+        plotter.save(fig, name=result_name)
+
+    def __get_confidence_and_veracity_tab(
+            self, name_confidence, name_veracity, confidence_intervals, veracity_intervals, dc, dv):
+        mc = confidence_intervals[-1]
+        self.exp.operation(name_confidence, lambda c: np.floor(c / dc) * dc + dc / 2.)
+        self.exp.get_df(name_confidence)[self.exp.get_df(name_confidence) > mc] = mc
+        tab_x = np.round(self.exp.get_array(name_confidence), 2)
+        min_v = veracity_intervals[0]
+        max_v = veracity_intervals[-1]
+        self.exp.operation(name_veracity, lambda v: 1 - np.abs(v) / np.pi)
+        self.exp.operation(name_veracity, lambda v: np.floor(v / dv) * dv + dv / 2.)
+        self.exp.get_df(name_veracity)[self.exp.get_df(name_veracity) > max_v] = max_v
+        self.exp.get_df(name_veracity)[self.exp.get_df(name_veracity) < min_v] = min_v
+        tab_y = np.round(self.exp.get_array(name_veracity), 2)
+        return tab_x, tab_y
