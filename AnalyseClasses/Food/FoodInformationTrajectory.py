@@ -675,15 +675,13 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
     def w10s_food_direction_error_vs_path_efficiency_probability_matrix(self, redo=False):
         time = 10
-        dc = 0.2
-        dv = 0.2
-        self.__compute_probability_matrix(time, dc, dv, redo)
+        d = 0.1
+        self.__compute_probability_matrix(time, d, d, redo)
 
     def w30s_food_direction_error_vs_path_efficiency_probability_matrix(self, redo=False):
         time = 30
-        dc = 0.2
-        dv = 0.2
-        self.__compute_probability_matrix(time, dc, dv, redo)
+        d = 0.1
+        self.__compute_probability_matrix(time, d, d, redo)
 
     def __compute_probability_matrix(self, time, dc, dv, redo):
         result_name = 'w' + str(time) + 's_food_direction_error_vs_path_efficiency_probability_matrix'
@@ -772,41 +770,75 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         tab_veracity.sort()
         mat_x, mat_y = np.meshgrid(tab_confidence, tab_veracity)
 
-        mat_north = np.zeros((len(tab_confidence), len(tab_veracity)))
-        mat_south = np.zeros((len(tab_confidence), len(tab_veracity)))
-        mat_west = np.zeros((len(tab_confidence), len(tab_veracity)))
-        mat_east = np.zeros((len(tab_confidence), len(tab_veracity)))
+        mat_north = np.full((len(tab_confidence), len(tab_veracity)), np.nan)
+        mat_south = np.full((len(tab_confidence), len(tab_veracity)), np.nan)
+        mat_west = np.full((len(tab_confidence), len(tab_veracity)), np.nan)
+        mat_east = np.full((len(tab_confidence), len(tab_veracity)), np.nan)
         self.exp.add_new_empty_dataset(name='time', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
+                                       index_values=np.array(tab_confidence)-dv/2., replace=True)
+        self.exp.add_new_empty_dataset(name='norm', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
+                                       index_values=np.array(tab_confidence)-dv/2., replace=True)
+        self.exp.add_new_empty_dataset(name='dist_uniform', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
                                        index_values=np.array(tab_confidence)-dv/2., replace=True)
 
         for i, confidence in enumerate(tab_confidence):
             for j, veracity in enumerate(tab_veracity):
-                mat_north[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['N']
-                mat_south[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['S']
-                mat_west[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['W']
-                mat_east[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['E']
-                self.exp.get_df('time').loc[confidence-dc/2.][veracity-dv/2.] \
-                    = self.exp.get_df(result_name).loc[(confidence, veracity)]['T']
-                #     = df_norm.loc[(confidence, veracity)]
+                nbr_data = df_norm.loc[(confidence, veracity)]
+
+                if nbr_data > 5:
+                    mat_north[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['N']
+                    mat_south[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['S']
+                    mat_west[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['W']
+                    mat_east[i, j] = self.exp.get_df(result_name).loc[(confidence, veracity)]['E']
+
+                    self.exp.get_df('time').loc[confidence-dc/2.][veracity-dv/2.] \
+                        = self.exp.get_df(result_name).loc[(confidence, veracity)]['T']
+
+                    self.exp.get_df('norm').loc[confidence-dc/2.][veracity-dv/2.] = nbr_data
+
+                    dist_uniform = -(np.log2(mat_north[i, j]) + np.log2(mat_south[i, j])\
+                        + np.log2(mat_west[i, j]) + np.log2(mat_east[i, j]))
+                    self.exp.get_df('dist_uniform').loc[confidence-dc/2.][veracity-dv/2.] = dist_uniform
 
         plotter = Plotter(self.exp.root, self.exp.get_data_object('time'))
         fig, ax = plotter.create_plot()
         plotter.plot_heatmap(preplot=(fig, ax), cbar_label='Mean time (s)', vmin=0)
+        headlength, headwidth, mat_zero, plotter, scale, width = self.__plot_proba_matrix(
+            ax, confidence_intervals, veracity_intervals,
+            mat_north, mat_south, mat_west, mat_east, mat_x, mat_y, result_name)
+        plotter.save(fig, name=result_name)
 
+        plotter = Plotter(self.exp.root, self.exp.get_data_object('norm'))
+        fig, ax = plotter.create_plot()
+        plotter.plot_heatmap(preplot=(fig, ax), cbar_label='N. data')
+        headlength, headwidth, mat_zero, plotter, scale, width = self.__plot_proba_matrix(
+            ax, confidence_intervals, veracity_intervals,
+            mat_north, mat_south, mat_west, mat_east, mat_x, mat_y, result_name)
+        plotter.save(fig, name=result_name, suffix='norm')
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object('dist_uniform'))
+        fig, ax = plotter.create_plot()
+        plotter.plot_heatmap(preplot=(fig, ax), cbar_label='dist to uniform')
+        headlength, headwidth, mat_zero, plotter, scale, width = self.__plot_proba_matrix(
+            ax, confidence_intervals, veracity_intervals,
+            mat_north, mat_south, mat_west, mat_east, mat_x, mat_y, result_name)
+        plotter.save(fig, name=result_name, suffix='dist_uniform')
+
+    def __plot_proba_matrix(self, ax, confidence_intervals, veracity_intervals, mat_north, mat_south, mat_west,
+                            mat_east, mat_x, mat_y, result_name):
         plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
-
         mat_zero = np.zeros(mat_north.shape)
-        scale = 7
+        scale = 10
         headwidth = 1
         headlength = 1
         width = 0.01
-        ax.quiver(mat_x, mat_y, mat_zero.T, mat_north.T, color='0', scale=scale, headwidth=headwidth,
+        ax.quiver(mat_x, mat_y, mat_zero.T, mat_north.T, color='indigo', scale=scale, headwidth=headwidth,
                   width=width, headlength=headlength)
-        ax.quiver(mat_x, mat_y, mat_zero.T, -mat_south.T, color='0.7', scale=scale, headwidth=headwidth,
+        ax.quiver(mat_x, mat_y, mat_zero.T, -mat_south.T, color='plum', scale=scale, headwidth=headwidth,
                   width=width, headlength=headlength)
-        ax.quiver(mat_x, mat_y, -mat_west.T, mat_zero.T, color='0.5', scale=scale, headwidth=headwidth,
+        ax.quiver(mat_x, mat_y, -mat_west.T, mat_zero.T, color='mediumpurple', scale=scale, headwidth=headwidth,
                   width=width, headlength=headlength)
-        ax.quiver(mat_x, mat_y, mat_east.T, mat_zero.T, color='0.3', scale=scale, headwidth=headwidth,
+        ax.quiver(mat_x, mat_y, mat_east.T, mat_zero.T, color='thistle', scale=scale, headwidth=headwidth,
                   width=width, headlength=headlength)
         ax.quiver(mat_x, mat_y, mat_zero.T, mat_zero.T, color='k', scale=scale, minlength=2)
         ax.set_xlim((0, 1))
@@ -815,7 +847,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         ax.set_yticks(veracity_intervals)
         ax.set_xlabel('Confidence')
         ax.set_ylabel('Veracity')
-        plotter.save(fig, name=result_name)
+        return headlength, headwidth, mat_zero, plotter, scale, width
 
     def __get_confidence_and_veracity_tab(
             self, name_confidence, name_veracity, confidence_intervals, veracity_intervals, dc, dv):
