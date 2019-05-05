@@ -5,6 +5,7 @@ from cv2 import cv2
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
 from DataStructure.Builders.Builder import Builder
+from DataStructure.DataObjects.CharacteristicEvents2d import CharacteristicEvents2dBuilder
 from DataStructure.DataObjects.CharacteristicTimeSeries2d import CharacteristicTimeSeries2dBuilder
 from DataStructure.DataObjects.Events2d import Events2dBuilder
 from DataStructure.DataObjects.Filters import Filters
@@ -247,10 +248,12 @@ class ExperimentGroups:
 
     def __is_1d(self, name):
         object_type = self.get_object_type(name)
-        if object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d', 'CharacteristicTimeSeries2d']:
+        if object_type in ['Events2d', 'TimeSeries2d', 'Characteristics2d', 'CharacteristicTimeSeries2d',
+                           'CharacteristicEvents2d']:
             return False
         elif object_type in [
-                'Events1d', 'TimeSeries1d', 'Characteristics1d', 'AntCharacteristics1d', 'CharacteristicTimeSeries1d']:
+                'Events1d', 'TimeSeries1d', 'Characteristics1d', 'AntCharacteristics1d',
+                'CharacteristicTimeSeries1d', 'CharacteristicEvents1d']:
             return True
         elif object_type in [dataset_name]:
             return self.get_data_object(name).get_dimension() == 1
@@ -379,6 +382,13 @@ class ExperimentGroups:
                     yname=yname, category=category, label=label, xlabel=xlabel,
                     ylabel=ylabel, description=description)
                 self.add_object(result_name, ts, replace)
+            elif object_type1 == 'CharacteristicEvents1d':
+                event = CharacteristicEvents2dBuilder().build_from_1d(
+                    event1=self.get_data_object(name1),
+                    event2=self.get_data_object(name2), name=result_name, xname=xname,
+                    yname=yname, category=category, label=label, xlabel=xlabel,
+                    ylabel=ylabel, description=description)
+                self.add_object(result_name, event, replace)
             else:
                 raise TypeError(object_type1 + ' can not be gathered in 2d')
 
@@ -470,7 +480,8 @@ class ExperimentGroups:
                               columns=[id_exp_name, name])
             df.set_index([id_exp_name], inplace=True)
             df[:] = np.nan
-        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
+        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d',
+                             'CharacteristicEvents1d', 'CharacteristicEvents2d']:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=[id_exp_name, id_frame_name])
         elif object_type in [dataset_name]:
             df = self.pandas_index_manager.create_empty_df(column_names=name, index_names=index_names)
@@ -587,7 +598,8 @@ class ExperimentGroups:
         elif object_type in ['Characteristics1d', 'Characteristics2d']:
             df = self.pandas_index_manager.convert_array_to_df(array, index_names=id_exp_name, column_names=name)
 
-        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d']:
+        elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d',
+                             'CharacteristicEvents1d', 'CharacteristicEvents2d']:
             df = self.pandas_index_manager.convert_array_to_df(
                 array, index_names=[id_exp_name, id_frame_name], column_names=name)
 
@@ -892,6 +904,76 @@ class ExperimentGroups:
         else:
             raise TypeError(name_to_hist+' is not frame indexed')
 
+    def compute_time_intervals(
+            self, name_to_intervals, result_name=None, category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name_to_intervals + '_intervals'
+
+        if category is None:
+            category = self.get_category(name_to_intervals)
+
+        if self.get_object_type(name_to_intervals) == 'TimeSeries1d':
+
+            object_type = 'Events1d'
+
+            def interval4each_group(df: pd.DataFrame):
+                df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+                df.iloc[-1, -1] = 0
+                frame0 = df.index.get_level_values(id_frame_name)[0]
+
+                arr = np.array(df[df != 0].dropna().reset_index())[:, 2:]
+                df[:] = np.nan
+                frame_list = arr[:, 0].copy().astype(int)
+                if len(arr) != 0:
+                    arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
+                    arr[0, 0] -= frame0
+
+                    inters = arr[arr[:, -1] == 1, :]
+                    frame_list = frame_list[arr[:, -1] == 1]
+
+                    df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters[:, 0]
+
+                return df
+            df_intervals = self.get_df(name_to_intervals).groupby([id_exp_name, id_ant_name]).apply(interval4each_group)
+
+        elif self.get_object_type(name_to_intervals) == 'CharacteristicTimeSeries1d':
+            object_type = 'CharacteristicEvents1d'
+
+            def interval4each_group(df: pd.DataFrame):
+                df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+                df.iloc[-1, -1] = 0
+                frame0 = df.index.get_level_values(id_frame_name)[0]
+
+                arr = np.array(df[df != 0].dropna().reset_index())[:, 1:]
+                df[:] = np.nan
+                frame_list = arr[:, 0].copy().astype(int)
+                if len(arr) != 0:
+                    arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
+                    arr[0, 0] -= frame0
+
+                    inters = arr[arr[:, -1] == 1, :]
+                    frame_list = frame_list[arr[:, -1] == 1]
+
+                    df.loc[pd.IndexSlice[:, list(frame_list.astype(int))], :] = inters[:, 0]
+
+                return df
+            df_intervals = self.get_df(name_to_intervals).groupby(id_exp_name).apply(interval4each_group)
+
+        else:
+            raise TypeError(name_to_intervals+' is not 1d time series')
+
+        df_intervals.dropna(inplace=True)
+
+        self.add_new1d_from_df(
+            df=df_intervals, name=result_name, object_type=object_type,
+            category=category, label=label, description=description, replace=replace
+        )
+
+        self.load('fps')
+        self.operation_between_2names(name1=result_name, name2='fps', func=lambda x, y: x/y)
+        return result_name
+
     def compute_time_delta(
             self, name_to_delta, result_name=None, xname=None, yname=None,
             category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False
@@ -926,51 +1008,6 @@ class ExperimentGroups:
             return result_name
         else:
             raise TypeError(name_to_delta+' is not a time series')
-
-    def compute_time_intervals(
-            self, name_to_intervals, result_name=None, category=None, label=None, description=None, replace=False):
-
-        if self.get_object_type(name_to_intervals) == 'TimeSeries1d':
-
-            if result_name is None:
-                result_name = name_to_intervals+'_intervals'
-
-            if category is None:
-                category = self.get_category(name_to_intervals)
-
-            def interval4each_group(df: pd.DataFrame):
-                df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
-                df.iloc[-1, -1] = 0
-                frame0 = df.index.get_level_values(id_frame_name)[0]
-
-                arr = np.array(df[df != 0].dropna().reset_index())[:, 2:]
-                df[:] = np.nan
-                frame_list = arr[:, 0].copy().astype(int)
-                if len(arr) != 0:
-                    arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
-                    arr[0, 0] -= frame0
-
-                    inters = arr[arr[:, -1] == 1, :]
-                    frame_list = frame_list[arr[:, -1] == 1]
-
-                    df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters[:, 0]
-
-                return df
-
-            df_intervals = self.get_df(name_to_intervals).groupby([id_exp_name, id_ant_name]).apply(interval4each_group)
-            df_intervals.dropna(inplace=True)
-
-            self.add_new1d_from_df(
-                df=df_intervals, name=result_name, object_type='Events1d',
-                category=category, label=label, description=description, replace=replace
-            )
-
-            self.load('fps')
-            self.operation_between_2names(name1=result_name, name2='fps', func=lambda x, y: x/y)
-            return result_name
-
-        else:
-            raise TypeError(name_to_intervals+' is not 1d time series')
 
     def compute_individual_mean(
             self, name_to_average, result_name=None, xname=None, yname=None,
