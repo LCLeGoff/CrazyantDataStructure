@@ -130,10 +130,12 @@ FoodInfo = AnalyseFoodInformation(group)
 #
 #
 # FoodInfo.compute_mm1s_food_direction_error_around_outside_attachments()
+# FoodInfo.compute_mm1s_food_direction_error_around_isolated_outside_attachments()
 # FoodInfo.compute_mm1s_food_direction_error_around_non_outside_attachments()
 #
 #
-# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(redo_info=True)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(True)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_attachments()
 #
@@ -142,6 +144,7 @@ FoodInfo = AnalyseFoodInformation(group)
 #
 #
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(redo_info=True)
+FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments()
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(redo_info=True)
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(redo_info=True)
 #

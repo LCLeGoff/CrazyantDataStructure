@@ -120,7 +120,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         result_label = 'Food direction error around outside attachments'
         result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
-                             ' before and after a ant coming from outside ant attached to the food'
+                             ' before and after an ant coming from outside ant attached to the food'
 
         self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
                                                   result_description)
@@ -134,7 +134,22 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         result_label = 'Food direction error around non outside attachments'
         result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
-                             ' before and after a ant coming from non outside ant attached to the food'
+                             ' before and after an ant coming from non outside ant attached to the food'
+
+        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                  result_description)
+
+    def compute_mm1s_food_direction_error_around_isolated_outside_attachments(self):
+        mm = 1
+        attachment_name = 'isolated_outside_ant_carrying_intervals'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_isolated_outside_attachments'
+
+        result_label = 'Food direction error around isolated outside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             'moreover no outside ant attachments occurs during this period of time'
 
         self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
                                                   result_description)
@@ -162,24 +177,25 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             fps = self.exp.get_value('fps', id_exp)
             last_frame = self.exp.get_value(last_frame_name, id_exp)
 
-            attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :]
-            attachment_frames = list(set(attachment_frames.index.get_level_values(id_frame_name)))
-            attachment_frames.sort()
+            if id_exp in self.exp.get_index(attachment_name).get_level_values(id_exp_name):
+                attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :]
+                attachment_frames = list(set(attachment_frames.index.get_level_values(id_frame_name)))
+                attachment_frames.sort()
 
-            for attach_frame in attachment_frames:
-                if attach_frame < last_frame:
-                    print(id_exp, attach_frame)
-                    f0 = int(attach_frame + time_intervals[0] * fps)
-                    f1 = int(attach_frame + time_intervals[-1] * fps)
+                for attach_frame in attachment_frames:
+                    if attach_frame < last_frame:
+                        print(id_exp, attach_frame)
+                        f0 = int(attach_frame + time_intervals[0] * fps)
+                        f1 = int(attach_frame + time_intervals[-1] * fps)
 
-                    var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
-                    var_df = var_df.loc[id_exp, :]
-                    var_df.index -= attach_frame
-                    var_df.index /= fps
+                        var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
+                        var_df = var_df.loc[id_exp, :]
+                        var_df.index -= attach_frame
+                        var_df.index /= fps
 
-                    var_df = var_df.reindex(time_intervals)
+                        var_df = var_df.reindex(time_intervals)
 
-                    self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
+                        self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
 
         self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
         self.exp.write(result_name)
@@ -202,6 +218,29 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
         ylim_zoom = (0.4, 0.6)
+        self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_isolated_outside_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around isolated outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around isolated outside ant attachments'
+
+        info_label = 'Information of the food around isolated outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around isolated outside ant attachments'
+
+        ylim_zoom = (0.2, 0.6)
         self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
@@ -657,6 +696,29 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
         ylim_zoom = (150, 200)
+        self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_isolated_outside_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'fisher_information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around isolated outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around isolated outside ant attachments'
+
+        info_label = 'Fisher information of the food around isolated outside attachments'
+        info_description = 'Fisher information of the food (1/(3variance))' \
+                           ' for each time t in time_intervals, which are times around isolated outside ant attachments'
+
+        ylim_zoom = (50, 250)
         self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
