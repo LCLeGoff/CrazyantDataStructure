@@ -108,7 +108,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                             label=label, description=description)
         self.exp.write(result_name)
 
-    def compute_outside_ant_attachment(self):
+    def compute_outside_ant_carrying_intervals(self):
         carrying_name = 'carrying_intervals'
         outside_ant_name = 'from_outside'
         results_name = 'outside_ant_carrying_intervals'
@@ -130,7 +130,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.exp.write(results_name)
 
-    def compute_non_outside_ant_attachment(self):
+    def compute_non_outside_ant_carrying_intervals(self):
         carrying_name = 'carrying_intervals'
         outside_ant_name = 'from_outside'
         results_name = 'non_outside_ant_carrying_intervals'
@@ -151,6 +151,97 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.get_df(results_name).groupby([id_exp_name, id_ant_name]).apply(keep_only_non_outside_ants4each_group)
 
         self.exp.write(results_name)
+
+    def compute_ant_attachments(self):
+        carrying_name = 'carrying_intervals'
+        result_name = 'ant_attachments'
+
+        label = 'Ant attachment time series'
+        description = 'Time series where 1 is when an ant attaches to the food and 0 when not'
+
+        self.__compute_attachments(carrying_name, description, label, result_name)
+
+    def compute_outside_ant_attachments(self):
+        carrying_name = 'outside_ant_carrying_intervals'
+        result_name = 'outside_ant_attachments'
+
+        label = 'Outside ant attachment time series'
+        description = 'Time series where 1 is when an ant coming from outside attaches to the food and 0 when not'
+
+        self.__compute_attachments(carrying_name, description, label, result_name)
+
+    def __compute_attachments(self, carrying_name, description, label, result_name):
+        food_name = 'food_x'
+        self.exp.load([food_name, carrying_name])
+        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
+                            label=label, description=description)
+        self.exp.get_df(result_name)[:] = 0
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
+
+        def fill_attachment_events(df: pd.DataFrame):
+            if len(df) != 0:
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                frames = list(df.index.get_level_values(id_frame_name))
+                self.exp.get_df(result_name).loc[pd.IndexSlice[id_exp, frames], :] = 1
+
+        self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], fill_attachment_events)
+        self.exp.write(result_name)
+
+    def compute_isolated_ant_carrying_intervals(self):
+        attachment_name = 'ant_attachments'
+        result_name = 'isolated_ant_carrying_intervals'
+        dt1 = 2
+        dt2 = 5
+
+        label = 'Isolated ant carrying intervals'
+        description = 'Carrying intervals starting at a time' \
+                      ' such that no other attachments occurred '+str(dt1)+'s before and '+str(dt2)+'s after'
+
+        self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
+
+    def compute_isolated_outside_ant_carrying_intervals(self):
+        attachment_name = 'outside_ant_attachments'
+        result_name = 'isolated_outside_ant_carrying_intervals'
+        dt1 = 2
+        dt2 = 5
+
+        label = 'Isolated outside ant carrying intervals'
+        description = 'Carrying intervals of outside ant starting at a time' \
+                      ' such that no other attachments occurred '+str(dt1)+'s before and '+str(dt2)+'s after'
+
+        self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
+
+    def __isolated_attachments(self, dt1, dt2, attachment_name, description, label, result_name):
+        self.exp.load([attachment_name, 'fps'])
+        interval_name = self.exp.compute_time_intervals(name_to_intervals=attachment_name)
+        self.exp.add_new1d_empty(name=result_name, object_type='CharacteristicEvents1d', category=self.category,
+                                 label=label, description=description)
+
+        def fct(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            print(id_exp)
+            fps = self.exp.get_value('fps', id_exp)
+
+            array = np.array(df.reset_index())
+            frame1 = int(array[0, 1])
+            frame2 = int(array[1, 1])
+            if frame2 - frame1 > dt2 * fps:
+                self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+
+            for i in range(1, len(array) - 1):
+                frame0 = int(array[i - 1, 1])
+                frame1 = int(array[i, 1])
+                frame2 = int(array[i + 1, 1])
+                if frame2 - frame1 > dt2 * fps and frame1 - frame0 > dt1 * fps:
+                    self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+
+            frame0 = int(array[-2, 1])
+            frame1 = int(array[-1, 1])
+            if frame1 - frame0 > dt1 * fps:
+                self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+
+        self.exp.groupby(interval_name, id_exp_name, fct)
+        self.exp.write(result_name)
 
     def compute_nbr_attachment_per_exp(self):
         outside_result_name = 'nbr_outside_attachment_per_exp'
