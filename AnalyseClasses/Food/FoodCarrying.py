@@ -80,7 +80,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def __get_attachment_frames(self, carrying_name, result_name):
         self.exp.load(carrying_name)
         nb_attach = len(self.exp.get_df(carrying_name))
-        self.exp.get_data_object(carrying_name).df[:] = np.c_[range(nb_attach)]
         res = np.full((nb_attach, 3), -1)
         label = 'Attachment frames of outside ants'
         description = 'Frames when an ant from outside attached to the food, data is indexed by the experiment index' \
@@ -88,16 +87,24 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         def get_attachment_frame4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
-            frames = list(set(df.index.get_level_values(id_frame_name)))
 
+            df2 = df.reset_index()
+            df2.drop(columns=[id_exp_name, id_ant_name], inplace=True)
+            df2.set_index(id_frame_name, inplace=True)
+            df2 = df2[~df2.index.duplicated()]
+
+            frames = list(df2.index.get_level_values(id_frame_name))
             frames.sort()
 
-            inters = np.array(df, dtype=int).ravel()
+            inters = np.array(df2).ravel()
+            mask = np.where(inters > 1)[0]
+            frames = np.array(frames)[mask]
             lg = len(frames)
 
-            res[inters[0]:inters[0] + lg, 0] = id_exp
-            res[inters[0]:inters[0] + lg, 1] = range(1, lg + 1)
-            res[inters[0]:inters[0] + lg, 2] = frames
+            inter = np.where(res[:, 0] == -1)[0][0]
+            res[inter:inter + lg, 0] = id_exp
+            res[inter:inter + lg, 1] = range(1, lg + 1)
+            res[inter:inter + lg, 2] = frames
 
             return df
 
@@ -223,21 +230,28 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             fps = self.exp.get_value('fps', id_exp)
 
             array = np.array(df.reset_index())
-            frame1 = int(array[0, 1])
-            frame2 = int(array[1, 1])
-            if frame2 - frame1 > dt2 * fps:
-                self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+            array = array[array[:, -1] > dt2, :]
 
-            for i in range(1, len(array) - 1):
-                frame0 = int(array[i - 1, 1])
-                frame1 = int(array[i, 1])
-                frame2 = int(array[i + 1, 1])
-                if frame2 - frame1 > dt2 * fps and frame1 - frame0 > dt1 * fps:
+            if len(array) > 1:
+                frame1 = int(array[0, 1])
+                frame2 = int(array[1, 1])
+                if frame2 - frame1 > dt2 * fps:
                     self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
 
-            frame0 = int(array[-2, 1])
-            frame1 = int(array[-1, 1])
-            if frame1 - frame0 > dt1 * fps:
+                for i in range(1, len(array) - 1):
+                    frame0 = int(array[i - 1, 1])
+                    frame1 = int(array[i, 1])
+                    frame2 = int(array[i + 1, 1])
+                    if frame2 - frame1 > dt2 * fps and frame1 - frame0 > dt1 * fps:
+                        self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+
+                frame0 = int(array[-2, 1])
+                frame1 = int(array[-1, 1])
+                if frame1 - frame0 > dt1 * fps:
+                    self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+
+            elif len(array) == 1:
+                frame1 = int(array[0, 1])
                 self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
 
         self.exp.groupby(interval_name, id_exp_name, fct)
