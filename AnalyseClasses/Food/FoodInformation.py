@@ -218,7 +218,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
         ylim_zoom = (0.4, 0.6)
-        self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -240,8 +241,9 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around isolated outside ant attachments'
 
-        ylim_zoom = (0.2, 0.6)
-        self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
+        ylim_zoom = (0., 0.4)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -265,7 +267,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around non outside ant attachments'
 
         ylim_zoom = (0.1, 0.2)
-        self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -291,17 +294,18 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around ant attachments'
 
         ylim_zoom = (0.2, 0.3)
-        self.__compute_information_around_attachments(self.__compute_entropy, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
 
-    def __compute_information_around_attachments(self, fct, variable_name, hists_result_name, info_result_name,
+    def __compute_information_around_attachments(self, fct, dpi, variable_name, hists_result_name, info_result_name,
                                                  hists_label, hists_description, info_label, info_description,
                                                  ylim_zoom, redo, redo_info, redo_plot_hist):
         t0, t1, dt = -60, 60, 0.5
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
-        dtheta = np.pi / 12.
+        dtheta = np.pi * dpi
         bins = np.arange(0, np.pi + dtheta, dtheta)
         hists_index_values = np.around((bins[1:] + bins[:-1]) / 2., 3)
         if redo:
@@ -665,7 +669,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around ant attachments'
 
         ylim_zoom = (150, 250)
-        self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -696,7 +701,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
         ylim_zoom = (150, 200)
-        self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -719,7 +725,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around isolated outside ant attachments'
 
         ylim_zoom = (50, 250)
-        self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
+        dpi = 1/6.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
@@ -742,7 +749,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around non outside ant attachments'
 
         ylim_zoom = (150, 200)
-        self.__compute_information_around_attachments(self.__compute_variance, variable_name, hists_result_name,
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
