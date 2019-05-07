@@ -122,10 +122,12 @@ class MovieCanvas(FigureCanvas):
         carrying_df = self.carrying_df0.loc[pd.IndexSlice[self.id_exp, self.id_ant, :], :]
         xy_df = xy_df.reindex(carrying_df.index)
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
-        dx = int(1920 / self.zoom / 2)
-        dy = int(1080 / self.zoom / 2)
-        xy_df.x -= x0 - dx
-        xy_df.y -= y0 - dy
+        xy_df.x -= x0
+        xy_df.y -= y0
+        dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
+        dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        xy_df.x += dx
+        xy_df.y += dy
         return xy_df, carrying_df, x0, y0, dx, dy
 
     def reset_play(self):
@@ -269,6 +271,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=1)
+aw = ApplicationWindow(group0, id_exp=7)
 aw.show()
 sys.exit(qApp.exec_())
