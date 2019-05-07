@@ -6,7 +6,7 @@ from sklearn import svm
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import auto_corr, get_entropy, get_interval_containing, \
+from Tools.MiscellaneousTools.ArrayManipulation import auto_corr, get_interval_containing, \
     get_index_interval_containing
 from Tools.Plotter.Plotter import Plotter
 from Tools.Plotter.ColorObject import ColorObject
@@ -153,11 +153,11 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.write(results_name)
 
     def compute_ant_attachments(self):
-        carrying_name = 'carrying_intervals'
+        carrying_name = 'ant_carrying_intervals'
         result_name = 'ant_attachments'
 
-        label = 'Ant attachment time series'
-        description = 'Time series where 1 is when an ant attaches to the food and 0 when not'
+        label = 'ant attachment time series'
+        description = 'Time series where 1 is when an ant coming from attaches to the food and 0 when not'
 
         self.__compute_attachments(carrying_name, description, label, result_name)
 
