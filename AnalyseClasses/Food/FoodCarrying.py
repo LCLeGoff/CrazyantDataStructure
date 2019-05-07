@@ -275,6 +275,18 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
+    def compute_isolated_non_outside_ant_carrying_intervals(self):
+        attachment_name = 'non_outside_ant_attachments'
+        result_name = 'isolated_non_outside_ant_carrying_intervals'
+        dt1 = 2
+        dt2 = 8
+
+        label = 'Isolated non outside ant carrying intervals'
+        description = 'Carrying intervals of non outside ant starting at a time' \
+                      ' such that no other attachments occurred '+str(dt1)+'s before and '+str(dt2)+'s after'
+
+        self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
+
     def __isolated_attachments(self, dt1, dt2, attachment_name, description, label, result_name):
         self.exp.load([attachment_name, 'fps'])
         interval_name = self.exp.compute_time_intervals(name_to_intervals=attachment_name)

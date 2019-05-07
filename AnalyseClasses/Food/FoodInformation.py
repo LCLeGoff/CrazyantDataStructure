@@ -154,6 +154,21 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
                                                   result_description)
 
+    def compute_mm1s_food_direction_error_around_isolated_non_outside_attachments(self):
+        mm = 1
+        attachment_name = 'isolated_non_outside_ant_carrying_intervals'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_isolated_non_outside_attachments'
+
+        result_label = 'Food direction error around isolated non outside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from non outside ant attached to the food,' \
+                             'moreover no outside ant attachments occurs during this period of time'
+
+        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                  result_description)
+
     def __gather_variable_around_attachments(self, variable_name, attachment_name, result_name, result_label,
                                              result_description):
 
@@ -243,6 +258,31 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         ylim_zoom = (0., 0.4)
         dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_isolated_non_outside_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around isolated non outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around isolated non outside ant attachments'
+
+        info_label = 'Information of the food around isolated non outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals,' \
+                           ' which are times around isolated non outside ant attachments'
+
+        ylim_zoom = (0.4, 1.)
+        dpi = 1/6.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
                                                       info_label, info_description, ylim_zoom,
@@ -723,6 +763,31 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_label = 'Fisher information of the food around isolated outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around isolated outside ant attachments'
+
+        ylim_zoom = (50, 250)
+        dpi = 1/6.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_isolated_non_outside_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'fisher_information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around isolated non outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around isolated non outside ant attachments'
+
+        info_label = 'Fisher information of the food around isolated non outside attachments'
+        info_description = 'Fisher information of the food (1/(3variance))' \
+                           ' for each time t in time_intervals,' \
+                           ' which are times around isolated non outside ant attachments'
 
         ylim_zoom = (50, 250)
         dpi = 1/6.
