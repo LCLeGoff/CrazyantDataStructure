@@ -929,10 +929,10 @@ class ExperimentGroups:
                     arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
                     arr[0, 0] -= frame0
 
-                    inters = arr[arr[:, -1] == 1, :]
-                    frame_list = frame_list[arr[:, -1] == 1]
+                    inters = arr[arr[:, -1] == -1, 0]
+                    frame_list = frame_list[arr[:, -1] == -1]-inters
 
-                    df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters[:, 0]
+                    df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters
 
                 return df
             df_intervals = self.get_df(name_to_intervals).groupby([id_exp_name, id_ant_name]).apply(interval4each_group)
@@ -952,10 +952,10 @@ class ExperimentGroups:
                     arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
                     arr[0, 0] -= frame0
 
-                    inters = arr[arr[:, -1] == 1, :]
-                    frame_list = frame_list[arr[:, -1] == 1]
+                    inters = arr[arr[:, -1] == -1, 0]
+                    frame_list = frame_list[arr[:, -1] == -1]-inters
 
-                    df.loc[pd.IndexSlice[:, list(frame_list.astype(int))], :] = inters[:, 0]
+                    df.loc[pd.IndexSlice[:, list(frame_list.astype(int))], :] = inters
 
                 return df
             df_intervals = self.get_df(name_to_intervals).groupby(id_exp_name).apply(interval4each_group)

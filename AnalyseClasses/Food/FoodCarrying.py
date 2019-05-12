@@ -160,7 +160,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.write(results_name)
 
     def compute_ant_attachments(self):
-        carrying_name = 'ant_carrying_intervals'
+        carrying_name = 'carrying_intervals'
         result_name = 'ant_attachments'
 
         label = 'ant attachment time series'
@@ -289,6 +289,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def __isolated_attachments(self, dt1, dt2, attachment_name, description, label, result_name):
         self.exp.load([attachment_name, 'fps'])
+        self.exp.get_data_object(attachment_name).df = 1-self.exp.get_df(attachment_name)
         interval_name = self.exp.compute_time_intervals(name_to_intervals=attachment_name)
         self.exp.add_new1d_empty(name=result_name, object_type='CharacteristicEvents1d', category=self.category,
                                  label=label, description=description)
