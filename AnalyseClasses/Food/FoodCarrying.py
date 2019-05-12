@@ -254,8 +254,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_isolated_ant_carrying_intervals(self):
         attachment_name = 'ant_attachments'
         result_name = 'isolated_ant_carrying_intervals'
-        dt1 = 2
-        dt2 = 8
+        dt1 = 5
+        dt2 = 5
 
         label = 'Isolated ant carrying intervals'
         description = 'Carrying intervals starting at a time' \
@@ -266,8 +266,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_isolated_outside_ant_carrying_intervals(self):
         attachment_name = 'outside_ant_attachments'
         result_name = 'isolated_outside_ant_carrying_intervals'
-        dt1 = 2
-        dt2 = 8
+        dt1 = 0
+        dt2 = 5
 
         label = 'Isolated outside ant carrying intervals'
         description = 'Carrying intervals of outside ant starting at a time' \
@@ -278,8 +278,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_isolated_non_outside_ant_carrying_intervals(self):
         attachment_name = 'non_outside_ant_attachments'
         result_name = 'isolated_non_outside_ant_carrying_intervals'
-        dt1 = 2
-        dt2 = 8
+        dt1 = 5
+        dt2 = 5
 
         label = 'Isolated non outside ant carrying intervals'
         description = 'Carrying intervals of non outside ant starting at a time' \

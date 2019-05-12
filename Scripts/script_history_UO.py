@@ -94,20 +94,20 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_carrying()
 # Carrying.compute_carried_food()
 # Carrying.compute_carrying_intervals(True)
+# Carrying.compute_not_carrying_intervals(True)
 
 # Carrying.compute_outside_ant_carrying_intervals()
 # Carrying.compute_non_outside_ant_carrying_intervals()
-# Carrying.compute_not_carrying_intervals(True)
 
 # Carrying.compute_ant_attachments()
 # Carrying.compute_outside_ant_attachments()
 # Carrying.compute_non_outside_ant_attachments()
-# Carrying.compute_attachment_intervals()
-# Carrying.compute_outside_attachment_intervals()
+# Carrying.compute_attachment_intervals(True)
+# Carrying.compute_outside_attachment_intervals(True)
 
-# Carrying.compute_isolated_ant_carrying_intervals()
-# Carrying.compute_isolated_outside_ant_carrying_intervals()
-# Carrying.compute_isolated_non_outside_ant_carrying_intervals()
+Carrying.compute_isolated_ant_carrying_intervals()
+Carrying.compute_isolated_outside_ant_carrying_intervals()
+Carrying.compute_isolated_non_outside_ant_carrying_intervals()
 
 # Carrying.compute_nbr_attachment_per_exp()
 # Carrying.compute_first_attachment_time_of_outside_ant()
@@ -135,8 +135,8 @@ FoodInfo = AnalyseFoodInformation(group)
 #
 #
 # FoodInfo.compute_mm1s_food_direction_error_around_outside_attachments()
-# FoodInfo.compute_mm1s_food_direction_error_around_isolated_outside_attachments()
-# FoodInfo.compute_mm1s_food_direction_error_around_isolated_non_outside_attachments()
+FoodInfo.compute_mm1s_food_direction_error_around_isolated_outside_attachments()
+FoodInfo.compute_mm1s_food_direction_error_around_isolated_non_outside_attachments()
 # FoodInfo.compute_mm1s_food_direction_error_around_non_outside_attachments()
 #
 #
@@ -145,17 +145,17 @@ FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_a
 FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(redo_info=True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(True)
-
+#
 # FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
 
 
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(redo_info=True)
 FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(redo_info=True)
 FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(redo_info=True)
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(redo_info=True)
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(redo_info=True)
-
+#
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(True)
 # FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
 

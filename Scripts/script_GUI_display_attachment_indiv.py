@@ -20,20 +20,22 @@ from Scripts.root import root
 
 class MovieCanvas(FigureCanvas):
 
-    def __init__(self, exp, parent=None, id_exp=1, width=1920, height=1080*1.15):
+    def __init__(self, exp, outside=True, parent=None, id_exp=1, width=1920, height=1080*1.15):
 
         self.exp = exp
         self.id_exp = id_exp
         self.frame_width = width/200.
         self.frame_height = height/200.
         self.play = 0
-        self.batch_length = 5
+        self.batch_length1 = 1
+        self.batch_length2 = 3
+        self.outside = outside
 
         self.fig, self.ax = self.init_figure()
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
-        self.xy_df0, self.outside_carrying_df0, self.non_outside_carrying_df0, self.movie =\
+        self.xy_df0, self.focused_carrying_df, self.not_focused_carrying_df, self.movie =\
             self.get_traj_and_movie(id_exp)
         self.list_frame_batch = self.get_frame_batches(id_exp)
 
@@ -54,32 +56,37 @@ class MovieCanvas(FigureCanvas):
         self.time_loop()
 
     def get_traj_and_movie(self, id_exp):
-        name_outside_carrying = 'outside_ant_carrying_intervals'
+        name_outside_carrying_intervals = 'outside_ant_carrying_intervals'
         name_non_outside_carrying = 'non_outside_ant_carrying_intervals'
         name_xy = 'xy_next2food'
-        self.exp.load([name_outside_carrying, name_non_outside_carrying, name_xy])
+        self.exp.load([name_outside_carrying_intervals, name_non_outside_carrying, name_xy])
 
         xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
 
-        outside_carrying_df = self.exp.get_df(name_outside_carrying)
-        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying)
+        outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[id_exp, :, :]
+        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[id_exp, :, :]
 
-        outside_carrying_df = outside_carrying_df[outside_carrying_df > 1].dropna()
-        non_outside_carrying_df = non_outside_carrying_df[non_outside_carrying_df > 1].dropna()
+        # outside_carrying_df = outside_carrying_df[outside_carrying_df > 1].dropna()
+        # non_outside_carrying_df = non_outside_carrying_df[non_outside_carrying_df > 1].dropna()
 
         movie = self.exp.get_movie(id_exp)
 
-        return xy_df, outside_carrying_df, non_outside_carrying_df, movie
+        if self.outside:
+            return xy_df, outside_carrying_df, non_outside_carrying_df, movie
+        else:
+            return xy_df, non_outside_carrying_df, outside_carrying_df, movie
 
     def get_frame_batches(self, id_exp):
 
         self.exp.load('fps')
         fps = self.exp.get_value('fps', id_exp)
-        frames = self.xy_df0.index.get_level_values(id_frame_name)
-        frame0, frame1 = frames[0], frames[-1]
-        lg = self.batch_length*fps
-        list_batch_frames = [[i, i+lg] for i in range(frame0, frame1, lg)]
+        frames = self.focused_carrying_df.index.get_level_values(id_frame_name)
+        list_batch_frames = []
+        lg1 = int((self.batch_length1*fps) / 2)
+        lg2 = int((self.batch_length2*fps) / 2)
+        for frame in frames:
+            list_batch_frames.append([frame - lg1, frame + lg2])
 
         return list_batch_frames
 
@@ -141,21 +148,43 @@ class MovieCanvas(FigureCanvas):
         pd_slice = pd.IndexSlice[self.id_exp, :, self.frame_batch[0]:self.frame_batch[1]]
         xy_df = self.xy_df0.loc[pd_slice, :]
 
-        fps = self.exp.get_value('fps', self.id_exp)
+        from_non_outside_color = 3*int(1-self.outside)
+        from_outside_color = 3*int(self.outside)
+        carrying_non_outside_color = 4*int(1-self.outside) + int(self.outside)
+        carrying_outside_color = 4*int(self.outside) + int(1-self.outside)
 
-        attachment_df = self.outside_carrying_df0.reindex(xy_df.index)
+        attachment_non_focused_color = 5*int(1-self.outside) + 2*int(self.outside)
+        attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
+
+        self.exp.load(['carrying', 'from_outside'])
+        carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
+
+        from_outside_df = carrying_df.copy()
+        from_outside_df[:] = 0
+        outside_ant_df = self.exp.from_outside.df.loc[self.id_exp, :]
+        list_outside_ant = list(outside_ant_df[outside_ant_df == 1].dropna().index)
+        from_outside_df.loc[pd.IndexSlice[self.id_exp, list_outside_ant, :], :] = 1
+
+        attachment_df = carrying_df.copy()
         attachment_size_df = attachment_df.copy()
-        attachment_df[:] = 0
         attachment_size_df[:] = 5
-        outside_attachment = np.array(self.outside_carrying_df0.loc[pd_slice, :].reset_index())
-        for id_exp, id_ant, frame, lg in outside_attachment:
-            attachment_df.loc[id_exp, id_ant, frame:frame+lg*fps] = 3
-            attachment_df.loc[id_exp, id_ant, frame] = 4
+
+        attachment_df[from_outside_df == 0] = from_non_outside_color
+        attachment_df[from_outside_df == 1] = from_outside_color
+        attachment_df[(carrying_df == 1)*(from_outside_df == 0)] = carrying_non_outside_color
+        attachment_df[(carrying_df == 1)*(from_outside_df == 1)] = carrying_outside_color
+
+        attachment_size_df = attachment_size_df.reindex(xy_df.index)
+        attachment_df = attachment_df.reindex(xy_df.index)
+
+        focused_attachments = self.focused_carrying_df.loc[pd_slice, :]
+        for id_exp, id_ant, frame, lg in np.array(focused_attachments.reset_index()):
+            attachment_df.loc[id_exp, id_ant, frame] = attachment_focused_color
             attachment_size_df.loc[id_exp, id_ant, frame] = 50
-        non_outside_attachment = np.array(self.non_outside_carrying_df0.loc[pd_slice, :].reset_index())
-        for id_exp, id_ant, frame, lg in non_outside_attachment:
-            attachment_df.loc[id_exp, id_ant, frame:frame+lg*fps] = 1
-            attachment_df.loc[id_exp, id_ant, frame] = 2
+
+        non_focused_attachments = np.array(self.not_focused_carrying_df.loc[pd_slice, :].reset_index())
+        for id_exp, id_ant, frame, lg in non_focused_attachments:
+            attachment_df.loc[id_exp, id_ant, frame] = attachment_non_focused_color
             attachment_size_df.loc[id_exp, id_ant, frame] = 50
 
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
@@ -184,7 +213,7 @@ class MovieCanvas(FigureCanvas):
         attach = np.array(self.attachment_df.loc[pd_slice, :]).ravel()
         marker_size = np.array(self.attachment_size_df.loc[pd_slice, :]).ravel()
 
-        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach, s=marker_size, cmap='jet', norm=colors.Normalize(0, 4))
+        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach, s=marker_size, cmap='jet', norm=colors.Normalize(0, 5))
 
         self.batch_text = self.ax.text(
             self.dx, 0, 'Batch '+str(self.frame_batch[0])+' to '+str(self.frame_batch[1]),
@@ -236,7 +265,7 @@ class MovieCanvas(FigureCanvas):
 
 
 class ApplicationWindow(QtWidgets.QMainWindow):
-    def __init__(self, group, id_exp):
+    def __init__(self, group, id_exp, outside=True):
 
         self.bt_height = 30
         self.bt_length = 80
@@ -248,7 +277,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.main_widget = QtWidgets.QWidget(self)
-        self.movie_canvas = MovieCanvas(self.exp, self.main_widget, id_exp=id_exp)
+        self.movie_canvas = MovieCanvas(self.exp, outside, self.main_widget, id_exp=id_exp)
 
         layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(self.movie_canvas)
@@ -315,6 +344,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=7)
+aw = ApplicationWindow(group0, id_exp=7, outside=True)
 aw.show()
 sys.exit(qApp.exec_())
