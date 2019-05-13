@@ -163,6 +163,9 @@ class ExperimentGroups:
             return self.pandas_index_manager.get_index_dict(
                 df=self.get_df(name), index_names=[id_exp_name, id_ant_name, id_frame_name])
 
+    def is_name_existing(self, name):
+        return name in self.data_manager.data_loader.definition_loader.definition_dict
+
     def plot_traj_on_movie(self, traj_names, id_exp, frame, id_ants=None):
         self.load_timeseries_exp_frame_ant_index()
         if id_ants is None:
