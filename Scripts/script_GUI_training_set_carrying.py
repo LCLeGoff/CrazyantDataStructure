@@ -13,6 +13,7 @@ from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_ant_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager

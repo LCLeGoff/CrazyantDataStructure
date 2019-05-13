@@ -268,7 +268,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 
-    def key_press_event(self, event):
+    def keyPressEvent(self, event):
         key = event.key()
 
         if key == Qt.Key_Space:
