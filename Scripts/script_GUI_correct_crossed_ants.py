@@ -66,6 +66,7 @@ class MovieCanvas(FigureCanvas):
         self.time_loop()
 
     def prev_ant(self):
+        print('prev ant')
         if self.iter_ant is None:
             self.ax.text(0, 0, 'No more ants')
             self.draw()
@@ -74,11 +75,21 @@ class MovieCanvas(FigureCanvas):
             self.iter_ant -= 1
             if self.iter_ant < 0:
                 self.iter_ant = len(self.list_outside_ant)-1
-
             self.crossing = self.data_manager.get_crossing(self.get_crossed_ant(), self.xy_df0)
+
+            turn = 0
+            while len(self.crossing) == 0 and turn != 2:
+                print(self.get_crossed_ant())
+                self.iter_ant -= 1
+                if self.iter_ant < 0:
+                    self.iter_ant = len(self.list_outside_ant)-1
+                    turn += 1
+                self.crossing = self.data_manager.get_crossing(self.get_crossed_ant(), self.xy_df0)
+
             self.refresh()
 
     def next_ant(self):
+        print('next ant')
         if self.iter_ant is None:
             self.ax.text(0, 0, 'No more ants')
             self.draw()
@@ -87,8 +98,17 @@ class MovieCanvas(FigureCanvas):
             self.iter_ant += 1
             if self.iter_ant >= len(self.list_outside_ant):
                 self.iter_ant = 0
-
             self.crossing = self.data_manager.get_crossing(self.get_crossed_ant(), self.xy_df0)
+
+            turn = 0
+            while len(self.crossing) == 0 and turn != 2:
+                print(self.get_crossed_ant())
+                self.iter_ant += 1
+                if self.iter_ant >= len(self.list_outside_ant):
+                    self.iter_ant = 0
+                    turn += 1
+                self.crossing = self.data_manager.get_crossing(self.get_crossed_ant(), self.xy_df0)
+
             self.refresh()
 
     def prev_cross(self):
@@ -194,7 +214,7 @@ class MovieCanvas(FigureCanvas):
 
             self.ax.cla()
             self.current_text = self.ax.text(
-                0.5, 0.5, 'No crosses', color='black', weight='bold',
+                0.5, 0.5, 'Ant '+str(self.get_crossed_ant())+': no crosses', color='black', weight='bold',
                 size='xx-large', horizontalalignment='center', verticalalignment='top')
             self.draw()
         else:
@@ -221,7 +241,7 @@ class MovieCanvas(FigureCanvas):
                 color='black', weight='bold', size='xx-large', horizontalalignment='center', verticalalignment='top')
 
             self.clock_text = self.ax.text(
-                0, 0, 'Stop', color='green', weight='bold', size='xx-large',
+                0, 0, str(frame0), color='green', weight='bold', size='xx-large',
                 horizontalalignment='left', verticalalignment='top')
 
             self.ax.axis('equal')
@@ -236,6 +256,7 @@ class MovieCanvas(FigureCanvas):
             self.frame += 1
             if self.frame >= self.crossed_xy.index[-1]:
                 self.play = -1
+                self.reset_play()
             else:
 
                 frame_img = self.crop_frame_img(self.movie.get_next_frame())
