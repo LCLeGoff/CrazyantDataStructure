@@ -13,22 +13,23 @@ from Scripts.root import root
 group = 'UO'
 
 starter = AnalyseStarter(root0=root, group=group)
-# starter.start(redo=True, index_dicts=False, markings=False, dynamic_food=True)
+# starter.start(redo=True, markings=False, dynamic_food=True)
 # starter.compute_mm2px()
 # starter.compute_exit0()
 
 
 Traj = AnalyseTrajectory(group)
+# Traj.interpolate_xy_orientation_food(dynamic_food=True)
 # Traj.initialize_xy_orientation_food(dynamic_food=True)
 # Traj.compute_mm10_traj()
-
+# Traj.compute_is_from_outside()
+#
 # Traj.compute_speed(True)
 # Traj.compute_mm10_speed(True)
 # Traj.compute_mm20_speed(True)
 # Traj.compute_mm1s_speed(True)
 # Traj.compute_mm10_orientation()
 # Traj.compute_mm20_orientation()
-# Traj.compute_is_from_outside()
 
 FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_mm10_food_traj()

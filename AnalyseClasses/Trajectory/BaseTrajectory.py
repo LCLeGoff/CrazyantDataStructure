@@ -15,26 +15,124 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'Trajectory'
 
+    def interpolate_xy_orientation_food(self, dynamic_food=False):
+        print('x, y')
+
+        self.__load_xy0_reorientation(dynamic_food=dynamic_food)
+        self.__copy_xy0_to_interpolated_xy0(dynamic_food=dynamic_food)
+        self.__interpolate_xy_and_orientation(dynamic_food=dynamic_food)
+        self.__write_interpolated_xy0_orientation(dynamic_food=dynamic_food)
+
     def initialize_xy_orientation_food(self, dynamic_food=False):
         print('x, y')
         id_exp_list = self.exp.set_id_exp_list()
 
-        self.__load_xy_reorientation(dynamic_food=dynamic_food)
-        self.__copy_xy0_to_xy(dynamic_food=dynamic_food)
+        self.__load_interpolated_xy0_reorientation(dynamic_food=dynamic_food)
+        self.__copy_interpolated_xy0_to_xy(dynamic_food=dynamic_food)
         self.__centered_xy_on_food(dynamic_food=dynamic_food)
         self.__convert_xy_to_mm(dynamic_food=dynamic_food)
         self.__orient_all_in_same_direction(id_exp_list, dynamic_food=dynamic_food)
         self.__write_initialize_xy_orientation(dynamic_food)
 
-    def __load_xy_reorientation(self, dynamic_food):
+    def __load_xy0_reorientation(self, dynamic_food):
         if dynamic_food is True:
             self.exp.load(['food_x0', 'food_y0'])
         self.exp.load([
-            'x0', 'y0', 'absoluteOrientation',
+            'x0', 'y0', 'absoluteOrientation'])
+
+    def __copy_xy0_to_interpolated_xy0(self, dynamic_food):
+        print('coping xy0, absoluteOrientation and food0')
+
+        self.exp.add_copy1d(
+            name_to_copy='x0', copy_name='interpolated_x0', category=self.category,
+            label='x (px)', description='x coordinate, linearly interpolated (px, in the camera system)'
+        )
+        self.exp.add_copy1d(
+            name_to_copy='y0', copy_name='interpolated_y0', category=self.category,
+            label='y (px)', description='y coordinate, linearly interpolated (px, in the camera system)'
+        )
+
+        self.exp.add_copy1d(
+            name_to_copy='absoluteOrientation', copy_name='interpolatedAbsoluteOrientation', category=self.category,
+            label='orientation (rad)', description='ant orientation, linearly interpolated (rad, in the camera system)'
+        )
+
+        if dynamic_food is True:
+            self.exp.add_copy1d(
+                name_to_copy='food_x0', copy_name='interpolated_food_x0', category='FoodBase',
+                label='x (px)', description='x coordinate of the food, linearly interpolated (px, in the camera system)'
+            )
+            self.exp.add_copy1d(
+                name_to_copy='food_y0', copy_name='interpolated_food_y0', category='FoodBase',
+                label='y (px)', description='y coordinate of the food, linearly interpolated (px, in the camera system)'
+            )
+
+    def __interpolate_xy_and_orientation(self, dynamic_food):
+        print('interpolating interpolated xy0, absoluteOrientation and food0')
+
+        self.focused_name = 'interpolated_x0'
+        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
+        self.exp.change_df(self.focused_name, res_df)
+
+        self.focused_name = 'interpolated_y0'
+        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
+        self.exp.change_df(self.focused_name, res_df)
+
+        self.focused_name = 'interpolatedAbsoluteOrientation'
+        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
+        self.exp.change_df(self.focused_name, res_df)
+
+        if dynamic_food:
+            self.focused_name = 'interpolated_food_x0'
+            res_df = self.exp.groupby(self.focused_name, id_exp_name, self.__interpolate_time_series1d)
+            self.exp.change_df(self.focused_name, res_df)
+
+            self.focused_name = 'interpolated_food_y0'
+            res_df = self.exp.groupby(self.focused_name, id_exp_name, self.__interpolate_time_series1d)
+            self.exp.change_df(self.focused_name, res_df)
+
+    @staticmethod
+    def __interpolate_time_series1d(df: pd.DataFrame):
+
+        nan_locations = np.where(np.isnan(df))[0]
+        if len(nan_locations) != 0:
+            prev_nan_loc = nan_locations[0]
+            for i in range(0, len(nan_locations)-1):
+                current_nan_loc = nan_locations[i]
+                if nan_locations[i+1] - current_nan_loc > 1:
+
+                    val0 = float(df.iloc[prev_nan_loc-1])
+                    val1 = float(df.iloc[current_nan_loc+1])
+                    num = current_nan_loc-prev_nan_loc+1
+                    val_range = np.c_[np.linspace(val0, val1, num+1, endpoint=False)[1:]]
+
+                    df.iloc[prev_nan_loc:current_nan_loc+1] = np.around(val_range, 2)
+
+                    prev_nan_loc = nan_locations[i+1]
+
+            current_nan_loc = nan_locations[-1]
+            val0 = float(df.iloc[prev_nan_loc-1])
+            val1 = float(df.iloc[current_nan_loc+1])
+            num = current_nan_loc-prev_nan_loc+1
+            val_range = np.c_[np.linspace(val0, val1, num+1, endpoint=False)[1:]]
+            df.iloc[prev_nan_loc:current_nan_loc+1] = np.around(val_range, 2)
+
+        return df
+
+    def __write_interpolated_xy0_orientation(self, dynamic_food):
+        if dynamic_food is True:
+            self.exp.write(['interpolated_food_x0', 'interpolated_food_y0'])
+        self.exp.write(['interpolatedAbsoluteOrientation', 'interpolated_x0', 'interpolated_y0'])
+
+    def __load_interpolated_xy0_reorientation(self, dynamic_food):
+        if dynamic_food is True:
+            self.exp.load(['interpolated_food_x0', 'interpolated_food_y0'])
+        self.exp.load([
+            'interpolated_x0', 'interpolated_y0', 'interpolatedAbsoluteOrientation',
             'entrance1', 'entrance2', 'exit0_1', 'exit0_2',
             'food_center', 'mm2px'])
 
-    def __copy_xy0_to_xy(self, dynamic_food):
+    def __copy_interpolated_xy0_to_xy(self, dynamic_food):
         print('coping xy0, absoluteOrientation and food0')
         self.exp.add_copy2d(
             name_to_copy='exit0_1', copy_name='exit1', category=self.category,
@@ -48,27 +146,26 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             description='Coordinates of one of the points defining the exit in the setup system')
 
         self.exp.add_copy1d(
-            name_to_copy='x0', copy_name='x', category=self.category,
+            name_to_copy='interpolated_x0', copy_name='x', category=self.category,
             label='x (mm)', description='x coordinate (mm, in the initial food system)'
         )
         self.exp.add_copy1d(
-            name_to_copy='y0', copy_name='y', category=self.category,
+            name_to_copy='interpolated_y0', copy_name='y', category=self.category,
             label='y (mm)', description='y coordinate (mm, in the initial food system)'
         )
 
         self.exp.add_copy1d(
-            name_to_copy='absoluteOrientation', copy_name='orientation', category=self.category,
+            name_to_copy='interpolatedAbsoluteOrientation', copy_name='orientation', category=self.category,
             label='orientation (rad)', description='ant orientation (in the initial food system)'
         )
-        self.exp.operation('orientation', lambda z: round(z, 3))
 
         if dynamic_food is True:
             self.exp.add_copy1d(
-                name_to_copy='food_x0', copy_name='food_x', category='FoodBase',
+                name_to_copy='interpolated_food_x0', copy_name='food_x', category='FoodBase',
                 label='x (mm)', description='x coordinate of the food (mm, in the initial food system)'
             )
             self.exp.add_copy1d(
-                name_to_copy='food_y0', copy_name='food_y', category='FoodBase',
+                name_to_copy='interpolated_food_y0', copy_name='food_y', category='FoodBase',
                 label='y (mm)', description='y coordinate of the food (mm, in the initial food system)'
             )
 
@@ -314,9 +411,9 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)' \
                            ' smoothed with a moving mean of window length ' + str(time_window) + ' frames'
         if redo:
-            self.exp.load(result_name)
+            self.exp.load(name)
             result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=result_name, time_window=time_window, category=category
+                name_to_average=name, time_window=time_window, category=category
             )
             self.exp.write(result_name)
 

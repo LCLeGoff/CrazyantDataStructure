@@ -20,6 +20,7 @@ class AnalyseStarter:
 
     def start(self, redo, markings=True, dynamic_food=False):
         self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=dynamic_food)
+        self.__sort_and_rewrite_trajectory()
         self.__sort_and_rewrite_markings(markings)
         self.__sort_and_rewrite_food(dynamic_food)
 
@@ -30,13 +31,66 @@ class AnalyseStarter:
             df = pd.read_csv(add, index_col=[id_exp_name, id_ant_name, id_frame_name])
             df.sort_index().to_csv(add)
 
+    def __sort_and_rewrite_trajectory(self):
+        print('write trajectory')
+        add = self.root + 'Raw/TimeSeries.csv'
+        names = ['x0', 'y0', 'absoluteOrientation',
+                 'area', 'eccentricity', 'major_axis_length', 'minor_axis_length', 'perimeter']
+
+        exps = ExperimentGroupBuilder(root).build(self.group)
+        exps.load(names[0])
+
+        self.new_indexes = []
+        exps.groupby(names[0], [id_exp_name, id_ant_name], self.__complete_time_series1d)
+        new_indexes = pd.MultiIndex.from_tuples(self.new_indexes, names=[id_exp_name, id_ant_name, id_frame_name])
+
+        res_df = exps.data_manager.data_loader.timeseries1d_loader.categories['Raw']
+        res_df = res_df.reindex(new_indexes)
+        res_df.to_csv(add)
+
     def __sort_and_rewrite_food(self, dynamic_food):
         if dynamic_food is True:
             print('write dynamic food')
-            add = self.root + 'Raw/CharacteristicTimeSeries.csv'
-            df = pd.read_csv(add, index_col=[id_exp_name, id_frame_name, 'food_x0', 'food_y0'])
-            df.sort_index().to_csv(add)
+            name_food_x = 'food_x0'
+            name_food_y = 'food_y0'
 
+            exps = ExperimentGroupBuilder(root).build(self.group)
+            exps.load([name_food_x, name_food_y])
+
+            res_df = exps.get_df(name_food_x)
+            res_df = res_df.join(exps.get_df(name_food_y))
+            res_df.sort_index(inplace=True)
+
+            self.new_indexes = []
+            exps.groupby(name_food_x, id_exp_name, self.__complete_chara_time_series1d)
+            new_indexes = pd.MultiIndex.from_tuples(self.new_indexes, names=[id_exp_name, id_frame_name])
+
+            res_df = res_df.reindex(new_indexes)
+
+            add = self.root + 'Raw/CharacteristicTimeSeries.csv'
+            res_df.to_csv(add)
+
+    def __complete_time_series1d(self, df: pd.DataFrame):
+        id_exp = df.index.get_level_values(id_exp_name)[0]
+        id_ant = df.index.get_level_values(id_ant_name)[0]
+        frame0, frame1 = df.index.get_level_values(id_frame_name)[[0, -1]]
+
+        frames = range(frame0, frame1 + 1)
+        exps = np.full(len(frames), id_exp)
+        ants = np.full(len(frames), id_ant)
+        self.new_indexes += list(zip(exps, ants, frames))
+
+        return df
+
+    def __complete_chara_time_series1d(self, df: pd.DataFrame):
+        id_exp = df.index.get_level_values(id_exp_name)[0]
+        frame0, frame1 = df.index.get_level_values(id_frame_name)[[0, -1]]
+
+        frames = range(frame0, frame1 + 1)
+        exps = np.full(len(frames), id_exp)
+        self.new_indexes += list(zip(exps, frames))
+
+        return df
 
     def __fill_and_write_definition_dict(self, redo, markings=True, dynamic_food=False):
 
