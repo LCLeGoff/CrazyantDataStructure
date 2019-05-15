@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def pts2vect(p, q):
@@ -161,6 +162,27 @@ def distance_between_point_and_line_df(p, line):
     p1.columns = ['x', 'y']
     p2.columns = ['x', 'y']
     return np.abs(cross2d_df(p2-p1, p0-p1))/distance_df(p2, p1)
+
+
+def is_counter_clockwise(a, b, c):
+    return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)
+
+
+def is_intersecting_df(a, b, c, d):
+    a2 = a.copy()
+    a2.columns = ['x', 'y']
+
+    b2 = b.copy()
+    b2.columns = ['x', 'y']
+
+    c2 = c.copy()
+    c2.columns = ['x', 'y']
+
+    d2 = d.copy()
+    d2.columns = ['x', 'y']
+
+    return (is_counter_clockwise(a, c, d) != is_counter_clockwise(b, c, d))\
+        * (is_counter_clockwise(a, b, c) != is_counter_clockwise(a, b, d))
 
 # def projection_on_line(p, line):
 #

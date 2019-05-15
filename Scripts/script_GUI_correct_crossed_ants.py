@@ -15,7 +15,7 @@ from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_frame_name, id_ant_name, id_exp_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
-from Tools.MiscellaneousTools.Geometry import distance_df
+from Tools.MiscellaneousTools.Geometry import distance_df, is_intersecting_df
 
 
 class MovieCanvas(FigureCanvas):
@@ -293,8 +293,8 @@ class DataManager:
         self.res_name_x = 'decrossed_x0'
         self.res_name_y = 'decrossed_y0'
         self.name_xy = 'xy0'
-        self.min_dist_in_mm = 4
-        self.cross_thresh = 2
+        self.min_dist_in_mm = 3
+        self.cross_thresh = 1
         self.init()
 
     def init(self):
@@ -302,8 +302,8 @@ class DataManager:
             name_x = self.res_name_x
             name_y = self.res_name_y
         else:
-            name_x = 'x0'
-            name_y = 'y0'
+            name_x = 'interpolated_x0'
+            name_y = 'interpolated_y0'
         self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
         self.exp.load('traj_translation')
 
@@ -325,7 +325,7 @@ class DataManager:
 
     def get_crossing(self, id_ant, xy_df):
         self.exp.load('mm2px')
-        min_dist = self.min_dist_in_mm*self.exp.get_value('mm2px', self.id_exp)
+        # min_dist = self.min_dist_in_mm*self.exp.get_value('mm2px', self.id_exp)
 
         xy = xy_df.loc[self.id_exp, id_ant, :]
         list_id_ant = list(set(xy_df.index.get_level_values(id_ant_name)))
@@ -335,9 +335,30 @@ class DataManager:
         for id_ant2 in list_id_ant:
             xy2 = xy_df.loc[self.id_exp, id_ant2, :]
 
-            distances = distance_df(xy, xy2)
-            distances = distances[distances < min_dist].dropna()
-            frame_when_cross_is_happening = np.array(distances.index.get_level_values(id_frame_name))
+            # distances = distance_df(xy, xy2)
+
+            dframe = 1
+            a = xy.iloc[:-dframe].copy()
+            a.index += dframe
+            b = xy.iloc[dframe:].copy()
+            c = xy2.iloc[:-dframe].copy()
+            c.index += dframe
+            d = xy2.iloc[dframe:].copy()
+            is_intersecting = is_intersecting_df(a, b, c, d)
+
+            for dframe in range(2, 5):
+                a = xy.iloc[:-dframe].copy()
+                a.index += dframe
+                b = xy.iloc[dframe:].copy()
+                c = xy2.iloc[:-dframe].copy()
+                c.index += dframe
+                d = xy2.iloc[dframe:].copy()
+                is_intersecting += is_intersecting_df(a, b, c, d)
+
+            is_crossing = is_intersecting.dropna().astype(bool)  # + distances < min_dist
+            is_crossing = is_crossing[is_crossing]
+
+            frame_when_cross_is_happening = np.array(is_crossing.index) + dframe/2
             if len(frame_when_cross_is_happening) != 0:
                 dframe_when_cross_is_happening = frame_when_cross_is_happening[1:]-frame_when_cross_is_happening[:-1]
 
