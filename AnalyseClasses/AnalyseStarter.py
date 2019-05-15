@@ -142,7 +142,7 @@ class AnalyseStarter:
             definition_dict[key] = dict()
             definition_dict[key]['label'] = key.capitalize()
             definition_dict[key]['category'] = 'Raw'
-            definition_dict[key]['object_type'] = 'Characteristics1d'
+            definition_dict[key]['object_type'] = 'TimeSeries1d'
 
         definition_dict['area']['description'] = 'area'
         definition_dict['eccentricity']['description'] = 'eccentricity'
