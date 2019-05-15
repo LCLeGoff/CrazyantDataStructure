@@ -99,6 +99,9 @@ class ExperimentGroups:
     def get_value(self, name, idx):
         return self.get_data_object(name).df.loc[idx][0]
 
+    def change_df(self, name, df):
+        self.get_data_object(name).df = df
+
     def change_value(self, name, idx, value):
         self.get_data_object(name).df.loc[idx] = value
 
