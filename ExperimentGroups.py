@@ -15,7 +15,6 @@ from Movies.Movies import Movies
 from Scripts.root import root_movie
 from Tools.MiscellaneousTools.ArrayManipulation import running_mean, turn_to_list
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
-from Tools.MiscellaneousTools.PickleJsonFiles import import_obj_pickle
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Tools.Plotter.Plotter import Plotter
 
@@ -28,26 +27,12 @@ class ExperimentGroups:
         self.data_manager = DataFileManager(root, group)
         self.pandas_index_manager = PandasIndexManager()
 
-        self.timeseries_exp_ant_frame_index = None
-        self.timeseries_exp_frame_ant_index = None
-        self.timeseries_exp_ant_index = import_obj_pickle(self.root + 'TimeSeries_exp_ant_index.p')
-        self.timeseries_exp_frame_index = import_obj_pickle(self.root + 'TimeSeries_exp_frame_index.p')
-        self.characteristic_timeseries_exp_frame_index = import_obj_pickle(
-            self.root + 'CharacteristicTimeSeries_exp_frame_index.p')
-        self.id_exp_list = list(self.timeseries_exp_frame_index.keys())
-        self.id_exp_list.sort()
-
         self.ref_id_exp = np.array(pd.read_csv(self.root + 'ref_id_exp.csv'))
 
+        self.id_exp_list = list(set(self.ref_id_exp[:, 0]))
+        self.id_exp_list.sort()
+
         self.names = set()
-
-    def load_timeseries_exp_ant_frame_index(self):
-        if self.timeseries_exp_ant_frame_index is None:
-            self.timeseries_exp_ant_frame_index = import_obj_pickle(self.root + 'TimeSeries_exp_ant_frame_index.p')
-
-    def load_timeseries_exp_frame_ant_index(self):
-        if self.timeseries_exp_frame_ant_index is None:
-            self.timeseries_exp_frame_ant_index = import_obj_pickle(self.root + 'TimeSeries_exp_frame_ant_index.p')
 
     @staticmethod
     def turn_to_list(names):
@@ -149,13 +134,6 @@ class ExperimentGroups:
         return self.pandas_index_manager.get_unique_index_array(df=self.get_df(name),
                                                                 index_names=[id_exp_name, id_ant_name])
 
-    def get_dict_id_exp_ant(self, name):
-        if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
-            return self.timeseries_exp_ant_index
-        else:
-            return self.pandas_index_manager.get_index_dict(df=self.get_df(name),
-                                                            index_names=[id_exp_name, id_ant_name])
-
     def get_dict_id_exp_ant_frame(self, name):
         if self.get_object_type(name) in ['TimeSeries1d', 'TimeSeries2d']:
             return self.timeseries_exp_ant_frame_index
@@ -167,6 +145,7 @@ class ExperimentGroups:
         return name in self.data_manager.data_loader.definition_loader.definition_dict
 
     def plot_traj_on_movie(self, traj_names, id_exp, frame, id_ants=None):
+        # TODO: rewrite this method with groupby
         self.load_timeseries_exp_frame_ant_index()
         if id_ants is None:
             id_ants = self.timeseries_exp_frame_ant_index[id_exp][frame]
