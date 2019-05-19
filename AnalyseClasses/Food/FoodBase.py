@@ -130,10 +130,10 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.exp.exit4.df.x.loc[id_exp] = xmax + dl
             self.exp.exit4.df.y.loc[id_exp] = ymin - dl
 
-        self.exp.exit1.df = self.exp.exit1.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
-        self.exp.exit2.df = self.exp.exit2.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
-        self.exp.exit3.df = self.exp.exit3.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
-        self.exp.exit4.df = self.exp.exit4.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit1.df = self.exp.exit1.df.groupby(id_exp_name).apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit2.df = self.exp.exit2.df.groupby(id_exp_name).apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit3.df = self.exp.exit3.df.groupby(id_exp_name).apply(self.exp.convert_xy_to_traj_system4each_group)
+        self.exp.exit4.df = self.exp.exit4.df.groupby(id_exp_name).apply(self.exp.convert_xy_to_traj_system4each_group)
 
     def compute_norm_time2frame(self, redo=False, redo_hist=False):
         result_name = 'norm_time2frame'

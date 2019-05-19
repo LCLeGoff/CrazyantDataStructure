@@ -514,14 +514,16 @@ class AnalyseTrajectory(AnalyseClassDecorator):
             ymin = min(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
             ymax = max(self.exp.entrance1.df.loc[id_exp].y, self.exp.entrance2.df.loc[id_exp].y)
             xmax = max(self.exp.entrance1.df.loc[id_exp].x, self.exp.entrance2.df.loc[id_exp].x)
-            self.exp.gate1.df.x.loc[id_exp] = xmin - 50
-            self.exp.gate1.df.y.loc[id_exp] = ymin - 50
-            self.exp.gate2.df.x.loc[id_exp] = xmin - 50
-            self.exp.gate2.df.y.loc[id_exp] = ymax + 50
-            self.exp.gate3.df.x.loc[id_exp] = xmax + 50
-            self.exp.gate3.df.y.loc[id_exp] = ymax + 50
-            self.exp.gate4.df.x.loc[id_exp] = xmax + 50
-            self.exp.gate4.df.y.loc[id_exp] = ymin - 50
+
+            dl = 50*self.exp.get_value('mm2px', id_exp)
+            self.exp.gate1.df.x.loc[id_exp] = xmin - dl
+            self.exp.gate1.df.y.loc[id_exp] = ymin - dl
+            self.exp.gate2.df.x.loc[id_exp] = xmin - dl
+            self.exp.gate2.df.y.loc[id_exp] = ymax + dl
+            self.exp.gate3.df.x.loc[id_exp] = xmax + dl
+            self.exp.gate3.df.y.loc[id_exp] = ymax + dl
+            self.exp.gate4.df.x.loc[id_exp] = xmax + dl
+            self.exp.gate4.df.y.loc[id_exp] = ymin - dl
 
         self.exp.gate1.df = self.exp.gate1.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
         self.exp.gate2.df = self.exp.gate2.df.groupby('id_exp').apply(self.exp.convert_xy_to_traj_system4each_group)
