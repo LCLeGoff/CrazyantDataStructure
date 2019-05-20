@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 
 from cv2 import cv2
+from matplotlib.path import Path
+
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Scripts.root import root
@@ -348,3 +350,66 @@ class AnalyseStarter:
         exps.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'y', 'y')
 
         exps.write([result_name1, result_name2])
+
+    def compute_is_from_outside(self):
+        result_name = 'from_outside'
+        category = 'CleanedRaw'
+
+        exps = ExperimentGroupBuilder(root).build(self.group)
+        if exps.is_name_existing('decrossed_x0'):
+            exps.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy')
+        else:
+            exps.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
+
+        self.__compute_gate_pts(exps)
+
+        def is_from_outside4each_group(df: pd.DataFrame):
+            id_exp = int(df.index.get_level_values('id_exp')[0])
+            gate_path = Path([exps.gate1.df.loc[id_exp], exps.gate2.df.loc[id_exp],
+                              exps.gate3.df.loc[id_exp], exps.gate4.df.loc[id_exp]])
+
+            xys = np.array(df)[:10]
+            df[:] = np.nan
+            from_outside = any(gate_path.contains_points(xys))
+            df.iloc[0, :] = from_outside
+
+            return df
+
+        exps.xy.df = exps.xy.df.groupby(['id_exp', 'id_ant']).apply(is_from_outside4each_group)
+        df_res = exps.xy.df.dropna()
+        df_res.index = df_res.index.droplevel('frame')
+        df_res = df_res.drop(columns='y')
+
+        exps.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
+                               category=category, label='Is the ant from outside?',
+                               description='Boolean saying if the ant is coming from outside or not')
+
+        exps.write(result_name)
+
+    @staticmethod
+    def __compute_gate_pts(exps):
+        exps.load(['entrance1', 'entrance2', 'mm2px', 'traj_translation'])
+
+        for gate_num in range(1, 5):
+            exps.add_copy('entrance1', 'gate'+str(gate_num))
+
+        for id_exp in exps.id_exp_list:
+
+            xmin = min(exps.entrance1.df.loc[id_exp].x, exps.entrance2.df.loc[id_exp].x)
+            ymin = min(exps.entrance1.df.loc[id_exp].y, exps.entrance2.df.loc[id_exp].y)
+            ymax = max(exps.entrance1.df.loc[id_exp].y, exps.entrance2.df.loc[id_exp].y)
+            xmax = max(exps.entrance1.df.loc[id_exp].x, exps.entrance2.df.loc[id_exp].x)
+
+            dl = 20*exps.get_value('mm2px', id_exp)
+            exps.gate1.df.x.loc[id_exp] = xmin - dl
+            exps.gate1.df.y.loc[id_exp] = ymin - dl
+            exps.gate2.df.x.loc[id_exp] = xmin - dl
+            exps.gate2.df.y.loc[id_exp] = ymax + dl
+            exps.gate3.df.x.loc[id_exp] = xmax + dl
+            exps.gate3.df.y.loc[id_exp] = ymax + dl
+            exps.gate4.df.x.loc[id_exp] = xmax + dl
+            exps.gate4.df.y.loc[id_exp] = ymin - dl
+
+        for gate_num in range(1, 5):
+            exps.operation_between_2names('gate'+str(gate_num), 'traj_translation', lambda x, y: x - y, 'x', 'x')
+            exps.operation_between_2names('gate'+str(gate_num), 'traj_translation', lambda x, y: x - y, 'y', 'y')
