@@ -390,12 +390,12 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         plotter = Plotter(self.exp.root, self.exp.get_data_object(result_names[0]))
         nr = int(round(np.sqrt(len(dt_attach))))
         nc = int(round(len(dt_attach)/nr))
-        fig, ax = plotter.create_plot(figsize=(10, 10), nrows=nr, ncols=nc, left=0.05)
+        fig, ax = plotter.create_plot(figsize=(8, 10), nrows=nr, ncols=nc, left=0.05, bottom=0.05)
         for i in range(len(dt_attach)-1):
             name = result_names[i]
             t0 = dt_attach[i]
             t1 = dt_attach[i+1]
-            title = '['+str(t0)+', '+str(t1)+']'
+            title = 't=['+str(t0)+', '+str(t1)+']'
             r = int(i/nc)
             c = i % nc
 
@@ -405,8 +405,8 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
                 title=title, normed=True, display_cbar=False)
             ax[r, c].set_xticks([])
             ax[r, c].set_yticks([])
-        ax[1, 0].set_ylabel('Veracity')
-        ax[-1, 1].set_xlabel('Confidence')
+        ax[1, 0].set_ylabel('Veracity', fontsize=15)
+        ax[-1, 1].set_xlabel('Confidence', fontsize=15)
 
         plotter.save(fig, name=result_name)
 
@@ -726,7 +726,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
             tab_dveracity = np.around(tab_veracity[1:]-tab_veracity[:-1], 2)
 
             to_keep = ~np.isnan(tab_confidence[:-1]*tab_veracity[:-1]*tab_dconfidence*tab_dveracity) \
-                & ((tab_dconfidence != 0) | (tab_dveracity != 0))
+                & ((np.abs(tab_dconfidence) > 0.05) | (np.abs(tab_dveracity) > 0.05))
 
             mask = np.where(to_keep)[0]
             tab_confidence = tab_confidence[mask]
@@ -737,7 +737,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
             for confidence, veracity, dconfidence, dveracity \
                     in zip(tab_confidence, tab_veracity, tab_dconfidence, tab_dveracity):
 
-                confidence = max(min(confidence,confidence_intervals2[-1]), confidence_intervals2[0])
+                confidence = max(min(confidence, confidence_intervals2[-1]), confidence_intervals2[0])
                 veracity = max(min(veracity, veracity_intervals2[-1]), veracity_intervals2[0])
 
                 if dconfidence == 0 and dveracity > 0:
@@ -778,7 +778,11 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
                                        index_values=np.array(tab_confidence)-dv/2., replace=True)
         self.exp.add_new_empty_dataset(name='norm', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
                                        index_values=np.array(tab_confidence)-dv/2., replace=True)
-        self.exp.add_new_empty_dataset(name='dist_uniform', index_names='confidence', column_names=np.array(tab_veracity)-dc/2.,
+        self.exp.add_new_empty_dataset(name='dist_uniform', index_names='confidence',
+                                       column_names=np.array(tab_veracity)-dc/2.,
+                                       index_values=np.array(tab_confidence)-dv/2., replace=True)
+        self.exp.add_new_empty_dataset(name='dominant_direction', index_names='confidence',
+                                       column_names=np.array(tab_veracity)-dc/2.,
                                        index_values=np.array(tab_confidence)-dv/2., replace=True)
 
         for i, confidence in enumerate(tab_confidence):
@@ -796,9 +800,29 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
                     self.exp.get_df('norm').loc[confidence-dc/2.][veracity-dv/2.] = nbr_data
 
-                    dist_uniform = -(np.log2(mat_north[i, j]) + np.log2(mat_south[i, j])\
-                        + np.log2(mat_west[i, j]) + np.log2(mat_east[i, j]))
+                    dist_uniform = -(np.log2(mat_north[i, j]) + np.log2(mat_south[i, j])
+                                     + np.log2(mat_west[i, j]) + np.log2(mat_east[i, j]))
                     self.exp.get_df('dist_uniform').loc[confidence-dc/2.][veracity-dv/2.] = dist_uniform
+
+                    val_max = mat_north[i, j] + mat_south[i, j]
+                    col_max = 4
+                    diff = 1.2
+                    if mat_north[i, j] > mat_south[i, j] * diff:
+                        col_max += 0.2
+                    elif mat_south[i, j] > mat_north[i, j] * diff:
+                        col_max -= 0.2
+                    if val_max < mat_west[i, j] + mat_east[i, j]:
+                        val_max = mat_west[i, j] + mat_east[i, j]
+                        col_max = 0
+                        if mat_west[i, j] > mat_east[i, j] * diff:
+                            col_max += 0.2
+                        elif mat_east[i, j] > mat_west[i, j] * diff:
+                            col_max -= 0.2
+
+                    if val_max < 0.5*diff:
+                        col_max = 2
+
+                    self.exp.get_df('dominant_direction').loc[confidence-dc/2.][veracity-dv/2.] = col_max
 
         plotter = Plotter(self.exp.root, self.exp.get_data_object('time'))
         fig, ax = plotter.create_plot()
@@ -824,6 +848,14 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
             mat_north, mat_south, mat_west, mat_east, mat_x, mat_y, result_name)
         plotter.save(fig, name=result_name, suffix='dist_uniform')
 
+        plotter = Plotter(self.exp.root, self.exp.get_data_object('dominant_direction'), cmap='jet')
+        fig, ax = plotter.create_plot(figsize=(7, 8))
+        plotter.plot_heatmap(preplot=(fig, ax), display_cbar=False)
+        headlength, headwidth, mat_zero, plotter, scale, width = self.__plot_proba_matrix(
+            ax, confidence_intervals, veracity_intervals,
+            mat_north, mat_south, mat_west, mat_east, mat_x, mat_y, result_name)
+        plotter.save(fig, name=result_name, suffix='dominant_direction')
+
     def __plot_proba_matrix(self, ax, confidence_intervals, veracity_intervals, mat_north, mat_south, mat_west,
                             mat_east, mat_x, mat_y, result_name):
         plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
@@ -845,8 +877,9 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         ax.set_ylim((0, 1))
         ax.set_xticks(confidence_intervals)
         ax.set_yticks(veracity_intervals)
-        ax.set_xlabel('Confidence')
-        ax.set_ylabel('Veracity')
+        ax.set_xlabel('Confidence', fontsize=15)
+        ax.set_ylabel('Veracity', fontsize=15)
+        ax.set_title('')
         return headlength, headwidth, mat_zero, plotter, scale, width
 
     def __get_confidence_and_veracity_tab(
