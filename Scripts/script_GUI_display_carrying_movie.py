@@ -124,8 +124,10 @@ class MovieCanvas(FigureCanvas):
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
         xy_df.x -= x0
         xy_df.y -= y0
-        dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
-        dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        # dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
+        # dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        dx = 100
+        dy = 100
         xy_df.x += dx
         xy_df.y += dy
         return xy_df, carrying_df, x0, y0, dx, dy
@@ -271,6 +273,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=7)
+aw = ApplicationWindow(group0, id_exp=2)
 aw.show()
 sys.exit(qApp.exec_())
