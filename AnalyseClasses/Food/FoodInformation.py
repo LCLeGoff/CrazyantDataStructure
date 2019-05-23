@@ -232,7 +232,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
-        ylim_zoom = (0.4, 0.6)
+        ylim_zoom = (0.35, 0.55)
         dpi = 1/12.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
@@ -401,7 +401,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         self.exp.remove_object(info_result_name)
         self.exp.load(info_result_name)
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
-        fig, ax = plotter.create_plot(figsize=(5, 8), nrows=2)
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
         plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel=ylabel, title='')
 
         ax[0].axvline(0, ls='--', c='k')
@@ -437,28 +437,6 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         ylim = (.35, .75)
         self.__compute_information_around_outside_attachments(self.__compute_entropy_around_outside_attachments,
-                                                              variable_name, hists_result_name, hists_label,
-                                                              hists_description, info_result_name, info_label,
-                                                              info_description, ylim, redo, redo_info, redo_plot_hist)
-
-    def compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
-
-        variable_name = 'mm1s_food_direction_error_around_outside_attachments'
-
-        hists_result_name = 'histograms_mm1s_food_direction_error_around_first_outside_attachments'
-        info_result_name = 'fisher information_mm1s_food_direction_error_around_first_outside_attachments'
-
-        hists_label = 'Histograms of the food direction error around first outside attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around first outside ant attachments'
-
-        info_label = 'Fisher information of the food around outside first outside attachments'
-        info_description = 'Fisher information of the food (max entropy - entropy of the food direction error)' \
-                           ' for each time t in time_intervals, which are times around first outside ant attachments'
-
-        ylim = (80, 140)
-        self.__compute_information_around_outside_attachments(self.__compute_fisher_info_around_outside_attachments,
                                                               variable_name, hists_result_name, hists_label,
                                                               hists_description, info_result_name, info_label,
                                                               info_description, ylim, redo, redo_info, redo_plot_hist)
@@ -528,9 +506,63 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                 ax.legend()
                 plotter.save(fig, sub_folder=hists_result_name, name=t)
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
-        fig, ax = plotter.create_plot(figsize=(5, 8), nrows=2)
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
         plotter.plot_smooth(window=150, preplot=(fig, ax[0]), marker='',
                             xlabel='time (s)', ylabel='Information (bit)', title='')
+        ax[0].axvline(0, ls='--', c='k')
+        plotter.plot_smooth(window=150, preplot=(fig, ax[1]), title='', marker='', )
+        ax[1].axvline(0, ls='--', c='k')
+        ax[1].set_xlim((-2, 8))
+        ax[1].set_ylim(ylim)
+        plotter.save(fig)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(self, redo=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_attachments'
+
+        info_result_name = 'fisher information_mm1s_food_direction_error_around_first_outside_attachments'
+
+        info_label = 'Fisher information of the food around outside first outside attachments'
+        info_description = 'Fisher information of the food (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around first outside ant attachments'
+
+        ylim = (0.1, 0.2)
+        self.__compute_fisher_information_around_outside_attachments(variable_name, info_result_name,
+                                                                     info_label, info_description, ylim, redo)
+
+    def __compute_fisher_information_around_outside_attachments(self, variable_name, info_result_name, info_label,
+                                                                info_description, ylim, redo):
+        self.exp.load([variable_name])
+        rank_list = np.arange(1., 11.)
+        t0, t1, dt = -60, 60, 0.1
+        time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+        index_values = [(th, t) for th in rank_list for t in time_intervals]
+
+        if redo:
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names=rank_list,
+                                           index_values=time_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+
+            first_attach_name = 'first_attachments'
+            self.__extract_10first_attachments(first_attach_name, variable_name)
+
+            for (th, t) in index_values:
+                values = self.exp.get_df(first_attach_name).loc[pd.IndexSlice[:, th], str(t)].dropna()
+
+                fisher_info = 1/(3*np.var(values))
+
+                self.exp.get_df(info_result_name).loc[t, th] = np.around(fisher_info, 5)
+
+            self.exp.write(info_result_name)
+
+        else:
+            self.exp.load(info_result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
+        plotter.plot_smooth(window=150, preplot=(fig, ax[0]), marker='',
+                            xlabel='time (s)', ylabel='Fisher information', title='')
         ax[0].axvline(0, ls='--', c='k')
         plotter.plot_smooth(window=150, preplot=(fig, ax[1]), title='', marker='', )
         ax[1].axvline(0, ls='--', c='k')
@@ -545,13 +577,6 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             max_entropy = get_max_entropy(hist)
 
             self.exp.get_df(info_result_name).loc[t, th] = np.around(max_entropy - entropy, 2)
-
-    def __compute_fisher_info_around_outside_attachments(self, hists_result_name, info_result_name):
-        for (th, t) in self.exp.get_index(hists_result_name):
-            hist = self.exp.get_df(hists_result_name).loc[(th, t)]
-            variance = np.var(hist)
-
-            self.exp.get_df(info_result_name).loc[t, th] = np.around(1/(3*variance))
 
     def __extract_10first_attachments(self, first_attach_name, variable_name):
         first_attach_index = [(id_exp, th) for id_exp in self.exp.id_exp_list for th in range(1, 11)]
@@ -577,20 +602,6 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around the first outside ant attachment'
 
         self.__compute_information_around_first_attachment(self.__compute_entropy_around_first_attachment,
-                                                           variable_name, info_result_name, info_label,
-                                                           info_description, redo)
-
-    def compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(self, redo=False):
-
-        variable_name = 'mm1s_food_direction_error'
-
-        info_result_name = 'fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment'
-
-        info_label = 'Fisher information of the food around outside the first outside attachment'
-        info_description = 'Fisher information of the food (1/(3variable))' \
-                           ' for each time t in time_intervals, which are times around the first outside ant attachment'
-
-        self.__compute_information_around_first_attachment(self.__compute_fisher_info_around_first_attachment,
                                                            variable_name, info_result_name, info_label,
                                                            info_description, redo)
 
@@ -638,12 +649,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             self.exp.load(info_result_name)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
-        fig, ax = plotter.create_plot(figsize=(5, 8), nrows=2)
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
         plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel='Information (bit)', title='')
         ax[0].axvline(0, ls='--', c='k')
         plotter.plot(preplot=(fig, ax[1]), title='')
         ax[1].axvline(0, ls='--', c='k')
         ax[1].set_xlim((-2, 8))
+        ax[1].set_ylim((0, 1))
         plotter.save(fig)
 
     def __compute_entropy_around_first_attachment(self, bins, bins2, info_result_name, time_intervals,
@@ -667,29 +679,74 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
                 plotter.save(fig, sub_folder=info_result_name, name=t)
 
-    def __compute_fisher_info_around_first_attachment(self, bins, bins2, info_result_name, time_intervals,
-                                                      time_intervals_to_plot):
+    def compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(self, redo=False):
 
-        for t in time_intervals:
-            values = self.exp.get_df('temp').loc[t].dropna()
-            hist = np.histogram(values, bins=bins, density=False)[0]
-            s = float(np.sum(hist))
-            hist = hist / s
-            variable = np.var(hist)
+        variable_name = 'mm1s_food_direction_error'
 
-            self.exp.get_df(info_result_name).loc[t] = np.around(1/(3*variable))
+        info_result_name = 'fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment'
 
-            if not (np.isnan(variable)) and t in time_intervals_to_plot:
-                df = pd.DataFrame(data=hist, index=bins2, columns=['hist'])
-                self.exp.add_new_dataset_from_df(df=df, name='hist', category=self.category, replace=True)
+        info_label = 'Fisher information of the food around outside the first outside attachment'
+        info_description = 'Fisher information of the food (1/(3variable))' \
+                           ' for each time t in time_intervals, which are times around the first outside ant attachment'
 
-                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('hist'))
-                fig, ax = plotter.plot(xlabel='Food direction error', ylabel='Probability')
+        self.__compute_fisher_information_around_first_attachment(variable_name, info_result_name, info_label,
+                                                                  info_description, redo)
 
-                plotter.save(fig, sub_folder=info_result_name, name=t)
+    def __compute_fisher_information_around_first_attachment(self, variable_name, info_result_name, info_label,
+                                                             info_description, redo):
 
-    def compute_fisher_information_mm1s_food_direction_error_around_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        self.exp.load([variable_name, first_attachment_name, 'fps'])
+
+        t0, t1, dt = -100, 400, 0.5
+        time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+
+        if redo:
+            self.exp.add_new_empty_dataset(name='temp', index_names='time', column_names=self.exp.id_exp_list,
+                                           index_values=time_intervals, replace=True)
+
+            def get_variable_around_first_attachment(df1: pd.DataFrame):
+                id_exp = df1.index.get_level_values(id_exp_name)[0]
+                fps = self.exp.get_value('fps', id_exp)
+                first_attach = self.exp.get_value(first_attachment_name, id_exp)
+
+                df2 = df1.loc[id_exp, :]
+                df2.index -= first_attach
+                df2.index /= fps
+                df2 = df2.reindex(time_intervals)
+
+                self.exp.get_df('temp')[id_exp] = df2[variable_name]
+
+            self.exp.groupby(variable_name, id_exp_name, get_variable_around_first_attachment)
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='information',
+                                           index_values=time_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+
+            for t in time_intervals:
+                values = self.exp.get_df('temp').loc[t].dropna()
+                fisher_info = 1/(3*np.var(values))
+
+                self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
+
+            self.exp.write(info_result_name)
+
+        else:
+            self.exp.load(info_result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
+        plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel='Information (bit)', title='')
+        ax[0].axvline(0, ls='--', c='k')
+        ax[0].set_ylim((0, 1))
+
+        plotter.plot(preplot=(fig, ax[1]), title='')
+        ax[1].axvline(0, ls='--', c='k')
+        ax[1].set_xlim((-2, 8))
+        ax[1].set_ylim((0, 0.2))
+        plotter.save(fig)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_attachments(self, redo=False):
 
         variable_name = 'mm1s_food_direction_error_around_outside_attachments'
         variable_name2 = 'mm1s_food_direction_error_around_non_outside_attachments'
@@ -697,125 +754,99 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         self.exp.get_data_object(variable_name).df =\
             pd.concat([self.exp.get_df(variable_name), self.exp.get_df(variable_name2)])
 
-        hists_result_name = 'histograms_mm1s_food_direction_error_around_attachments'
         info_result_name = 'fisher_information_mm1s_food_direction_error_around_attachments'
-
-        hists_label = 'Histograms of the food direction error around attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around ant attachments'
 
         info_label = 'Fisher information of the food around outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around ant attachments'
 
-        ylim_zoom = (150, 250)
-        dpi = 1/12.
-        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
-                                                      info_result_name, hists_label, hists_description,
-                                                      info_label, info_description, ylim_zoom,
-                                                      redo, redo_info, redo_plot_hist)
+        ylim_zoom = (0.13, 0.15)
+        self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
+                                                             info_label, info_description, ylim_zoom, redo)
 
-    def __compute_variance(self, time_intervals, hists_result_name, info_result_name):
-
-        for t in time_intervals:
-            hist = self.exp.get_df(hists_result_name)[t]
-            variance = np.var(hist)
-
-            self.exp.get_df(info_result_name).loc[t] = np.around(1/(3*variance))
-
-    def compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
+    def compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(self, redo=False):
 
         variable_name = 'mm1s_food_direction_error_around_outside_attachments'
         self.exp.load(variable_name)
 
-        hists_result_name = 'histograms_' + variable_name
         info_result_name = 'fisher_information_' + variable_name
-
-        hists_label = 'Histograms of the food direction error around outside attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around outside ant attachments'
 
         info_label = 'Fisher information of the food around outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
-        ylim_zoom = (150, 200)
-        dpi = 1/12.
-        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
-                                                      info_result_name, hists_label, hists_description,
-                                                      info_label, info_description, ylim_zoom,
-                                                      redo, redo_info, redo_plot_hist)
+        ylim_zoom = (0.17, 0.22)
+        self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
+                                                             info_label, info_description, ylim_zoom, redo)
 
-    def compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
+    def __compute_fisher_information_around_attachments(self, variable_name, info_result_name,
+                                                        info_label, info_description, ylim_zoom, redo):
+        t0, t1, dt = -60, 60, 0.5
+        time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+        if redo:
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
+                                           index_values=time_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+
+            for t in time_intervals:
+                values = self.exp.get_df(variable_name)[str(t)].dropna()
+                fisher_info = 1/(3*np.var(values))
+
+                self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
+
+            self.exp.write(info_result_name)
+
+        else:
+            self.exp.load(info_result_name)
+
+        ylabel = 'Fisher information'
+
+        self.__plot_info('', info_result_name, time_intervals, ylabel, ylim=None, ylim_zoom=ylim_zoom,
+                         redo=False, redo_plot_hist=False)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(self, redo=False):
 
         variable_name = 'mm1s_food_direction_error_around_isolated_outside_attachments'
         self.exp.load(variable_name)
 
-        hists_result_name = 'histograms_' + variable_name
         info_result_name = 'fisher_information_' + variable_name
-
-        hists_label = 'Histograms of the food direction error around isolated outside attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around isolated outside ant attachments'
 
         info_label = 'Fisher information of the food around isolated outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around isolated outside ant attachments'
 
-        ylim_zoom = (50, 250)
-        dpi = 1/6.
-        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
-                                                      info_result_name, hists_label, hists_description,
-                                                      info_label, info_description, ylim_zoom,
-                                                      redo, redo_info, redo_plot_hist)
+        ylim_zoom = (0.12, 0.15)
+        self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
+                                                             info_label, info_description, ylim_zoom, redo)
 
-    def compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
+    def compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(self, redo=False):
 
         variable_name = 'mm1s_food_direction_error_around_isolated_non_outside_attachments'
         self.exp.load(variable_name)
 
-        hists_result_name = 'histograms_' + variable_name
         info_result_name = 'fisher_information_' + variable_name
-
-        hists_label = 'Histograms of the food direction error around isolated non outside attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around isolated non outside ant attachments'
 
         info_label = 'Fisher information of the food around isolated non outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals,' \
                            ' which are times around isolated non outside ant attachments'
 
-        ylim_zoom = (50, 250)
-        dpi = 1/6.
-        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
-                                                      info_result_name, hists_label, hists_description,
-                                                      info_label, info_description, ylim_zoom,
-                                                      redo, redo_info, redo_plot_hist)
+        ylim_zoom = (0.17, 0.22)
+        self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
+                                                             info_label, info_description, ylim_zoom, redo)
 
-    def compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(
-            self, redo=False, redo_info=False, redo_plot_hist=False):
+    def compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(self, redo=False):
 
         variable_name = 'mm1s_food_direction_error_around_non_outside_attachments'
         self.exp.load(variable_name)
 
-        hists_result_name = 'histograms_' + variable_name
         info_result_name = 'fisher_information_' + variable_name
-
-        hists_label = 'Histograms of the food direction error around non outside attachments'
-        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
-                            'which are times around non outside ant attachments'
 
         info_label = 'Fisher information of the food around non outside attachments'
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around non outside ant attachments'
 
-        ylim_zoom = (150, 200)
-        dpi = 1/12.
-        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
-                                                      info_result_name, hists_label, hists_description,
-                                                      info_label, info_description, ylim_zoom,
-                                                      redo, redo_info, redo_plot_hist)
+        ylim_zoom = (0.11, 0.13)
+        self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
+                                                             info_label, info_description, ylim_zoom, redo)
