@@ -851,10 +851,12 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
     def __get_confidence_and_veracity_tab(
             self, name_confidence, name_veracity, confidence_intervals, veracity_intervals, dc, dv):
+
         mc = confidence_intervals[-1]
         self.exp.operation(name_confidence, lambda c: np.floor(c / dc) * dc + dc / 2.)
         self.exp.get_df(name_confidence)[self.exp.get_df(name_confidence) > mc] = mc
         tab_x = np.round(self.exp.get_array(name_confidence), 2)
+
         min_v = veracity_intervals[0]
         max_v = veracity_intervals[-1]
         self.exp.operation(name_veracity, lambda v: 1 - np.abs(v) / np.pi)

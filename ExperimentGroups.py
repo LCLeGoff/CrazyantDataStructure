@@ -96,8 +96,10 @@ class ExperimentGroups:
     def get_index_names(self, name):
         return list(self.get_index(name).names)
 
-    def get_value(self, name, idx):
-        return self.get_data_object(name).df.loc[idx][0]
+    def get_value(self, name, idx, name_col=None):
+        if name_col is None:
+            name_col = 0
+        return self.get_data_object(name).df.loc[idx][name_col]
 
     def change_df(self, name, df):
         self.get_data_object(name).df = df

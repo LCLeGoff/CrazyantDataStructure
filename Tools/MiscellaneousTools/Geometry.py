@@ -181,8 +181,8 @@ def is_intersecting_df(a, b, c, d):
     d2 = d.copy()
     d2.columns = ['x', 'y']
 
-    return (is_counter_clockwise(a, c, d) != is_counter_clockwise(b, c, d))\
-        * (is_counter_clockwise(a, b, c) != is_counter_clockwise(a, b, d))
+    return (is_counter_clockwise(a2, c2, d2) != is_counter_clockwise(b2, c2, d2))\
+        & (is_counter_clockwise(a2, b2, c2) != is_counter_clockwise(a2, b2, d2))
 
 # def projection_on_line(p, line):
 #

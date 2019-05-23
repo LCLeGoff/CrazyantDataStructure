@@ -208,7 +208,7 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         bins = np.arange(0, 1, 0.01)
         label = 'Food path efficiency'
         description = 'Distance crossed by the food during ' + str(w) + ' s ' \
-                      'divided by the total distance crossed by  te food during the same time'
+                      'divided by the total distance crossed by the food during the same time'
         if redo:
             self.exp.load([dist_name, total_dist_name])
 
