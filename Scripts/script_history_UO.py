@@ -16,14 +16,13 @@ starter = AnalyseStarter(root0=root, group=group)
 # starter.start(redo=True, markings=False, dynamic_food=True)
 # starter.compute_mm2px()
 # starter.compute_exit0()
+# starter.compute_is_from_outside()
 
 
 Traj = AnalyseTrajectory(group)
 # Traj.interpolate_xy_orientation_food(dynamic_food=True)
 # Traj.initialize_xy_orientation_food(dynamic_food=True)
 # Traj.compute_mm10_traj()
-# Traj.compute_is_from_outside()
-#
 # Traj.compute_speed(True)
 # Traj.compute_mm10_speed(True)
 # Traj.compute_mm20_speed(True)
@@ -141,24 +140,24 @@ FoodInfo = AnalyseFoodInformation(group)
 # FoodInfo.compute_mm1s_food_direction_error_around_non_outside_attachments()
 #
 #
-# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(True)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(True)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(redo_info=True)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(True)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(True)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(False)
 #
-# FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(True)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(False)
 
 
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(redo_info=True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(redo_info=True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(redo_info=True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(redo_info=True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(redo_info=True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(True)
 #
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(False)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(False)
 
 FoodVelocity = AnalyseFoodVelocity(group)
 # FoodVelocity.compute_food_velocity(True)
@@ -206,8 +205,8 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
 #
-# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
-# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(False)
+# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(False)
 #
 # FoodInfoTraj.w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(True)
 
@@ -217,5 +216,5 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_vector_field()
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_vector_field()
 
-# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_probability_matrix(True)
-# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_probability_matrix(True)
+# FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_probability_matrix(False)
+# FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_probability_matrix(False)
