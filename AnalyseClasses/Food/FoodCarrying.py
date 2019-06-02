@@ -212,6 +212,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             name = 'ant_attachments'
             self.exp.load(name)
 
+            self.exp.get_data_object(name).df = 1-self.exp.get_df(name)
+
             self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
                                             result_name=result_name, label='Between attachment intervals',
                                             description='Time intervals between attachment intervals (s)')

@@ -189,7 +189,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 description='Instantaneous speed of the food'
             )
 
-            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+            for id_exp in self.exp.id_exp_list:
                 dx = np.array(self.exp.get_df(name_x).loc[id_exp, :])
                 dx1 = dx[1, :]
                 dx2 = dx[-2, :]
@@ -204,7 +204,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 dy[0, :] = dy1 - dy[0, :]
                 dy[-1, :] = dy[-1, :] - dy2
 
-                dt = np.array(self.exp.characteristic_timeseries_exp_frame_index[id_exp], dtype=float)
+                dt = np.array(self.exp.get_df(name_x).loc[id_exp, :].index.get_level_values(id_frame_name), dtype=float)
                 dt.sort()
                 dt[1:-1] = dt[2:] - dt[:-2]
                 dt[0] = 1
@@ -221,8 +221,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                           hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$v (mm/s)$', ylabel='PDF',
+        fig, ax = plotter.plot(xlabel=r'$v$ (mm/s)', ylabel='PDF',
                                normed=True, label_suffix='s')
+        ax.set_xlim((0, 20))
         plotter.save(fig)
 
     def compute_food_speed_evol(self, redo=False):

@@ -1,5 +1,5 @@
 import cv2
-import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Movies:
@@ -31,7 +31,10 @@ class Movies:
         return frame_img
 
     def get_next_frame(self):
-        ret, frame_img = self.cap.read()
-        frame_img = cv2.cvtColor(frame_img, cv2.COLOR_BGR2GRAY)
-        cv2.destroyAllWindows()
-        return frame_img
+        try:
+            ret, frame_img = self.cap.read()
+            frame_img = cv2.cvtColor(frame_img, cv2.COLOR_BGR2GRAY)
+            cv2.destroyAllWindows()
+            return frame_img
+        except cv2.error:
+            return np.zeros((1080, 1920))
