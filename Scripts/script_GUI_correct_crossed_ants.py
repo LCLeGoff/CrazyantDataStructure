@@ -703,7 +703,7 @@ class DataManager:
                                                'for which the trajectory of ant coming from outside has been manually '
                                                'corrected to have no crossing and is complete', replace=True)
 
-        self.exp.write([self.res_name_x, self.res_name_y])
+        self.exp.write([self.res_name_x, self.res_name_y], modify_index=True)
 
 
 class ApplicationWindow(QtWidgets.QMainWindow):

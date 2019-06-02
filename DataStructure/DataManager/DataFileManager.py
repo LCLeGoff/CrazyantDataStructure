@@ -73,7 +73,7 @@ class DataFileManager:
                 df = pd.DataFrame(index=self._get_exp_frame_index())
                 df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
-    def write(self, obj):
+    def write(self, obj, modify_index=False):
         if obj.category is None:
             raise ValueError(obj.name + ' definition not properly set: category is missing')
         elif obj.label is None:
@@ -85,7 +85,7 @@ class DataFileManager:
                 raise ValueError(obj.name + ' definition not properly set: nb_indexes is missing')
             else:
                 self.create_new_category(obj.category)
-                self.data_writer.write(obj)
+                self.data_writer.write(obj, modify_index=modify_index)
 
     def rename(
             self, obj, name=None, xname=None, yname=None,

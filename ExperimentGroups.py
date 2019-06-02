@@ -205,11 +205,11 @@ class ExperimentGroups:
                 print('loading ', name)
                 self.add_object(name, self.data_manager.load(name), replace=True)
 
-    def write(self, names):
+    def write(self, names, modify_index=False):
         names = self.turn_to_list(names)
         for name in names:
             print('writing ', name)
-            self.data_manager.write(self.get_data_object(name))
+            self.data_manager.write(self.get_data_object(name), modify_index=modify_index)
 
     def delete_data(self, names):
         names = self.turn_to_list(names)

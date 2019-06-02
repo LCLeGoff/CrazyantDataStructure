@@ -27,10 +27,10 @@ class DataWriter:
 
         self.dataset_writer = DataSetWriter(root, group)
 
-    def write(self, obj):
+    def write(self, obj, modify_index=False):
 
         if obj.object_type == 'TimeSeries1d':
-            self.timeseries1d_writer.write(obj)
+            self.timeseries1d_writer.write(obj, modify_index=modify_index)
 
         elif obj.object_type in ['Events1d', 'CharacteristicEvents1d']:
             self.events1d_writer.write(obj)
