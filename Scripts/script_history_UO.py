@@ -8,6 +8,7 @@ from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
 from AnalyseClasses.Food.FoodInformation import AnalyseFoodInformation
 from AnalyseClasses.Food.FoodVeracity import AnalyseFoodVeracity
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
+from AnalyseClasses.Models.UOModels import UOSimpleModel, AnalyseUOModel, UOConfidenceModel
 from Scripts.root import root
 
 group = 'UO'
@@ -102,8 +103,8 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_ant_attachments()
 # Carrying.compute_outside_ant_attachments()
 # Carrying.compute_non_outside_ant_attachments()
-# Carrying.compute_attachment_intervals(True)
-# Carrying.compute_outside_attachment_intervals(True)
+# Carrying.compute_attachment_intervals(redo_hist=True)
+# Carrying.compute_outside_attachment_intervals(redo_hist=True)
 
 # Carrying.compute_isolated_ant_carrying_intervals()
 # Carrying.compute_isolated_outside_ant_carrying_intervals()
@@ -218,3 +219,26 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_probability_matrix(False)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_probability_matrix(False)
+
+SimpleModel = UOSimpleModel(root, group, new=True, n_replica=500)
+# ConfidenceModel = UOConfidenceModel(root, group, new=True, n_replica=200)
+
+#
+var_orientation = 0.1
+var_perception = 0.5
+var_information = 0.5
+for p_att in [0.2, 0.5, 0.7]:
+    for c in [0.001, 0.01, 0.02, 0.05, 0.1]:
+        SimpleModel.run({'c': c, 'p_attachment': p_att, 'var_orientation': var_orientation,
+                        'var_perception': var_perception, 'var_information': var_information})
+# for c in [0.001, 0.01, 0.02, 0.05, 0.1]:
+#     SimpleModel.run({'c': c, 'p_attachment': 'power', 'var_orientation': var_orientation,
+#                     'var_perception': var_perception, 'var_information': var_information})
+#
+#
+# # ConfidenceModel.write()
+SimpleModel.write()
+
+AnalyseUOModel = AnalyseUOModel(group)
+AnalyseUOModel.plot_simple_model_evol(n=3, m=5)
+# AnalyseUOModel.plot_confidence_model_evol()
