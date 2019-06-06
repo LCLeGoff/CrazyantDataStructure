@@ -64,7 +64,6 @@ class MovieCanvas(FigureCanvas):
         self.current_text = None
         self.clock_text = None
 
-        self.events = None
         self.focused_ant_xy = None
         self.other_ant_xy = None
 
@@ -138,7 +137,7 @@ class MovieCanvas(FigureCanvas):
         turn = False
 
         while len(self.events) == 0 and not turn:
-            print(self.get_focused_ant_id())
+            print(str(self.get_focused_ant_id())+'/'+str(np.max(self.list_outside_ant)))
 
             self.iter_focused_ant += 1
 
@@ -184,7 +183,7 @@ class MovieCanvas(FigureCanvas):
             self.events = np.array(list(self.events[:self.iter_event]) + list(self.events[self.iter_event + 1:]))
             if len(self.events) == 0:
                 self.iter_event = None
-            elif self.iter_event == len(self.events)-1:
+            elif self.iter_event == len(self.events):
                 self.iter_event = 0
 
             self.refresh()
@@ -287,30 +286,36 @@ class MovieCanvas(FigureCanvas):
             other_xy_df = xy.loc[other_ant, :]
             other_xy_df = other_xy_df.loc[frame-self.dt:frame+self.dt]
 
-            other_xy_df.x -= x0
-            other_xy_df.y -= y0
+            if len(other_xy_df) > 0:
 
-            dx1 = max(dx1, int(-np.nanmin(other_xy_df.x)))
-            dx1 = max(dx1, self.dpx)
-            dx1 = min(dx1, x0)
+                other_xy_df.x -= x0
+                other_xy_df.y -= y0
 
-            dx2 = max(dx2, int(np.nanmax(other_xy_df.x)))
-            dx2 = max(dx2, self.dpx)
-            dx2 = min(dx2, 1920-self.x0)
+                dx1 = max(dx1, int(-np.nanmin(other_xy_df.x)))
+                dx1 = max(dx1, self.dpx)
+                dx1 = min(dx1, x0)
 
-            dy1 = max(dy1, int(-np.nanmin(other_xy_df.y)))
-            dy1 = max(dy1, self.dpx)
-            dy1 = min(dy1, x0)
+                dx2 = max(dx2, int(np.nanmax(other_xy_df.x)))
+                dx2 = max(dx2, self.dpx)
+                dx2 = min(dx2, 1920-self.x0)
 
-            dy2 = max(dy2, int(np.nanmax(other_xy_df.y)))
-            dy2 = max(dy2, self.dpx)
-            dy2 = min(dy2, 1080-self.y0)
+                dy1 = max(dy1, int(-np.nanmin(other_xy_df.y)))
+                dy1 = max(dy1, self.dpx)
+                dy1 = min(dy1, x0)
 
-            other_xy_df.x += dx1
-            other_xy_df.y += dy1
+                dy2 = max(dy2, int(np.nanmax(other_xy_df.y)))
+                dy2 = max(dy2, self.dpx)
+                dy2 = min(dy2, 1080-self.y0)
+
+                other_xy_df.x += dx1
+                other_xy_df.y += dy1
+            else:
+                other_xy_df = None
 
         focus_xy_df.x += dx1
         focus_xy_df.y += dy1
+
+        print(frame, x0, y0)
 
         return focus_xy_df, other_xy_df, x0, y0, dx1, dy1, dx2, dy2
 
@@ -341,10 +346,10 @@ class MovieCanvas(FigureCanvas):
     def display_crossing(self):
         self.ax.cla()
 
-        if len(self.events) == 0 or self.iter_event is None:
+        if len(self.events) == 0 or self.iter_event is None or self.other_ant_xy is None:
 
             self.current_text = self.ax.text(
-                self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': no crosses',
+                self.dx1+self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': no crosses',
                 color='black', weight='bold',
                 size='xx-large', horizontalalignment='right', verticalalignment='top')
             self.frame = self.focused_ant_xy.index[-1]-self.dt
@@ -361,7 +366,7 @@ class MovieCanvas(FigureCanvas):
 
             id_ant = str(self.get_focused_ant_id())
             self.current_text = self.ax.text(
-                self.dx2, 0,
+                self.dx1+self.dx2, 0,
                 'ant ' + id_ant + ' (' + str(self.iter_event + 1) + '/' + str(len(self.events)) + ')',
                 color='black', weight='bold', size='xx-large', horizontalalignment='right', verticalalignment='top')
 
@@ -391,19 +396,17 @@ class MovieCanvas(FigureCanvas):
 
         if self.iter_event is None:
             self.current_text = self.ax.text(
-                self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': has exited',
+                self.dx1+self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': has exited',
                 color='black', weight='bold',
                 size='xx-large', horizontalalignment='right', verticalalignment='top')
             self.draw()
             self.mode = 0
-        elif len(self.events) == 0:
+        elif len(self.events) == 0 or self.other_ant_xy is None:
             self.current_text = self.ax.text(
-                self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': no candidates',
+                self.dx1+self.dx2, 0, 'Ant ' + str(self.get_focused_ant_id()) + ': no candidates',
                 color='black', weight='bold', size='xx-large', horizontalalignment='right', verticalalignment='top')
             self.draw()
         else:
-
-            self.other_xy_graph, = self.ax.plot(self.other_ant_xy.x, self.other_ant_xy.y, c='k')
 
             self.candidates_graphs = []
             for id_ant in self.events:
@@ -411,10 +414,12 @@ class MovieCanvas(FigureCanvas):
                 candidates_graph, = self.ax.plot(xys.x - self.x0 + self.dx1, xys.y - self.y0 + self.dy1, c='k')
                 self.candidates_graphs.append(candidates_graph)
 
+            self.other_xy_graph, = self.ax.plot(self.other_ant_xy.x, self.other_ant_xy.y, c='w')
+
             id_ant = str(self.get_focused_ant_id())
 
             self.current_text = self.ax.text(
-                self.dx2, 0,
+                self.dx1+self.dx2, 0,
                 'ant ' + id_ant + ' (' + str(self.iter_event + 1) + '/' + str(len(self.events)) + ')',
                 color='black', weight='bold', size='xx-large', horizontalalignment='right',
                 verticalalignment='top')
@@ -836,8 +841,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             press_func=self.keep_previous_crossing_search_distance)
 
     def add_all_buttons(self):
-        self.create_button(1, 0, "Save", self.save)
-        self.create_button(0, 0, "Quit", self.quit)
+        self.create_button(0, 0, "Save", self.save)
+        self.create_button(1, 0, "Quit", self.quit)
 
         self.create_button(1, 2, "Play", self.resume_play)
         self.create_button(1, 3, "RePlay", self.replay)
@@ -1038,6 +1043,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=6)
+aw = ApplicationWindow(group0, id_exp=18)
 aw.show()
 sys.exit(qApp.exec_())
