@@ -63,9 +63,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         if redo:
             self.exp.load(name)
             self.exp.operation(name, func)
-            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category=self.category,
-                                           label=hist_label, description=hist_description)
+            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)

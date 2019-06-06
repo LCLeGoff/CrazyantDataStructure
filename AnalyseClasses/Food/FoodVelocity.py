@@ -91,11 +91,12 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         if redo:
             self.exp.load(name)
             self.exp.operation(name, lambda x: np.abs(x))
-            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category=self.category,
-                                           label='Food velocity phi distribution over time (rad)',
-                                           description='Histogram of the absolute value of the angular coordinate'
-                                                       ' of the velocity of the food trajectory over time (rad)')
+            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label='Food velocity phi distribution over time (rad)',
+                                      description='Histogram of the absolute value of the angular coordinate'
+                                                  ' of the velocity of the food trajectory over time (rad)')
+
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)

@@ -639,9 +639,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
             self.exp.operation(name, lambda x: np.abs(x))
 
-            self.exp.hist1d_time_evolution(name_to_hist=name, frame_intervals=frame_intervals, bins=bins,
-                                           result_name=result_name, category=self.category,
-                                           label=result_label, description=result_description)
+            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=result_label, description=result_description)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)

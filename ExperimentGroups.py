@@ -545,7 +545,7 @@ class ExperimentGroups:
     def add_new_dataset_from_df(self, df, name, category=None, label=None, description=None, replace=False):
 
         obj = Builder.build_dataset_from_df(
-            df=df, name=name, category=category, label=label, description=description)
+            df=pd.DataFrame(df), name=name, category=category, label=label, description=description)
         self.add_object(name, obj, replace)
 
     def add_new1d_from_array(
@@ -858,38 +858,46 @@ class ExperimentGroups:
 
         return result_name
 
-    def hist1d_time_evolution(
-            self, name_to_hist, frame_intervals, bins, normed=False, result_name=None, column_to_hist=None,
+    def hist1d_evolution(
+            self, name_to_hist, index_intervals, bins, index_name=None, normed=False, result_name=None, column_to_hist=None,
             category=None, label=None, description=None, replace=False):
 
-        if self.__is_frame_in_indexes(name_to_hist):
-            if result_name is None:
-                result_name = name_to_hist + '_hist'
+        if result_name is None:
+            result_name = name_to_hist + '_hist'
 
-            if category is None:
-                category = self.get_category(name_to_hist)
+        if category is None:
+            category = self.get_category(name_to_hist)
 
-            if label is None:
-                if self.get_label(name_to_hist) is not None:
-                    label = self.get_label(name_to_hist)+' histogram'
+        if label is None:
+            if self.get_label(name_to_hist) is not None:
+                label = self.get_label(name_to_hist) + ' histogram'
 
-            if description is None:
-                if self.get_description(name_to_hist) is not None:
-                    description = 'Histogram of '+self.get_description(name_to_hist).lower()
+        if description is None:
+            if self.get_description(name_to_hist) is not None:
+                description = 'Histogram of ' + self.get_description(name_to_hist).lower()
+
+        if self.__is_indexed_by_exp_ant_frame(name_to_hist) or self.__is_indexed_by_exp_frame(name_to_hist):
 
             df = self.get_data_object(name_to_hist).hist1d_time_evolution(
-                column_name=column_to_hist, frame_intervals=frame_intervals, bins=bins, normed=normed)
+                column_name=column_to_hist, frame_intervals=index_intervals, bins=bins, normed=normed)
 
-            frame_intervals = np.array(frame_intervals)/100
-            df.columns = frame_intervals
+            index_intervals = np.array(index_intervals) / 100
 
-            self.add_new_dataset_from_df(df=df, name=result_name, category=category,
-                                         label=label, description=description, replace=replace)
+        elif self.get_object_type(name_to_hist) == dataset_name:
 
-            return result_name
+            df = self.get_data_object(name_to_hist).hist1d_evolution(
+                column_name=column_to_hist, index_name=index_name, index_intervals=index_intervals,
+                bins=bins, normed=normed)
 
         else:
             raise TypeError(name_to_hist+' is not frame indexed')
+
+        df.columns = index_intervals
+
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
 
     def compute_time_intervals(
             self, name_to_intervals, result_name=None, category=None, label=None, description=None, replace=False):
