@@ -206,49 +206,37 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_attachment_intervals(self, redo=False, redo_hist=False):
 
         result_name = 'ant_attachment_intervals'
-        bins = np.arange(0, 10, 0.1)
+        name = 'ant_attachments'
 
-        if redo is True:
-            name = 'ant_attachments'
-            self.exp.load(name)
+        label = 'Between attachment intervals'
+        description = 'Time intervals between attachment intervals (s)'
 
-            self.exp.get_data_object(name).df = 1-self.exp.get_df(name)
-
-            self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
-                                            result_name=result_name, label='Between attachment intervals',
-                                            description='Time intervals between attachment intervals (s)')
-
-            self.exp.write(result_name)
-
-        else:
-            self.exp.load(result_name)
-
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', xlabel='Attachment intervals (s)', ylabel='PDF')
-        plotter.save(fig)
+        self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
 
     def compute_outside_attachment_intervals(self, redo=False, redo_hist=False):
 
         result_name = 'outside_ant_attachment_intervals'
-        bins = np.arange(0, 10, 0.1)
+        name = 'outside_ant_attachments'
 
+        label = 'Between outside attachment intervals'
+        description = 'Time intervals between outside attachment intervals (s)'
+
+        self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
+
+    def __compute_attachment_intervals(self, description, label, name, redo, redo_hist, result_name):
+        bins = np.arange(0, 20, 0.1)
         if redo is True:
-            name = 'outside_ant_attachments'
             self.exp.load(name)
+            self.exp.get_data_object(name).df = 1 - self.exp.get_df(name)
 
             self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
-                                            result_name=result_name, label='Between outside attachment intervals',
-                                            description='Time intervals between outside attachment intervals (s)')
+                                            result_name=result_name, label=label, description=description)
 
             self.exp.write(result_name)
 
         else:
             self.exp.load(result_name)
-
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
-
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(yscale='log', xlabel='Attachment intervals (s)', ylabel='PDF')
         plotter.save(fig)
