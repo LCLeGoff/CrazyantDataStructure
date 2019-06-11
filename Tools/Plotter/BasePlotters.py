@@ -23,7 +23,7 @@ class BasePlotters:
         ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color, which='both')
         ax.xaxis.label.set_color(fg_color)
         ax.yaxis.label.set_color(fg_color)
-        ax.title.set_color('w')
+        ax.title.set_color(fg_color)
 
     @staticmethod
     def grey_background(fig, ax):
