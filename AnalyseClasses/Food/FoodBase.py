@@ -191,15 +191,15 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
             for id_exp in self.exp.id_exp_list:
                 dx = np.array(self.exp.get_df(name_x).loc[id_exp, :])
-                dx1 = dx[1, :]
-                dx2 = dx[-2, :]
+                dx1 = dx[1, :].copy()
+                dx2 = dx[-2, :].copy()
                 dx[1:-1, :] = (dx[2:, :] - dx[:-2, :]) / 2.
                 dx[0, :] = dx1 - dx[0, :]
                 dx[-1, :] = dx[-1, :] - dx2
 
                 dy = np.array(self.exp.get_df(name_y).loc[id_exp, :])
-                dy1 = dy[1, :]
-                dy2 = dy[-2, :]
+                dy1 = dy[1, :].copy()
+                dy2 = dy[-2, :].copy()
                 dy[1:-1, :] = (dy[2:, :] - dy[:-2, :]) / 2.
                 dy[0, :] = dy1 - dy[0, :]
                 dy[-1, :] = dy[-1, :] - dy2
