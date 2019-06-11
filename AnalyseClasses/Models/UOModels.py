@@ -1,6 +1,8 @@
 import numpy as np
 import random as rd
 
+import pandas as pd
+
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
 from ExperimentGroups import ExperimentGroups
@@ -13,7 +15,7 @@ class BaseModels:
         self.para = ModelParameters(self.parameter_names)
 
         self.t = None
-        self.last_attachment_time = None
+        self.last_attachment_time = 0
         self.id_exp = None
         self.orientation = None
         self.name_column = None
@@ -91,7 +93,7 @@ class UOSimpleModel(BaseModels):
 
         for id_exp in range(1, self.n_replica + 1):
             self.id_exp = id_exp
-            self.orientation = rd.uniform(-np.pi, np.pi)
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
             self.res.append(self.orientation)
             self.t = 0
             self.last_attachment_time = 0
@@ -187,7 +189,7 @@ class UOConfidenceModel(BaseModels):
 
         for id_exp in range(1, self.n_replica + 1):
             self.id_exp = id_exp
-            self.orientation = rd.uniform(-np.pi, np.pi)
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
             self.confidence = 1/self.para.var_orientation
 
             self.res_orientation.append(self.orientation)
@@ -227,6 +229,69 @@ class UOConfidenceModel(BaseModels):
         self.exp.write([self.name, self.name_confidence])
 
 
+class PersistenceModel(BaseModels):
+    def __init__(self, root, group, duration=100, n_replica=500, new=False):
+
+        self.exp = ExperimentGroups(root, group)
+        self.name = 'PersistenceModel'
+        parameter_names = ['var_orientation']
+
+        BaseModels.__init__(self, parameter_names)
+
+        self.duration = duration
+        self.n_replica = n_replica
+
+        self.res = None
+
+        self.init(new)
+
+    def init(self, new):
+        if new is True or not self.exp.is_name_existing(self.name):
+            index = [(id_exp, t) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
+
+            self.exp.add_new_empty_dataset(name=self.name, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='Persistence model',
+                                           description='Persistence model with parameter'
+                                                       ' orientation variance = var_orientation')
+        else:
+
+            self.exp.load(self.name)
+            self.n_replica = max(self.exp.get_index(self.name).get_level_values(id_exp_name))
+            self.duration = max(self.exp.get_index(self.name).get_level_values(self.time_name))
+
+    def run(self, para_value):
+
+        self.para.change_parameter_values(para_value)
+        self.name_column = str(self.para.get_parameter_tuple())
+
+        self.res = []
+        print(self.name_column)
+
+        for id_exp in range(1, self.n_replica + 1):
+            self.id_exp = id_exp
+            self.orientation = 0
+            self.res.append(self.orientation)
+            self.t = 0
+            self.last_attachment_time = 0
+
+            for t in range(1, self.duration + 1):
+                self.step()
+
+        self.exp.get_df(self.name)[self.name_column] = self.res
+
+    def step(self):
+        self.t += 1
+
+        rho = rd.normalvariate(0, self.para.var_orientation)
+        self.orientation += rho
+
+        self.res.append(np.around(self.orientation, 3))
+
+    def write(self):
+        self.exp.write(self.name)
+
+
 class AnalyseUOModel(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
@@ -242,6 +307,51 @@ class AnalyseUOModel(AnalyseClassDecorator):
         name = 'UOConfidenceModel'
         self._plot_hist_evol(name, n, m, 'confidence')
         self._plot_confidence_evol(name+'_confidence', n, m, 'confidence')
+
+    def plot_persistence(self):
+        name = 'PersistenceModel'
+        self.__plot_cosinus_correlation(name)
+
+    def __plot_cosinus_correlation(self, name):
+
+        self.exp.load(name)
+        column_names = self.exp.get_data_object(name).get_column_names()
+
+        n_replica = max(self.exp.get_df(name).index.get_level_values(id_exp_name))
+        duration = max(self.exp.get_df(name).index.get_level_values('t'))
+
+        speed = 4.66
+        index_values = np.arange(duration + 1)/speed
+
+        self.exp.add_new_empty_dataset('plot', index_names='lag', column_names=column_names,
+                                       index_values=index_values,
+                                       fill_value=0, category=self.category, replace=True)
+
+        for column_name in column_names:
+            df = pd.DataFrame(self.exp.get_df(name)[column_name])
+
+            for id_exp in range(1, max(df.index.get_level_values(id_exp_name))+1):
+                df2 = df.loc[id_exp, :]
+
+                orientations = np.array(df2)
+                res = np.zeros(len(orientations))
+                weight = np.zeros(len(orientations))
+
+                for i in range(1, len(orientations)):
+                    res[:-i] += np.cos(orientations[i] - orientations[i:]).ravel()
+                    weight[:-i] += 1.
+
+                res /= weight
+
+                self.exp.get_df('plot')[column_name] += res
+
+        self.exp.get_data_object('plot').df /= float(n_replica)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('plot'))
+        fig, ax = plotter.plot(xlabel='Distance along trajectory (cm)', ylabel='Cosine correlation', marker=None)
+        ax.axhline(0, ls='--', c='grey')
+        ax.grid()
+        plotter.save(fig, name=name)
 
     def _plot_confidence_evol(self, name, n=None, m=None, model=None):
 
