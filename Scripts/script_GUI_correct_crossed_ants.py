@@ -137,7 +137,8 @@ class MovieCanvas(FigureCanvas):
         turn = False
 
         while len(self.events) == 0 and not turn:
-            print(str(self.get_focused_ant_id())+'/'+str(np.max(self.list_outside_ant)))
+            print(str(self.get_focused_ant_id()) + '/'+str(np.max(self.list_outside_ant))
+                  + ' ('+str(self.iter_focused_ant+1)+'/'+str(len(self.list_outside_ant))+')')
 
             self.iter_focused_ant += 1
 
@@ -1043,6 +1044,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=18)
+aw = ApplicationWindow(group0, id_exp=24)
 aw.show()
 sys.exit(qApp.exec_())
