@@ -219,21 +219,22 @@ class MovieCanvas(FigureCanvas):
         self.reset_play()
 
     def decross(self):
-        focused_ant = self.get_focused_ant_id()
-        crossing_ant = self.get_other_ant_id()
-        crossing_frame = self.get_event_frame()
+        if self.iter_event is not None and len(self.events) != 0:
+            focused_ant = self.get_focused_ant_id()
+            crossing_ant = self.get_other_ant_id()
+            crossing_frame = self.get_event_frame()
 
-        self.xy_df0 = self.data_manager.decross(self.xy_df0, focused_ant, crossing_ant, crossing_frame)
+            self.xy_df0 = self.data_manager.decross(self.xy_df0, focused_ant, crossing_ant, crossing_frame)
 
-        if crossing_ant not in self.xy_df0.index.get_level_values(id_ant_name)\
-                and crossing_ant in self.list_outside_ant:
-            self.list_outside_ant.remove(crossing_ant)
-            self.iter_focused_ant = np.where(np.array(self.list_outside_ant) == focused_ant)[0][0]
+            if crossing_ant not in self.xy_df0.index.get_level_values(id_ant_name)\
+                    and crossing_ant in self.list_outside_ant:
+                self.list_outside_ant.remove(crossing_ant)
+                self.iter_focused_ant = np.where(np.array(self.list_outside_ant) == focused_ant)[0][0]
 
-        if self.mode == 0:
-            self.search_for_crossings()
-        else:
-            self.search_for_candidates()
+            if self.mode == 0:
+                self.search_for_crossings()
+            else:
+                self.search_for_candidates()
 
     def write(self):
         self.data_manager.write(self.xy_df0)
@@ -316,7 +317,7 @@ class MovieCanvas(FigureCanvas):
         focus_xy_df.x += dx1
         focus_xy_df.y += dy1
 
-        print(frame, x0, y0)
+        # print(frame, x0, y0)
 
         return focus_xy_df, other_xy_df, x0, y0, dx1, dy1, dx2, dy2
 
@@ -415,7 +416,7 @@ class MovieCanvas(FigureCanvas):
                 candidates_graph, = self.ax.plot(xys.x - self.x0 + self.dx1, xys.y - self.y0 + self.dy1, c='k')
                 self.candidates_graphs.append(candidates_graph)
 
-            self.other_xy_graph, = self.ax.plot(self.other_ant_xy.x, self.other_ant_xy.y, c='w')
+            self.other_xy_graph, = self.ax.plot(self.other_ant_xy.x, self.other_ant_xy.y, c='lightblue')
 
             id_ant = str(self.get_focused_ant_id())
 
@@ -497,8 +498,8 @@ class DataManager:
         self.gate_path = None
         self.mm2px = None
 
-        self.candidate_search_distance = 10
-        self.candidate_search_time_window = 10
+        self.candidate_search_distance = 20
+        self.candidate_search_time_window = 30
 
         self.crossing_search_time_window = 10
         self.crossing_search_distance = 2
@@ -689,8 +690,8 @@ class DataManager:
 
     def come_from_outside(self, xy_df, id_ant):
         xys = np.array(xy_df.loc[self.id_exp, id_ant, :])[:10]
-        has_exit = any(self.gate_path.contains_points(xys))
-        return has_exit
+        from_outside = any(self.gate_path.contains_points(xys))
+        return from_outside
 
     def has_exit(self, xy_df, id_ant):
         xys = np.array(xy_df.loc[self.id_exp, id_ant, :])[-10:]
@@ -817,17 +818,17 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def add_all_sliders(self):
         self.movie_time_window_slider = self.create_slider(
-            0, 0, 'movie time window (frame)', min_val=40, max_val=1000, step=10,
+            0, 0, 'movie time window (frame)', min_val=40, max_val=1500, step=10,
             value=self.movie_canvas.dt, release_func=self.update_movie_time_window, press_func=self.nothing)
 
         self.candidate_search_time_window_slider = self.create_slider(
-            0, 1, 'candidate search time window (frame)', min_val=10, max_val=1000, step=10,
+            0, 1, 'candidate search time window (frame)', min_val=10, max_val=1500, step=10,
             value=self.movie_canvas.data_manager.candidate_search_time_window,
             release_func=self.update_candidate_search_time_window,
             press_func=self.keep_previous_candidate_search_time_window)
 
         self.candidate_search_distance_slider = self.create_slider(
-            0, 2, 'candidate search distance (mm)', min_val=5, max_val=500, step=1,
+            0, 2, 'candidate search distance (mm)', min_val=5, max_val=100, step=1,
             value=self.movie_canvas.data_manager.candidate_search_distance,
             release_func=self.update_candidate_search_distance,
             press_func=self.keep_previous_candidate_search_distance)
@@ -865,9 +866,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.create_button(1, 9, "Candidate2", self.search_candidate2)
 
         self.create_button(0, 10, "Crossings", self.search_crossings)
-        self.create_button(1, 10, "Reset", self.reset)
+        # self.create_button(1, 10, "Reset", self.reset)
 
-        self.create_button(1, 11, "Reset no crossing", self.reset_no_crossing)
+        self.create_button(1, 10, "Reset no crossing", self.reset_no_crossing)
 
     def add_group_box(self, layout):
         group_box = QtWidgets.QGroupBox()
@@ -878,6 +879,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         key = event.key()
 
         if key == Qt.Key_Space:
+            self.replay()
+        if key == Qt.Key_Control:
             self.replay()
         elif key == Qt.Key_Right:
             self.next_event()
@@ -1047,6 +1050,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=24)
+aw = ApplicationWindow(group0, id_exp=60)
 aw.show()
 sys.exit(qApp.exec_())
