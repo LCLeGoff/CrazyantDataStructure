@@ -960,6 +960,9 @@ class ExperimentGroups:
                 if len(arr) != 0:
                     arr[1:, 0] = arr[1:, 0]-arr[:-1, 0]
                     arr[0, 0] -= frame0
+                    if arr[0, 1] == -1:
+                        arr = arr[1:, :]
+                        frame_list = frame_list[1:]
 
                     inters = arr[arr[:, -1] == -1, 0]
                     frame_list = frame_list[arr[:, -1] == -1]-inters
