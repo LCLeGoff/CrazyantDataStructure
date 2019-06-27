@@ -564,24 +564,27 @@ class DataManager:
         for id_ant2 in list_id_ant:
             xy2 = xy_df.loc[self.id_exp, id_ant2, :]
 
-            dist = distance_df(xy, xy2)
-            dist = dist[dist < self.crossing_search_distance*self.mm2px].dropna()
-            frame_when_cross_is_happening = np.array(dist.index.get_level_values(id_frame_name))
-            if len(frame_when_cross_is_happening) != 0:
-                dframe_when_cross_is_happening = frame_when_cross_is_happening[1:] - frame_when_cross_is_happening[:-1]
-
-                between_crosses = list(np.where(dframe_when_cross_is_happening > 1)[0])
-                between_crosses = [0] + between_crosses + [len(dframe_when_cross_is_happening)]
-
-                for i in range(1, len(between_crosses)):
-                    frames = frame_when_cross_is_happening[between_crosses[i - 1]:between_crosses[i] + 1]
-                    middle_frame_cross = frames[int(len(frames) / 2)]
-                    if (id_ant2, middle_frame_cross) not in not_crossing and (id_ant2, middle_frame_cross) not in res:
-                        res.append((id_ant2, middle_frame_cross))
-
             other_frame0 = xy2.index.get_level_values(id_frame_name)[0]
             other_frame1 = xy2.index.get_level_values(id_frame_name)[-1]
-            if focused_frame1 > other_frame0 or other_frame1 > focused_frame0:
+            if (focused_frame0 < other_frame0 < focused_frame1) or (focused_frame0 < other_frame1 < focused_frame1) or\
+                    (other_frame0 < focused_frame0 < other_frame1) or (other_frame0 < focused_frame1 < other_frame1):
+
+                dist = distance_df(xy, xy2)
+                dist = dist[dist < self.crossing_search_distance*self.mm2px].dropna()
+                frame_when_cross_is_happening = np.array(dist.index.get_level_values(id_frame_name))
+                if len(frame_when_cross_is_happening) != 0:
+                    dframe_when_cross_is_happening =\
+                        frame_when_cross_is_happening[1:] - frame_when_cross_is_happening[:-1]
+
+                    between_crosses = list(np.where(dframe_when_cross_is_happening > 1)[0])
+                    between_crosses = [0] + between_crosses + [len(dframe_when_cross_is_happening)]
+
+                    for i in range(1, len(between_crosses)):
+                        frames = frame_when_cross_is_happening[between_crosses[i - 1]:between_crosses[i] + 1]
+                        middle_frame_cross = frames[int(len(frames) / 2)]
+                        if (id_ant2, middle_frame_cross) not in not_crossing\
+                                and (id_ant2, middle_frame_cross) not in res:
+                            res.append((id_ant2, middle_frame_cross))
 
                 a = xy.iloc[:-self.crossing_search_time_window].copy()
                 b = xy.iloc[self.crossing_search_time_window:].copy()
