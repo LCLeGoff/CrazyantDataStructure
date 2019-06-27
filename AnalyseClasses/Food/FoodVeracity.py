@@ -79,6 +79,145 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
 
+    def compute_food_direction_error_variance_evol(self, redo=False):
+        name = 'food_direction_error'
+        result_name = name + '_var_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 4., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food direction error distribution over time'
+        description = 'Variance of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.draw_horizontal_line(ax, 1.75)
+        plotter.plot_fit(preplot=(fig, ax), window=[0, 11])
+        plotter.save(fig)
+
+    def compute_food_direction_error_hist_evol_around_first_attachment(self, redo=False):
+        name = 'food_direction_error'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = name+'_hist_evol_around_first_attachment'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        result_label = 'Food direction error histogram evolution over time'
+        result_description = 'Evolution over time of the histogram of food error direction,negative times (s)' \
+                             ' correspond to periods before the first attachment of an outside ant'
+
+        if redo:
+            self.exp.load([name, first_attachment_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.operation(name, lambda x: np.abs(x))
+
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=result_label, description=result_description)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix=' s')
+        plotter.save(fig)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', label_suffix=' s')
+        plotter.save(fig, suffix='non_norm')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig, suffix='exp')
+
+        self.exp.get_df(result_name).index = self.exp.get_df(result_name).index**2
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig, suffix='gauss')
+
+    def compute_food_direction_error_variance_evol_around_first_attachment(self, redo=False):
+        name = 'food_direction_error'
+        result_name = name + '_var_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food direction error distribution over time'
+        description = 'Variance of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.draw_vertical_line(ax)
+        plotter.draw_horizontal_line(ax, 1.75)
+        plotter.plot_fit(preplot=(fig, ax), window=[0, 9])
+        plotter.save(fig)
+
     def compute_mm1s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 
         name = 'food_direction_error'

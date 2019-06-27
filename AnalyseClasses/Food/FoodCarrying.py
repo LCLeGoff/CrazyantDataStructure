@@ -599,49 +599,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                xscale='log', yscale='log', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_food_direction_error_evol_around_first_attachment(self, redo=False):
-        name = 'food_direction_error'
-        first_attachment_name = 'first_attachment_time_of_outside_ant'
-        result_name = name+'_hist_evol_around_first_attachment'
-
-        dtheta = np.pi/25.
-        bins = np.arange(0, np.pi+dtheta, dtheta)
-        frame_intervals = np.arange(-2, 5., 1)*60*100
-
-        result_label = 'Food direction error histogram evolution over time'
-        result_description = 'Evolution over time of the histogram of food error direction,negative times (s)' \
-                             ' correspond to periods before the first attachment of an outside ant'
-
-        if redo:
-            self.exp.load([name, first_attachment_name])
-
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
-
-            self.exp.operation(name, lambda x: np.abs(x))
-
-            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
-                                      result_name=result_name, category=self.category,
-                                      label=result_label, description=result_description)
-            self.exp.write(result_name)
-        else:
-            self.exp.load(result_name)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix=' s')
-        plotter.save(fig)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', label_suffix=' s')
-        plotter.save(fig, suffix='non_norm')
-
     def compute_autocorrelation_food_phi(self, redo=False):
 
         name = 'food_phi'
