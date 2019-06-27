@@ -14,7 +14,9 @@ from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments,
 class Plotter(BasePlotters):
     def __init__(self, root, obj, column_name=None, category=None, cmap='hot', **kwargs):
 
-        if obj.category is None:
+        if category is not None:
+            self.root = root+category+'/Plots/'
+        elif obj.category is None:
             if category is None:
                 self.root = None
             else:
@@ -150,7 +152,7 @@ class Plotter(BasePlotters):
                     self.line['c'] = cols[str(column_name)]
                     self.line['markeredgecolor'] = cols[str(column_name)]
                     ax.plot(x, y[i], label=label[i], **self.line)
-                ax.legend(loc=0)
+                ax.legend(loc=0, framealpha=0.2)
             else:
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)

@@ -88,3 +88,12 @@ class BasePlotters:
                 ax.set_title(title_prefix)
             else:
                 ax.set_title(title_prefix + ' ' + title)
+
+    @staticmethod
+    def draw_horizontal_line(ax, val=0, c='k', ls='--'):
+        ax.axhline(val, ls=ls, c=c)
+
+    @staticmethod
+    def draw_vertical_line(ax, val=0, c='k', ls='--'):
+        ax.axvline(val, ls=ls, c=c)
+
