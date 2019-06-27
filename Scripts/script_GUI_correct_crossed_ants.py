@@ -948,14 +948,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def update_candidate_search_distance(self):
         if self.movie_canvas.mode == 1:
-            self.movie_canvas.data_manager.candidate_search_time_window = self.candidate_search_distance_slider.value()
+            self.movie_canvas.data_manager.candidate_search_distance = self.candidate_search_distance_slider.value()
             self.search_candidate()
         else:
             self.candidate_search_distance_slider.setValue(self.prev_slider_value)
 
     def update_crossing_search_time_window(self):
         if self.movie_canvas.mode == 0:
-            self.movie_canvas.data_manager.crossing_search_time_window = self.crossing_search_time_window_slider.value()
+            self.movie_canvas.data_manager.crossing_search_distance = self.crossing_search_time_window_slider.value()
             self.search_crossings()
         else:
             self.crossing_search_time_window_slider.setValue(self.prev_slider_value)
