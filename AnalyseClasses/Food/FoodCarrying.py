@@ -238,7 +238,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.load(result_name)
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', xlabel='Attachment intervals (s)', ylabel='PDF')
+        fig, ax = plotter.plot(xscale='log', yscale='log', xlabel='Attachment intervals (s)', ylabel='PDF')
         plotter.save(fig)
 
     def compute_isolated_ant_carrying_intervals(self):

@@ -87,9 +87,19 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
+
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s')
+        plotter.save(fig, suffix='exp')
+
+        self.exp.get_df(result_name).index = self.exp.get_df(result_name).index**2
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s')
+        plotter.save(fig, suffix='gauss')
 
     def compute_food_direction_error_variance_evol(self, redo=False):
         name = 'food_direction_error'
