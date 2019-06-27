@@ -98,24 +98,23 @@ Carrying = AnalyseFoodCarrying(group)
 
 # Carrying.compute_outside_ant_carrying_intervals()
 # Carrying.compute_non_outside_ant_carrying_intervals()
-
+#
 # Carrying.compute_ant_attachments()
-# Carrying.compute_outside_ant_attachments()
+# Carrying.compute_outside_ant_attachments(False)
 # Carrying.compute_non_outside_ant_attachments()
-# Carrying.compute_attachment_intervals(redo_hist=True)
-# Carrying.compute_outside_attachment_intervals(redo_hist=True)
-
+# Carrying.compute_attachment_intervals(True)
+Carrying.compute_outside_attachment_intervals(False)
+#
 # Carrying.compute_isolated_ant_carrying_intervals()
 # Carrying.compute_isolated_outside_ant_carrying_intervals()
 # Carrying.compute_isolated_non_outside_ant_carrying_intervals()
-
+#
 # Carrying.compute_nbr_attachment_per_exp()
 # Carrying.compute_first_attachment_time_of_outside_ant()
 # Carrying.compute_food_traj_length_around_first_attachment()
 # Carrying.compute_outside_ant_attachment_frames()
 # Carrying.compute_non_outside_ant_attachment_frames()
 
-# Carrying.compute_food_direction_error_evol_around_first_attachment(True)
 # Carrying.compute_autocorrelation_food_phi(True)
 # Carrying.compute_autocorrelation_food_velocity_phi(True)
 # Carrying.compute_autocorrelation_food_velocity_phi_indiv(True)
@@ -190,7 +189,11 @@ FoodConfidence = AnalyseFoodConfidence(group)
 
 FoodVeracity = AnalyseFoodVeracity(group)
 # FoodVeracity.compute_food_direction_error(True)
-# FoodVeracity.compute_food_direction_error_evol(True)
+# FoodVeracity.compute_food_direction_error_hist_evol(True)
+# FoodVeracity.compute_food_direction_error_variance_evol()
+# FoodVeracity.compute_food_direction_error_hist_evol_around_first_attachment(True)
+# FoodVeracity.compute_food_direction_error_variance_evol_around_first_attachment()
+#
 # FoodVeracity.compute_mm1s_food_direction_error(True)
 # FoodVeracity.compute_mm10s_food_direction_error(True)
 # FoodVeracity.compute_mm30s_food_direction_error(True)
