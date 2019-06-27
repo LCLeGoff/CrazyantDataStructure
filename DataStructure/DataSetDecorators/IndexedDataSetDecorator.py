@@ -129,7 +129,7 @@ class IndexedDataSetDecorator:
         df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
         return df.astype(int)
 
-    def hist1d_evolution(self, column_name, index_name, index_intervals, bins, normed=False):
+    def hist1d_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals, bins, normed=False):
         if column_name is None:
             if len(self.df.columns) == 1:
                 column_name = self.df.columns[0]
@@ -139,14 +139,12 @@ class IndexedDataSetDecorator:
         if index_name is None:
             index_name = self.get_column_names()[-1]
 
-        index_intervals = np.array(index_intervals, dtype=int)
-
-        h = np.zeros((len(bins)-1, len(index_intervals)+1))
+        h = np.zeros((len(bins)-1, len(start_index_intervals)+1))
         h[:, 0] = (bins[1:] + bins[:-1]) / 2.
 
-        for i in range(len(index_intervals)-1):
-            index0 = int(index_intervals[i])
-            index1 = int(index_intervals[i+1])
+        for i in range(len(start_index_intervals)):
+            index0 = start_index_intervals[i]
+            index1 = end_index_intervals[i]
 
             index_location = (self.df[column_name].index.get_level_values(index_name) > index0)\
                 & (self.df[column_name].index.get_level_values(index_name) < index1)
@@ -155,14 +153,10 @@ class IndexedDataSetDecorator:
             y, x = np.histogram(df.dropna(), bins, normed=normed)
             h[:, i+1] = y
 
-        index0 = int(index_intervals[-1])
-        index_location = (self.df[column_name].index.get_level_values(index_name) > index0)
-        df = self.df[column_name].loc[index_location]
-        y, x = np.histogram(df.dropna(), bins, normed=normed)
-        h[:, -1] = y
-
-        df = PandasIndexManager().convert_array_to_df(
-                array=h, index_names='bins', column_names=np.array(index_intervals, dtype=str))
+        column_names = [
+            str([start_index_intervals[i]/100., end_index_intervals[i]/100.])
+            for i in range(len(start_index_intervals))]
+        df = PandasIndexManager().convert_array_to_df(array=h, index_names='bins', column_names=column_names)
         if normed:
             return df
         else:

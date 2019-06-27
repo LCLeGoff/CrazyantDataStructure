@@ -231,12 +231,15 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = name + '_hist_evol'
 
         bins = np.arange(0, 200, 1)
-        frame_intervals = np.arange(0, 5., 0.5) * 60 * 100
+        dx = 0.5
+        start_frame_intervals = np.arange(0, 5., dx)*60*100
+        end_frame_intervals = start_frame_intervals+dx*60*100
 
         if redo:
             self.exp.load(name)
             self.exp.operation(name, lambda x: np.abs(x))
-            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food speed distribution over time (rad)',
                                       description='Histogram of the instantaneous speed of the food trajectory over '\
@@ -424,11 +427,14 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = name+'_hist_evol'
 
         bins = np.arange(0, 500, 25.)
-        frame_intervals = np.arange(0, 4.5, 0.5)*60*100
+        dx = 0.5
+        start_frame_intervals = np.arange(0, 4.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals+dx*60*100
 
         if redo:
             self.exp.load(name)
-            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category)
             self.exp.write(result_name)
         else:

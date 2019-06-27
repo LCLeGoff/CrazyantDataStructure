@@ -859,8 +859,8 @@ class ExperimentGroups:
         return result_name
 
     def hist1d_evolution(
-            self, name_to_hist, index_intervals, bins, index_name=None, normed=False, result_name=None, column_to_hist=None,
-            category=None, label=None, description=None, replace=False):
+            self, name_to_hist, start_index_intervals, end_index_intervals, bins, index_name=None, normed=False,
+            result_name=None, column_to_hist=None, category=None, label=None, description=None, replace=False):
 
         if result_name is None:
             result_name = name_to_hist + '_hist'
@@ -879,20 +879,22 @@ class ExperimentGroups:
         if self.__is_indexed_by_exp_ant_frame(name_to_hist) or self.__is_indexed_by_exp_frame(name_to_hist):
 
             df = self.get_data_object(name_to_hist).hist1d_time_evolution(
-                column_name=column_to_hist, frame_intervals=index_intervals, bins=bins, normed=normed)
-
-            index_intervals = np.array(index_intervals) / 100
+                column_name=column_to_hist, start_frame_intervals=start_index_intervals,
+                end_frame_intervals=end_index_intervals, bins=bins, normed=normed)
 
         elif self.get_object_type(name_to_hist) == dataset_name:
 
             df = self.get_data_object(name_to_hist).hist1d_evolution(
-                column_name=column_to_hist, index_name=index_name, index_intervals=index_intervals,
-                bins=bins, normed=normed)
+                column_name=column_to_hist, index_name=index_name, start_index_intervals=start_index_intervals,
+                end_index_intervals=end_index_intervals, bins=bins, normed=normed)
 
         else:
-            raise TypeError(name_to_hist+' is not frame indexed')
+            raise TypeError(name_to_hist+' is not frame indexed or not Dataset')
 
-        df.columns = index_intervals
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
 
         self.add_new_dataset_from_df(df=df, name=result_name, category=category,
                                      label=label, description=description, replace=replace)

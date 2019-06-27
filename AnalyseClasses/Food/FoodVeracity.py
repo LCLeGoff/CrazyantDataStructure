@@ -53,7 +53,11 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
-        frame_intervals = np.arange(0, 5., .5)*60*100
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 4., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
         func = lambda x: np.abs(x)
 
         hist_label = 'Food direction error distribution over time (rad)'
@@ -63,7 +67,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         if redo:
             self.exp.load(name)
             self.exp.operation(name, func)
-            self.exp.hist1d_evolution(name_to_hist=name, index_intervals=frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
 
