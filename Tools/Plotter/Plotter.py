@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
+from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -210,3 +211,51 @@ class Plotter(BasePlotters):
             fig.savefig(address)
             fig.clf()
             plt.close()
+
+    def plot_fit(self, preplot, label=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False,
+                 ls='-', marker='', c='w'):
+
+        if self.obj.get_dimension() == 1:
+            fig, ax = preplot
+
+            x = self.obj.get_index_array()
+            y = self.__get_y(normed, x)
+
+            if window is None:
+                bound = [0, len(x)]
+            else:
+                bound = window
+
+            if sqrt_x:
+                x_fit = np.sqrt(x[bound[0]:bound[1]])
+            else:
+                x_fit = x[bound[0]:bound[1]]
+
+            if sqrt_y:
+                y_fit = np.sqrt(y[bound[0]:bound[1]])
+            else:
+                y_fit = y[bound[0]:bound[1]]
+
+            mask = np.where(y_fit != 0)[0]
+
+            if typ == 'linear':
+                af, bf, x_fit, y_fit = linear_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'exp':
+                af, bf, x_fit, y_fit = exp_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'power':
+                af, bf, x_fit, y_fit = power_fit(x_fit[mask], y_fit[mask])
+            else:
+                raise NameError('Type of fit unknown')
+            af, bf = np.around(af, 4), np.around(bf, 4)
+
+            if label is None:
+                label = '(a, b) ='+str(af)+', '+str(bf)+')'
+            else:
+                label = label+': (a, b) ='+str(af)+', '+str(bf)+')'
+
+            ax.plot(x_fit, y_fit, label=label, ls=ls, marker=marker, c=c)
+            ax.legend(loc=0)
+            return af, bf, x_fit, y_fit
+
+        else:
+            raise IndexError("object not one dimension")
