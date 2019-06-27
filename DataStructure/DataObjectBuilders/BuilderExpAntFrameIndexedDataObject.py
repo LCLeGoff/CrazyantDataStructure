@@ -69,3 +69,29 @@ class BuilderExpAntFrameIndexedDataObject:
         column_names = [
             str([start_frame_intervals[i], end_frame_intervals[i]]) for i in range(len(start_frame_intervals))]
         df = PandasIndexManager().convert_array_to_df(
+                array=h, index_names='bins', column_names=column_names)
+        return df.astype(int)
+
+    def variance_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        start_frame_intervals = np.array(start_frame_intervals, dtype=int)
+        end_frame_intervals = np.array(end_frame_intervals, dtype=int)
+
+        x = (end_frame_intervals+start_frame_intervals)/2./100.
+        y = np.zeros(len(start_frame_intervals))
+
+        for i in range(len(start_frame_intervals)):
+            frame0 = start_frame_intervals[i]
+            frame1 = end_frame_intervals[i]
+
+            df = self.df[column_name].loc[:, :, frame0:frame1]
+            y[i] = np.nanvar(df)
+
+        df = pd.DataFrame(y, index=x)
+
+        return df

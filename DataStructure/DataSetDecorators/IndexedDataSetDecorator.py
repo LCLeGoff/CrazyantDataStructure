@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from DataStructure.VariableNames import id_frame_name
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
@@ -161,6 +162,33 @@ class IndexedDataSetDecorator:
             return df
         else:
             return df.astype(int)
+
+    def variance_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        if index_name is None:
+            index_name = self.get_column_names()[-1]
+
+        x = (end_index_intervals+start_index_intervals)/2.
+        y = np.zeros(len(start_index_intervals))
+
+        for i in range(len(start_index_intervals)):
+            index0 = start_index_intervals[i]
+            index1 = end_index_intervals[i]
+
+            index_location = (self.df[column_name].index.get_level_values(index_name) > index0)\
+                & (self.df[column_name].index.get_level_values(index_name) < index1)
+
+            df = self.df[column_name].loc[index_location]
+            y[i] = np.nanvar(df)
+
+        df = pd.DataFrame(y, index=x)
+
+        return df
 
     # def mean_over(self, level_df, mean_level=None, new_level_as=None):
     #     df = self.df.copy()
