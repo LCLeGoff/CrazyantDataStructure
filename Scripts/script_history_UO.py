@@ -8,7 +8,6 @@ from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
 from AnalyseClasses.Food.FoodInformation import AnalyseFoodInformation
 from AnalyseClasses.Food.FoodVeracity import AnalyseFoodVeracity
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
-from AnalyseClasses.Models.UOModels import UOSimpleModel, AnalyseUOModel, UOConfidenceModel, PersistenceModel
 from Scripts.root import root
 
 group = 'UO'
@@ -219,36 +218,3 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_probability_matrix(False)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_probability_matrix(False)
-
-# SimpleModel = UOSimpleModel(root, group, new=True, n_replica=500)
-# var_orientation = 0.3
-# var_perception = 0.5
-# var_information = 0.5
-# p_att = 0.7
-# for var_information in [0.1, 0.5, 1, 2, 10]:
-#     for c in [0.01, 0.02, 0.05, 0.1]:
-#         SimpleModel.run({'c': c, 'p_attachment': p_att, 'var_orientation': var_orientation,
-#                          'var_perception': var_perception, 'var_information': var_information})
-# SimpleModel.write()
-
-# ConfidenceModel = UOConfidenceModel(root, group, new=True, n_replica=500)
-# var_orientation = 0.3
-# var_perception = 0.5
-# var_information = 0.5
-# p_att = 0.7
-# for var_information in [0.1, 0.5, 1, 2, 5]:
-#     ConfidenceModel.run({'p_attachment': p_att, 'var_orientation': var_orientation,
-#                         'var_perception': var_perception, 'var_information': var_information})
-# ConfidenceModel.write()
-
-# PersistenceModel = PersistenceModel(root, group, new=True, duration=60)
-# PersistenceModel.run({'var_orientation': 1})
-# PersistenceModel.run({'var_orientation': 0.5})
-# PersistenceModel.run({'var_orientation': 0.3})
-# PersistenceModel.run({'var_orientation': 0.1})
-# PersistenceModel.write()
-#
-AnalyseUOModel = AnalyseUOModel(group)
-# AnalyseUOModel.plot_simple_model_evol()
-# AnalyseUOModel.plot_confidence_model_evol()
-AnalyseUOModel.plot_persistence()
