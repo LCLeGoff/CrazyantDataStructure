@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import angle_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
@@ -47,9 +47,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         fig2, ax2 = plotter2.plot(xlabel='Food direction error', ylabel='PDF', normed=True)
         plotter2.save(fig2)
 
-    def compute_food_direction_error_evol(self, redo=False):
+    def compute_food_direction_error_hist_evol(self, redo=False):
         name = 'food_direction_error'
         result_name = name+'_hist_evol'
+        init_frame_name = 'food_first_frame'
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -65,7 +66,18 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                            'which gives in radian how much the food is not going in the good direction (rad)'
 
         if redo:
-            self.exp.load(name)
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
             self.exp.operation(name, func)
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,
