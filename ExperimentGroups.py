@@ -836,6 +836,76 @@ class ExperimentGroups:
 
             self.add_object(name_extracted_events, event, replace)
 
+    def sum_over_exp_and_frames(
+            self, name_to_average, result_name=None, xname=None, yname=None,
+            category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name_to_average+'_sum_exp_and_frames'
+
+        sum_df = self.get_data_object(name_to_average).sum_over_exp_and_frames()
+
+        if self.__is_1d(name_to_average):
+            if self.get_object_type(name_to_average) == 'TimeSeries1d':
+                self.add_new1d_from_df(
+                    sum_df, result_name, 'CharacteristicTimeSeries1d',
+                    category=category, label=label, description=description, replace=replace)
+            else:
+                self.add_new1d_from_df(
+                    sum_df, result_name, 'CharacteristicEvents1d',
+                    category=category, label=label, description=description, replace=replace)
+        else:
+            if xname is None:
+                xname = self.get_xname(name_to_average)
+            if yname is None:
+                yname = self.get_yname(name_to_average)
+
+            if self.get_object_type(name_to_average) is 'TimeSeries2d':
+                self.add_new2d_from_df(
+                    sum_df, result_name, object_type='CharacteristicTimeSeries2d',
+                    xname=xname, yname=yname, category=category,
+                    label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
+            else:
+                self.add_new2d_from_df(
+                    sum_df, result_name, object_type='CharacteristicEvents2d',
+                    xname=xname, yname=yname, category=category,
+                    label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
+
+    def mean_over_exp_and_frames(
+            self, name_to_average, result_name=None, xname=None, yname=None,
+            category=None, label=None, xlabel=None, ylabel=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name_to_average+'_mean_over_exp_and_frames'
+
+        mean_df = self.get_data_object(name_to_average).mean_over_exp_and_frames()
+
+        if self.__is_1d(name_to_average):
+            if self.get_object_type(name_to_average) is 'TimeSeries1d':
+                self.add_new1d_from_df(
+                    mean_df, result_name, 'CharacteristicTimeSeries1d',
+                    category=category, label=label, description=description, replace=replace)
+            else:
+                self.add_new1d_from_df(
+                    mean_df, result_name, 'CharacteristicEvents1d',
+                    category=category, label=label, description=description, replace=replace)
+        else:
+            if xname is None:
+                xname = self.get_xname(name_to_average)
+            if yname is None:
+                yname = self.get_yname(name_to_average)
+
+            if self.get_object_type(name_to_average) is 'TimeSeries2d':
+                self.add_new2d_from_df(
+                    mean_df, result_name, object_type='CharacteristicTimeSeries2d',
+                    xname=xname, yname=yname, category=category,
+                    label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
+            else:
+                self.add_new2d_from_df(
+                    mean_df, result_name, object_type='CharacteristicEvents2d',
+                    xname=xname, yname=yname, category=category,
+                    label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
+
     def hist1d(self, name_to_hist, result_name=None, column_to_hist=None, bins='fd',
                category=None, label=None, description=None, replace=False):
 
@@ -1051,7 +1121,7 @@ class ExperimentGroups:
         if result_name is None:
             result_name = 'indiv_mean_' + name_to_average
 
-        mean_df = self.get_data_object(name_to_average).mean_over_ants()
+        mean_df = self.get_data_object(name_to_average).mean_over_exp_and_ants()
 
         if self.__is_1d(name_to_average):
             self.add_new1d_from_df(

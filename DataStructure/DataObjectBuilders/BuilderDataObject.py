@@ -105,17 +105,26 @@ class BuilderDataObject:
             idx_to_keep = ~self.df.index.duplicated(keep='last')
             self.df = self.df[idx_to_keep]
 
-    def mean_over_ants(self):
+    def mean_over_exp_and_ants(self):
         return self.df.mean(level=[id_exp_name, id_ant_name])
 
     def mean_over_experiments(self):
         return self.df.mean(level=id_exp_name)
 
-    def mean_over_frames(self):
-        if id_ant_name not in self.df.columns:
-            return self.df.mean(level=[id_exp_name, id_ant_name, id_frame_name])
-        else:
-            return self.df.mean(level=[id_exp_name, id_frame_name])
+    def sum_over_exp_and_ants(self):
+        return self.df.sum(level=[id_exp_name, id_ant_name])
+
+    def sum_over_experiments(self):
+        return self.df.sum(level=id_exp_name)
+
+    def sum_over_ants(self):
+        return self.df.sum(level=id_ant_name)
+
+    def mean_over_exp_and_frames(self):
+        return self.df.mean(level=[id_exp_name, id_frame_name])
+
+    def sum_over_exp_and_frames(self):
+        return self.df.sum(level=[id_exp_name, id_frame_name])
 
     def mean_over(self, level_df, mean_level=None, new_level_as=None):
         df = self.df.copy()
