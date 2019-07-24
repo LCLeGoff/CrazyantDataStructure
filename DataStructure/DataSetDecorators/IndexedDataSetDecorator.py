@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from DataStructure.VariableNames import id_frame_name
+from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -130,12 +131,60 @@ class IndexedDataSetDecorator:
         df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
         return df.astype(int)
 
-    def hist1d_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals, bins, normed=False):
+    def hist2d(self, df2, column_name=None, column_name2=None, bins=10):
+        column_name = self.get_column_name(column_name, self.df)
+        column_name2 = self.get_column_name(column_name2, df2)
+
+        h, x, y = np.histogram2d(self.df[column_name].dropna(), df2[column_name2].dropna(), bins)
+
+        df = pd.DataFrame(h, index=y, columns=x)
+        return df.astype(int)
+
+    @staticmethod
+    def get_column_name(column_name, df):
         if column_name is None:
-            if len(self.df.columns) == 1:
-                column_name = self.df.columns[0]
+            if len(df.columns) == 1:
+                column_name = df.columns[0]
             else:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
+        return column_name
+
+    def vs(self, df2, column_name=None, column_name2=None, n_bins=10):
+        column_name = self.get_column_name(column_name, self.df)
+        column_name2 = self.get_column_name(column_name2, df2)
+
+        x_min = float(self.df[column_name].min())
+        x_max = float(self.df[column_name].max())
+        dx = (x_max - x_min) / n_bins
+        bins = np.arange(x_min, x_max+dx, dx)
+        m_bins = (bins[1:]+bins[:-1])/2.
+
+        val_dict = dict()
+        for x in m_bins:
+            val_dict[x] = []
+
+        for val in df2[column_name2]:
+            idx = int(np.floor(val/dx))
+            val_dict[m_bins[idx]].append(val)
+
+        lg = len(m_bins)
+        res = np.zeros((lg, 3))
+        for j, x in enumerate(m_bins):
+            list_vals = val_dict[x]
+            if len(list_vals) == 0:
+                res[j, 0] = 0.
+                res[j, 1] = 0.
+                res[j, 2] = 0.
+            else:
+                res[j, 0] = np.mean(list_vals)
+                res[j, 1] = - np.percentile(list_vals, 2.5) + res[j, 0]
+                res[j, 2] = np.percentile(list_vals, 97.5) - res[j, 0]
+
+        res_df = pd.DataFrame(res, index=m_bins, columns=[column_name, 'error1', 'error2'])
+        return res_df
+
+    def hist1d_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals, bins, normed=False):
+        column_name = self.get_column_name(column_name, self.df)
 
         if index_name is None:
             index_name = self.get_column_names()[-1]

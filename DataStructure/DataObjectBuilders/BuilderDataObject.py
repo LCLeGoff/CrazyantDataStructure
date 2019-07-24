@@ -159,3 +159,60 @@ class BuilderDataObject:
 
         df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
         return df.astype(int)
+
+    def hist2d(self, df2, column_name=None, column_name2=None, bins=10):
+        column_name = self.get_column_name(column_name, self.df)
+        column_name2 = self.get_column_name(column_name2, df2)
+
+        h, x, y = np.histogram2d(self.df[column_name].dropna(), df2[column_name2].dropna(), bins)
+        
+        df = pd.DataFrame(h, index=y, columns=x)
+        return df.astype(int)
+
+    @staticmethod
+    def get_column_name(column_name2, df2):
+        if column_name2 is None:
+            if len(df2.columns) == 1:
+                column_name2 = df2.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+        return column_name2
+
+    def vs(self, df2, column_name=None, column_name2=None, n_bins=10):
+        column_name = self.get_column_name(column_name, self.df)
+        column_name2 = self.get_column_name(column_name2, df2)
+
+        df3 = df2.reindex(self.df.index)
+
+        x_min = np.floor(float(np.nanmin(df3[column_name2])))
+        x_max = np.ceil(float(np.nanmax(df3[column_name2])))
+        dx = (x_max - x_min+1) / n_bins
+        bins = np.arange(x_min, x_max + 2*dx, dx)
+        m_bins = (bins[1:] + bins[:-1]) / 2.
+        lg = len(m_bins)
+
+        val_dict = dict()
+        for x in m_bins:
+            val_dict[x] = []
+
+        for i_val, val in enumerate(df3[column_name2]):
+            if not np.isnan(val):
+                idx = int(np.floor(val / dx))
+                idx = min(lg-1, idx)
+
+                val_dict[m_bins[idx]].append(self.df[column_name].iloc[i_val])
+
+        res = np.zeros((lg, 3))
+        for j, x in enumerate(m_bins):
+            list_vals = val_dict[x]
+            if len(list_vals) == 0:
+                res[j, 0] = 0.
+                res[j, 1] = 0.
+                res[j, 2] = 0.
+            else:
+                res[j, 0] = np.nanmean(list_vals)
+                res[j, 1] = - np.nanpercentile(list_vals, 2.5) + res[j, 0]
+                res[j, 2] = np.nanpercentile(list_vals, 97.5) - res[j, 0]
+
+        res_df = pd.DataFrame(res, index=m_bins, columns=[column_name, 'error1', 'error2'])
+        return res_df

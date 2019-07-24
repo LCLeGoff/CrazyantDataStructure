@@ -928,6 +928,52 @@ class ExperimentGroups:
 
         return result_name
 
+    def hist2d(self, xname_to_hist, yname_to_hist, result_name=None, xcolumn_to_hist=None, ycolumn_to_hist=None,
+               bins=10, category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = xname_to_hist+'_'+xname_to_hist + '_hist2d'
+
+        if category is None:
+            category = self.get_category(yname_to_hist)
+
+        if label is None:
+            label = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
+
+        if description is None:
+            description = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
+
+        df = self.get_data_object(yname_to_hist).hist2d(self.get_df(xname_to_hist), bins=bins,
+                                                        column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
+
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
+
+    def vs(self, xname, yname, result_name=None, xcolumn_to_hist=None, ycolumn_to_hist=None,
+           n_bins=10, category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = yname+'_vs_'+xname
+
+        if category is None:
+            category = self.get_category(yname)
+
+        if label is None:
+            label = self.get_label(xname)+' vs '+self.get_label(yname)
+
+        if description is None:
+            description = self.get_label(xname)+' vs '+self.get_label(yname)
+
+        df = self.get_data_object(yname).vs(self.get_df(xname), n_bins=n_bins,
+                                            column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
+
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
+
     def hist1d_evolution(
             self, name_to_hist, start_index_intervals, end_index_intervals, bins, index_name=None, normed=False,
             result_name=None, column_to_hist=None, category=None, label=None, description=None, replace=False):
