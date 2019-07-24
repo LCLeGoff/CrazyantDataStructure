@@ -147,11 +147,7 @@ class BuilderDataObject:
         return df
 
     def hist1d(self, column_name=None, bins='fd'):
-        if column_name is None:
-            if len(self.df.columns) == 1:
-                column_name = self.df.columns[0]
-            else:
-                raise IndexError('Data not 1d, precise on which column apply hist1d')
+        column_name = self.get_column_name(column_name, self.df)
 
         y, x = np.histogram(self.df[column_name].dropna(), bins)
         x = (x[1:] + x[:-1]) / 2.

@@ -72,26 +72,33 @@ class BuilderExpAntFrameIndexedDataObject:
                 array=h, index_names='bins', column_names=column_names)
         return df.astype(int)
 
+    def mean_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
+        fct = np.nanmean
+        df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)
+
+        return df
+
     def variance_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
+        fct = np.nanvar
+        df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)
+
+        return df
+
+    def _apply_function_on_evolution(self, column_name, start_frame_intervals, end_frame_intervals, fct):
         if column_name is None:
             if len(self.df.columns) == 1:
                 column_name = self.df.columns[0]
             else:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
-
         start_frame_intervals = np.array(start_frame_intervals, dtype=int)
         end_frame_intervals = np.array(end_frame_intervals, dtype=int)
-
-        x = (end_frame_intervals+start_frame_intervals)/2./100.
+        x = (end_frame_intervals + start_frame_intervals) / 2. / 100.
         y = np.zeros(len(start_frame_intervals))
-
         for i in range(len(start_frame_intervals)):
             frame0 = start_frame_intervals[i]
             frame1 = end_frame_intervals[i]
 
             df = self.df[column_name].loc[:, :, frame0:frame1]
-            y[i] = np.nanvar(df)
-
+            y[i] = fct(df)
         df = pd.DataFrame(y, index=x)
-
         return df

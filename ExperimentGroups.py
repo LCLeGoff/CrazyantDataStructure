@@ -1012,6 +1012,46 @@ class ExperimentGroups:
 
         return result_name
 
+    def mean_evolution(
+            self, name_to_var, start_index_intervals, end_index_intervals, index_name=None,
+            result_name=None, column_to_var=None, category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name_to_var + '_mean_evol'
+
+        if category is None:
+            category = self.get_category(name_to_var)
+
+        if label is None:
+            if self.get_label(name_to_var) is not None:
+                label = self.get_label(name_to_var) + ' mean evolution'
+
+        if description is None:
+            if self.get_description(name_to_var) is not None:
+                description = 'Evolution of mean of ' + self.get_description(name_to_var).lower()
+
+        if self.__is_indexed_by_exp_ant_frame(name_to_var) or self.__is_indexed_by_exp_frame(name_to_var):
+
+            df = self.get_data_object(name_to_var).mean_evolution(
+                column_name=column_to_var, start_frame_intervals=start_index_intervals,
+                end_frame_intervals=end_index_intervals)
+
+        elif self.get_object_type(name_to_var) == dataset_name:
+
+            df = self.get_data_object(name_to_var).mean_evolution(
+                column_name=column_to_var, index_name=index_name, start_index_intervals=start_index_intervals,
+                end_index_intervals=end_index_intervals)
+
+        else:
+            raise TypeError(name_to_var+' is not dataset')
+
+        df.columns = ['mean']
+
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
+
     def variance_evolution(
             self, name_to_var, start_index_intervals, end_index_intervals, index_name=None,
             result_name=None, column_to_var=None, category=None, label=None, description=None, replace=False):
