@@ -215,7 +215,7 @@ class Plotter(BasePlotters):
     def plot_fit(self, preplot, label=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False,
                  ls='-', marker='', c='w'):
 
-        if self.obj.get_dimension() == 1:
+        if self.obj.get_dimension() == 1 or self.column_name is not None:
             fig, ax = preplot
 
             x = self.obj.get_index_array()
@@ -236,7 +236,7 @@ class Plotter(BasePlotters):
             else:
                 y_fit = y[bound[0]:bound[1]]
 
-            mask = np.where(y_fit != 0)[0]
+            mask = np.where((y_fit != 0)*~(np.isnan(y_fit)))[0]
 
             if typ == 'linear':
                 af, bf, x_fit, y_fit = linear_fit(x_fit[mask], y_fit[mask])
@@ -249,7 +249,7 @@ class Plotter(BasePlotters):
             af, bf = np.around(af, 4), np.around(bf, 4)
 
             if label is None:
-                label = '(a, b) ='+str(af)+', '+str(bf)+')'
+                label = '(a, b) = ('+str(af)+', '+str(bf)+')'
             else:
                 label = label+': (a, b) ='+str(af)+', '+str(bf)+')'
 
