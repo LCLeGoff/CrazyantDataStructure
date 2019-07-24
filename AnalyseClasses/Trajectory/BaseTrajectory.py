@@ -375,30 +375,20 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         fig, ax = plotter.plot(yscale='log', normed=True)
         plotter.save(fig)
 
-    def compute_mm10_speed(self, redo=False, redo_hist=False):
-        name = 'speed'
+    def compute_mm10_speed(self):
         category = 'SpeedMM'
         time_window = 10
-        result_name = 'mm'+str(time_window)+'_'+name
-        hist_name = result_name+'_hist'
-        bins = np.arange(0, 500, 1)
-        hist_label = 'Distribution of the speed (mm/s), MM '+str(time_window)
-        hist_description = 'Distribution of the instantaneous speed of the ants (mm/s)' \
-                           ' smoothed with a moving mean of window length '+str(time_window)+' frames'
-        if redo:
-            self.exp.load(name)
-            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=name, time_window=time_window, category=category
-            )
 
+        name = 'speed'
+        name_x = 'speed_x'
+        name_y = 'speed_y'
+        names = [name, name_x, name_y]
+
+        self.exp.load(names)
+        for n in names:
+            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=n, time_window=time_window,
+                                                                        category=category)
             self.exp.write(result_name)
-
-        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
-                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', normed=True)
-        plotter.save(fig)
 
     def compute_mm20_speed(self, redo=False, redo_hist=False):
         name = 'speed'

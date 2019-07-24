@@ -188,6 +188,14 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 name_to_copy=name_x, copy_name=name, category=self.category, label='Food speed',
                 description='Instantaneous speed of the food'
             )
+            self.exp.add_copy1d(
+                name_to_copy=name_x, copy_name=name + '_x', category=self.category, label='X speed',
+                description='X coordinate of the instantaneous speed of the food'
+            )
+            self.exp.add_copy1d(
+                name_to_copy=name_x, copy_name=name + '_y', category=self.category, label='Y speed',
+                description='Y coordinate of the instantaneous speed of the food'
+            )
 
             for id_exp in self.exp.id_exp_list:
                 dx = np.array(self.exp.get_df(name_x).loc[id_exp, :])
@@ -212,10 +220,12 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 dx[dt > 2] = np.nan
                 dy[dt > 2] = np.nan
 
-                food_speed = np.around(np.sqrt(dx ** 2 + dy ** 2) * self.exp.fps.df.loc[id_exp].fps, 3)
-                self.exp.food_speed.df.loc[id_exp, :] = food_speed
+                fps = self.exp.get_value('fps', id_exp)
+                self.exp.get_df(name).loc[id_exp, :] = np.around(np.sqrt(dx ** 2 + dy ** 2) * fps, 3)
+                self.exp.get_df(name + '_x').loc[id_exp, :] = np.c_[np.around(dx * fps, 3)]
+                self.exp.get_df(name + '_y').loc[id_exp, :] = np.c_[np.around(dy * fps, 3)]
 
-            self.exp.write(name)
+            self.exp.write([name, name + '_x', name + '_y'])
 
         self.compute_hist(name=name, bins=bins, hist_name=hist_name, hist_label=hist_label,
                           hist_description=hist_description, redo=redo, redo_hist=redo_hist)
@@ -225,6 +235,20 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                normed=True, label_suffix='s')
         ax.set_xlim((0, 20))
         plotter.save(fig)
+
+    def compute_mm10_food_speed(self):
+        name = 'food_speed'
+        name_x = 'food_speed_x'
+        name_y = 'food_speed_y'
+        names = [name, name_x, name_y]
+
+        self.exp.load(names)
+        time_window = 10
+
+        for n in names:
+            result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=n, time_window=time_window,
+                                                                    category=self.category)
+            self.exp.write(result_name)
 
     def compute_food_speed_evol(self, redo=False):
         name = 'food_speed'
@@ -242,7 +266,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food speed distribution over time (rad)',
-                                      description='Histogram of the instantaneous speed of the food trajectory over '\
+                                      description='Histogram of the instantaneous speed of the food trajectory over ' \
                                                   'time (rad)')
             self.exp.write(result_name)
         else:
