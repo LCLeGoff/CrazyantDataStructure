@@ -40,14 +40,14 @@ class Plotter(BasePlotters):
         self.arg_tools.change_arg_value('axis', kwargs)
 
     def plot(
-            self, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
+            self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
             preplot=None, figsize=None, **kwargs):
 
         fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
 
         x = self.obj.get_index_array()
 
-        y = self.__get_y(normed, x)
+        y = fct(self.__get_y(normed, x))
         self.__plot_xy(ax, x, y, label)
 
         return fig, ax
