@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from matplotlib.path import Path
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
@@ -37,6 +36,11 @@ class AnalyseTrajectory(AnalyseClassDecorator):
     def __load_xy0_reorientation(self, dynamic_food):
         if dynamic_food is True:
             self.exp.load(['food_x0', 'food_y0'])
+
+        if  self.exp.is_name_existing('decrossed_x0'):
+            self.exp.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy', 'x', 'y')
+        else:
+            self.exp.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
         self.exp.load([
             'x0', 'y0', 'absoluteOrientation'])
 

@@ -357,7 +357,7 @@ class AnalyseStarter:
 
         exps = ExperimentGroupBuilder(root).build(self.group)
         if exps.is_name_existing('decrossed_x0'):
-            exps.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy')
+            exps.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy', 'x', 'y')
         else:
             exps.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
 

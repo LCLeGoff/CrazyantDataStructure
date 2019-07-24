@@ -24,7 +24,6 @@ class CharacteristicTimeSeries1dWriter:
                 type_is_int64 *= df.index.get_level_values(index_name).dtype == 'int64'
 
             if type_is_int64:
-
                 df[ts.name] = ts.df
                 df.to_csv(add)
             else:

@@ -3,7 +3,8 @@ import numpy as np
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df
+from Tools.Plotter.Plotter import Plotter
 
 
 class AnalyseAntFoodRelation(AnalyseClassDecorator):
@@ -118,6 +119,20 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         )
 
         self.exp.write(name)
+
+    def compute_mm10_distance2food_speed_next2food(self):
+        name = 'mm10_distance2food_speed'
+        res_name = name+'_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category=self.category, label='distance ant-food speed next to food',
+            description='Instantaneous speed fo distance ant-food of ant next to food'
+        )
+
+        self.exp.write(res_name)
 
     def compute_speed_next2food(self):
         name = 'speed'
@@ -418,6 +433,98 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             category=self.category, label='orientation next to food',
             description='Moving mean (time window of 20 frames)  of the angle'
                         ' between the ant-food vector and the body vector for the ants close to the food'
+        )
+
+        self.exp.write(res_name)
+
+    def __reindexing(self, name_to_reindex, name2):
+        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+
+        df = self.exp.get_df(name_to_reindex).copy()
+        df = df.reindex(idxs)
+        df[id_ant_name] = id_ants
+        df.reset_index(inplace=True)
+        df.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
+        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        return df
+
+    def compute_food_angular_component_ant_velocity(self, redo=False, redo_hist=False):
+        result_name = 'food_angular_component_ant_velocity'
+        print(result_name)
+        hist_name = result_name+'_hist'
+
+        dtheta = 0.1
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        if redo:
+            food_name_x = 'mm10_food_x'
+            food_name_y = 'mm10_food_y'
+            food_name = 'food_xy'
+            self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
+
+            food_speed_name_x = 'mm10_food_speed_x'
+            food_speed_name_y = 'mm10_food_speed_y'
+            food_speed_name = 'food_speed_xy'
+            self.exp.load_as_2d(
+                food_speed_name_x, food_speed_name_y, result_name=food_speed_name, xname='x', yname='y', replace=True)
+
+            name_x = 'mm10_x'
+            name_y = 'mm10_y'
+            name_xy = 'xy'
+            self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
+
+            name_speed_x = 'mm10_speed_x'
+            name_speed_y = 'mm10_speed_y'
+            speed_name = 'speed_xy'
+            self.exp.load_as_2d(name_speed_x, name_speed_y, result_name=speed_name, xname='x', yname='y', replace=True)
+
+            df_food = self.__reindexing(food_name, name_xy)
+            df_food_speed = self.__reindexing(food_speed_name, speed_name)
+
+            df_food_ant = norm_vect_df(self.exp.get_df(name_xy)-df_food)
+            df_velocity = norm_vect_df(self.exp.get_df(speed_name)-df_food_speed)
+
+            df = angle_df(df_velocity, df_food_ant)
+
+            self.exp.add_new1d_from_df(
+                df=df, name=result_name, object_type='TimeSeries1d',
+                category=self.category, label='Food angular component of the ant velocity',
+                description='Angle between the food-ant vector and the vector,'
+                            ' which  is ant velocity minus food velocity'
+            )
+            self.exp.write(result_name)
+
+        self.compute_hist(name=result_name, bins=bins, hist_name=hist_name, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(normed=True, label='all', marker=None)
+        plotter.draw_vertical_line(ax, np.pi/2.)
+        plotter.draw_vertical_line(ax, -np.pi/2.)
+
+        self.exp.load(['carrying', result_name])
+        self.exp.filter_with_values(
+            name_to_filter=result_name, filter_name='carrying', result_name='temp', replace=True)
+        hist_name = self.exp.hist1d(name_to_hist='temp', replace=True, label='', description='')
+        plotter2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        plotter2.plot(normed=True, preplot=(fig, ax), label='carrying', marker=None, c='w')
+
+        ax.legend()
+        plotter.save(fig)
+
+    def compute_angle_velocity_food_next2food(self):
+        name = 'angle_velocity_food'
+        res_name = name + '_next2food'
+
+        self.exp.load([name, 'is_xy_next2food'])
+
+        self.exp.filter_with_values(
+            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
+            category=self.category, label='Food-ant velocity angle',
+            description='Angle between the ant velocity and the ant-food center vector'
         )
 
         self.exp.write(res_name)

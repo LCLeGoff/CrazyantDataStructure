@@ -374,7 +374,7 @@ class RecruitmentDirection(AnalyseClassDecorator):
 
         self.exp.filter_with_values(
             name_to_filter=recruitment_interval_filter_name, filter_name=is_in_circular_arena,
-            result_name=recruitment_interval_filter_name, redo=True
+            result_name=recruitment_interval_filter_name, replace=True
         )
 
     def _compute_when_markings_inside_circular_arena(self, r_markings, is_in_circular_arena):

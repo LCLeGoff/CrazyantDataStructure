@@ -58,7 +58,7 @@ def angle_df(u, v=None):
     if v is None:
         u2 = u.copy()
         u2.columns = ['x', 'y']
-        return -np.arctan2(-u.y, u.x)
+        return -np.arctan2(-u2.y, u2.x)
     else:
         return np.arctan2(cross2d_df(u, v), dot2d_df(u, v))
 

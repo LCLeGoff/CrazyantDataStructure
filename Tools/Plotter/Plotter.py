@@ -52,6 +52,22 @@ class Plotter(BasePlotters):
 
         return fig, ax
 
+    def plot_with_error(
+            self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
+            preplot=None, figsize=None, **kwargs):
+
+        if self.obj.get_dimension() == 3:
+            fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
+
+            x = self.obj.get_index_array()
+
+            y = fct(self.__get_y(normed, x))
+            self.__plot_xy_with_error(ax, x, y, label)
+
+            return fig, ax
+        else:
+            raise ValueError("obj does not have exactly 3 columns")
+
     def plot_smooth(self, window, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
                     preplot=None, figsize=None, **kwargs):
 
@@ -158,6 +174,11 @@ class Plotter(BasePlotters):
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
                 ax.plot(x, y, label=label, **self.line)
+
+    def __plot_xy_with_error(self, ax, x, y, label):
+        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=[label, 'error inf.', 'error sup.'], **self.line)
+        if self.column_name not in self.obj.get_column_names():
+            self.column_name = str(self.column_name)
 
     def __get_y(self, normed, x, window=None, smooth=False):
 

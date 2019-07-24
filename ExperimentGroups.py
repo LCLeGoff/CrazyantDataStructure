@@ -107,8 +107,8 @@ class ExperimentGroups:
     def change_value(self, name, idx, value):
         self.get_data_object(name).df.loc[idx] = value
 
-    def change_values(self, name, df):
-        self.get_data_object(name).change_values(df)
+    def change_values(self, name, arr):
+        self.get_data_object(name).change_values(arr)
 
     def groupby(self, name, index_to_group_with, func):
         return self.get_df(name).groupby(index_to_group_with).apply(func)
@@ -217,6 +217,7 @@ class ExperimentGroups:
         for name in names:
             print('deleting ', name)
             self.data_manager.delete(self.get_data_object(name))
+            self.remove_object(name)
 
     def is_name_in_data(self, name):
         return self.data_manager.is_name_in_data(name)
@@ -378,6 +379,8 @@ class ExperimentGroups:
                 self.add_object(result_name, event, replace)
             else:
                 raise TypeError(object_type1 + ' can not be gathered in 2d')
+        else:
+            raise TypeError(name1+' and '+name2+' do not have same index')
 
     def add_2d_from_2dfs(
             self, df1, df2, result_name, object_type, xname=None, yname=None,
@@ -497,7 +500,8 @@ class ExperimentGroups:
             raise ValueError('Use add_new_dataset_from_df for DataSets')
         else:
             obj = Builder.build1d_from_df(
-                df=df, name=name, object_type=object_type, category=category, label=label, description=description)
+                df=pd.DataFrame(df), name=name, object_type=object_type,
+                category=category, label=label, description=description)
             self.add_object(name, obj, replace)
 
     def add_new2d_from_df(
@@ -643,7 +647,8 @@ class ExperimentGroups:
 
     def filter_with_values(
             self, name_to_filter, filter_name, filter_values=1, result_name=None,
-            xname=None, yname=None, category=None, label=None, xlabel=None, ylabel=None, description=None, redo=False):
+            xname=None, yname=None, category=None,
+            label=None, xlabel=None, ylabel=None, description=None, replace=False):
 
         if not isinstance(filter_values, list):
             filter_values = [filter_values]
@@ -658,7 +663,7 @@ class ExperimentGroups:
                 obj=self.get_data_object(name_to_filter), filter_obj=self.get_data_object(filter_name),
                 filter_values=filter_values, result_name=result_name, xname=xname, yname=yname,
                 label=label, xlabel=xlabel, ylabel=ylabel, category=category, description=description)
-            self.add_object(result_name, obj_filtered, redo)
+            self.add_object(result_name, obj_filtered, replace)
         else:
             raise TypeError(
                 'Filter can not be applied on ' + name_to_filter + ' or ' + filter_name + ' is not a filter')
@@ -915,10 +920,10 @@ class ExperimentGroups:
         if category is None:
             category = self.get_category(name_to_hist)
 
-        if label is None:
+        if label is None and not self.get_label(name_to_hist) is None:
             label = self.get_label(name_to_hist)+' histogram'
 
-        if description is None:
+        if description is None and not self.get_description(name_to_hist) is None:
             description = 'Histogram of '+self.get_description(name_to_hist).lower()
 
         df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins)

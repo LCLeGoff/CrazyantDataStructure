@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+from cv2 import cv2
 from matplotlib.path import Path
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, angle, dot2d_df, distance_between_point_and_line_df, distance_df
+from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
+from Tools.MiscellaneousTools.Geometry import angle_df, angle, dot2d_df, distance_between_point_and_line_df, \
+    distance_df, norm_vect_df
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -723,4 +725,101 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
         plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
+
+    def __reindexing_food_xy(self, name):
+        id_exps = self.exp.get_df(name).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+
+        df_d = self.exp.get_df('food_xy').copy()
+        df_d = df_d.reindex(idxs)
+        df_d[id_ant_name] = id_ants
+        df_d.reset_index(inplace=True)
+        df_d.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
+        df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+        return df_d
+
+    def compute_food_angular_speed(self, redo=False, redo_hist=False):
+        result_name = 'food_angular_speed'
+        temp_name = 'temp'
+
+        bins = np.arange(0, 3, 0.1)
+
+        if redo:
+            food_name_x = 'mm10_food_x'
+            food_name_y = 'mm10_food_y'
+            name_x = 'mm10_x'
+            name_y = 'mm10_y'
+            food_name = 'food_xy'
+            name_xy = 'xy'
+            self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
+            self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
+
+            carrying_name = 'carrying'
+            self.exp.load([carrying_name, 'fps'])
+
+            def erode4each_group(df):
+                df_img = np.array(df, dtype=np.uint8)
+                df_img = cv2.erode(df_img, kernel=np.ones(400, np.uint8))
+                df[:] = df_img
+                return df
+
+            df_carrying = self.exp.get_df(carrying_name).groupby([id_exp_name, id_ant_name]).apply(erode4each_group)
+            self.exp.change_df(carrying_name, df_carrying)
+
+            self.exp.filter_with_values(
+                name_to_filter=name_xy, filter_name=carrying_name, result_name=name_xy, replace=True)
+            self.exp.remove_object(carrying_name)
+
+            self.exp.add_new1d_from_df(self.exp.get_df(name_xy)['x'], name=temp_name, object_type='Events1d')
+
+            def get_speed4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+                frames = np.array(df.index.get_level_values(id_frame_name))
+                frame0 = frames[0]
+                frame1 = frames[-1]
+
+                df2 = df.loc[id_exp, id_ant, :]
+                df2 -= self.exp.get_df(food_name).loc[id_exp, :]
+                df2 *= -1
+
+                fps = self.exp.get_value('fps', id_exp)
+                dframe = int(fps/2)
+                vect1 = df2.loc[frame0+dframe:].copy()
+                vect2 = df2.loc[:frame1-dframe].copy()
+
+                dframe2 = int(dframe/2)
+                vect1.index -= dframe2
+                vect2.index += dframe2
+
+                df_angle = df2.copy()
+                df_angle.pop('y')
+                df_angle[:] = np.nan
+                df_angle.loc[vect1.index, 'x'] = angle_df(vect1, vect2)
+
+                dt = np.ones(len(df2))
+                dt[dframe2:-dframe2] = frames[dframe:]-frames[:-dframe]
+
+                df_angle = np.array(df_angle).ravel()
+                df_angle /= dt
+                df_angle *= fps
+
+                self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[np.around(np.abs(df_angle), 6)]
+
+            self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
+
+            self.exp.mean_over_exp_and_frames(name_to_average=temp_name, result_name=result_name,
+                                              category=self.category, label='Food angular speed',
+                                              description='Angular speed of the food (rad/s)', replace=True)
+            self.exp.change_df(result_name, np.around(self.exp.get_df(result_name), 6))
+
+            self.exp.write(result_name)
+
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel='Angular speed (rad/s)', ylabel='PDF', ls='', normed=True)
         plotter.save(fig)

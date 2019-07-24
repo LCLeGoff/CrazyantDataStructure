@@ -27,8 +27,8 @@ class MovieCanvas(FigureCanvas):
         self.frame_width = width/200.
         self.frame_height = height/200.
         self.play = 0
-        self.batch_length1 = 1
-        self.batch_length2 = 3
+        self.batch_length1 = 2
+        self.batch_length2 = 5
         self.outside = outside
 
         self.fig, self.ax = self.init_figure()
@@ -85,8 +85,9 @@ class MovieCanvas(FigureCanvas):
         list_batch_frames = []
         lg1 = int((self.batch_length1*fps) / 2)
         lg2 = int((self.batch_length2*fps) / 2)
-        for frame in frames:
-            list_batch_frames.append([frame - lg1, frame + lg2])
+        # for frame in frames:
+        #     list_batch_frames.append([frame - lg1, frame + lg2])
+        list_batch_frames = [[2700, 2900]]
 
         return list_batch_frames
 
@@ -156,8 +157,13 @@ class MovieCanvas(FigureCanvas):
         attachment_non_focused_color = 5*int(1-self.outside) + 2*int(self.outside)
         attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
 
-        self.exp.load(['carrying', 'from_outside'])
+        self.exp.load(['carrying', 'from_outside'])  # , 'food_angular_component_ant_velocity'])
         carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
+        # marker_df = self.exp.get_df('food_angular_component_ant_velocity').loc[self.id_exp, :, :].abs()
+        # marker_df2 = marker_df.copy()
+        # marker_df[:] = 'r'
+        # marker_df[marker_df2 <= np.pi/2.*1.25] = 'b'
+        # marker_df[marker_df2 < np.pi/2.*0.75] = 'r'
 
         from_outside_df = carrying_df.copy()
         from_outside_df[:] = 0
@@ -187,11 +193,14 @@ class MovieCanvas(FigureCanvas):
             attachment_df.loc[id_exp, id_ant, frame] = attachment_non_focused_color
             attachment_size_df.loc[id_exp, id_ant, frame] = 50
 
+        # attachment_size_df *= 10
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
         xy_df.x -= x0
         xy_df.y -= y0
-        dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
-        dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        # dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
+        # dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        dx = 100
+        dy = 100
         xy_df.x += dx
         xy_df.y += dy
 
@@ -212,8 +221,11 @@ class MovieCanvas(FigureCanvas):
         xy = self.xy_df.loc[pd_slice, :]
         attach = np.array(self.attachment_df.loc[pd_slice, :]).ravel()
         marker_size = np.array(self.attachment_size_df.loc[pd_slice, :]).ravel()
+        # marker = np.array(self.marker_df.loc[pd_slice, :]).ravel()
 
-        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach, s=marker_size, cmap='jet', norm=colors.Normalize(0, 5))
+        self.xy_graph = self.ax.scatter(xy.x, xy.y,
+                                        c=attach, s=marker_size,  # edgecolor=marker,
+                                        cmap='jet', norm=colors.Normalize(0, 5))
 
         self.batch_text = self.ax.text(
             self.dx, 0, 'Batch '+str(self.frame_batch[0])+' to '+str(self.frame_batch[1]),
@@ -244,10 +256,12 @@ class MovieCanvas(FigureCanvas):
                 xy = self.xy_df.loc[pd_slice, :]
                 attach = np.array(self.attachment_df.loc[pd_slice]).ravel()
                 marker_size = np.array(self.attachment_size_df.loc[pd_slice]).ravel()
+                # marker = np.array(self.marker_df.loc[pd_slice]).ravel()
 
                 self.xy_graph.set_offsets(np.c_[xy.x, xy.y])
                 self.xy_graph.set_array(attach)
                 self.xy_graph.set_sizes(marker_size)
+                # self.xy_graph.set_edgecolors(marker)
                 self.clock_text.set_text(frame)
 
                 self.draw()
@@ -344,6 +358,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=7, outside=True)
+aw = ApplicationWindow(group0, id_exp=1, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

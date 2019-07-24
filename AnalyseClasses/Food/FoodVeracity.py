@@ -93,12 +93,28 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter.save(fig)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s')
+        fig, ax = plotter.plot(yscale='log', xscale='log',
+                               xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s', normed=True)
+        plotter.save(fig, suffix='power')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s', normed=True)
+        x = self.exp.get_index(result_name)
+        lamb = 0.78
+        ax.plot(x, lamb*np.exp(-lamb*x), ls='--', c='k', label=str(lamb)+' exp(-'+str(lamb)+r'$\varphi$)')
+        ax.legend(framealpha=0.1, ncol=2)
         plotter.save(fig, suffix='exp')
+
+        column = self.exp.get_columns(result_name)[-5]
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s', normed=True,
+                               label=r'Variance at times t$\in$' + str(column) + ' s')
+        plotter.plot_fit(preplot=(fig, ax), normed=True)
+        plotter.save(fig, suffix='steady_state')
 
         self.exp.get_df(result_name).index = self.exp.get_df(result_name).index**2
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s')
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\varphi$', ylabel='PDF', label_suffix='s', normed=True)
         plotter.save(fig, suffix='gauss')
 
     def compute_food_direction_error_variance_evol(self, redo=False):
@@ -137,10 +153,20 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
         plotter.draw_horizontal_line(ax, 1.75)
-        plotter.plot_fit(preplot=(fig, ax), window=[0, 11])
+        plotter.plot_fit(typ='linear', preplot=(fig, ax), window=[0, 11])
         plotter.save(fig)
+
+        min_var = np.min(self.exp.get_df(result_name))
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name) - min_var
+        self.exp.get_data_object(result_name).df[self.exp.get_df(result_name) < 0] = np.nan
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='PDF', label_suffix='s',
+                               label='Variance - '+str(float(np.around(min_var, 2))))
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 15])
+        ax.set_xlim((0, 250))
+        plotter.save(fig, suffix='exp')
 
     def compute_food_direction_error_hist_evol_around_first_attachment(self, redo=False):
         name = 'food_direction_error'
@@ -234,11 +260,21 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
         plotter.draw_vertical_line(ax)
         plotter.draw_horizontal_line(ax, 1.75)
-        plotter.plot_fit(preplot=(fig, ax), window=[0, 9])
+        plotter.plot_fit(typ='linear', preplot=(fig, ax), window=[0, 9])
         plotter.save(fig)
+
+        min_var = np.min(self.exp.get_df(result_name))
+        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name) - min_var
+        self.exp.get_data_object(result_name).df[self.exp.get_df(result_name) < 0] = np.nan
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='PDF', label_suffix='s',
+                               label='Variance - '+str(float(np.around(min_var, 2))))
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 40])
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig, suffix='exp')
 
     def compute_mm1s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 

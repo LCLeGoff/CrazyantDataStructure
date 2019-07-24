@@ -30,13 +30,13 @@ class MovieCanvas(FigureCanvas):
         self.frame_height = height/200.
         self.play = 0
         self.batch_length = 5
-        self.dt = 50
         self.dpx = 60
 
         self.mode = 0
         self.event_text = 'crosses'
 
         self.data_manager = DataManager(exp, id_exp)
+        self.dt = self.data_manager.candidate_search_time_window
 
         self.fig, self.ax = self.init_figure()
         FigureCanvas.__init__(self, self.fig)
@@ -44,6 +44,7 @@ class MovieCanvas(FigureCanvas):
 
         self.movie = self.exp.get_movie(id_exp)
         self.xy_df0 = self.data_manager.get_trajs()
+
         self.list_outside_ant = self.data_manager.get_outside_ant(self.xy_df0)
         self.not_crossing = {id_ant: [] for id_ant in self.list_outside_ant}
 
@@ -148,6 +149,9 @@ class MovieCanvas(FigureCanvas):
             get_events()
             turn = start_inter_ant == self.iter_focused_ant
 
+        if turn:
+            print('loop')
+
     def prev_event(self):
         if self.iter_event is None:
             self.ax.text(0, 0, 'No more '+self.event_text)
@@ -236,8 +240,21 @@ class MovieCanvas(FigureCanvas):
             else:
                 self.search_for_candidates()
 
+    def cut(self):
+        if self.iter_event is not None and len(self.events) != 0:
+            focused_ant = self.get_focused_ant_id()
+            frame = self.get_event_frame()
+
+            self.xy_df0 = self.data_manager.cut(self.xy_df0, focused_ant, frame)
+
+            if self.mode == 0:
+                self.search_for_crossings()
+            else:
+                self.search_for_candidates()
+
     def write(self):
-        self.data_manager.write(self.xy_df0)
+        # self.data_manager.write(self.xy_df0)
+        self.data_manager.write()
 
     def get_event_frame(self):
         if self.mode == 1 or self.iter_event is None or len(self.events) == 0:
@@ -490,8 +507,9 @@ class DataManager:
     def __init__(self, exp: ExperimentGroups, id_exp):
         self.exp = exp
         self.id_exp = id_exp
-        self.res_name_x = 'decrossed_x0'
-        self.res_name_y = 'decrossed_y0'
+        # self.res_name_x = 'decrossed_x0'
+        # self.res_name_y = 'decrossed_y0'
+        self.decross_name = 'crossing_reference'
 
         # self.exp.delete_data([self.res_name_x, self.res_name_y])
         self.name_xy = 'xy0'
@@ -499,7 +517,7 @@ class DataManager:
         self.mm2px = None
 
         self.candidate_search_distance = 20
-        self.candidate_search_time_window = 30
+        self.candidate_search_time_window = 10
 
         self.crossing_search_time_window = 10
         self.crossing_search_distance = 2
@@ -523,19 +541,31 @@ class DataManager:
 
         self.gate_path = Path([gate1, gate2, gate3, gate4])
 
-        if self.exp.is_name_existing(self.res_name_x):
-            name_x = self.res_name_x
-            name_y = self.res_name_y
-            self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+        # if self.exp.is_name_existing(self.res_name_x):
+        #     name_x = self.res_name_x
+        #     name_y = self.res_name_y
+        #     self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+        # else:
+        name_x = 'interpolated_x0'
+        name_y = 'interpolated_y0'
+        self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+
+        if self.exp.is_name_existing(self.decross_name):
+            self.exp.load(self.decross_name)
         else:
-            name_x = 'interpolated_x0'
-            name_y = 'interpolated_y0'
-            self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+            self.exp.add_new_empty_dataset(
+                name=self.decross_name, index_names=[id_exp_name, id_frame_name, 'id_ant1'],
+                column_names='id_ant2', category='CleanedRaw', label='crossing events',
+                description='A line (id_exp, frame, id_ant1, id_ant2) indicates that in experiment id_exp,'
+                            'at time frame, the identity of ants id_ant1 and id_ant2 have switched'
+            )
 
     def get_trajs(self):
         xy_df = self.exp.get_df(self.name_xy).loc[self.id_exp, :, :]
         xy_df.x += np.array(self.exp.traj_translation.df.x.loc[self.id_exp])
         xy_df.y += np.array(self.exp.traj_translation.df.y.loc[self.id_exp])
+
+        xy_df = self.decross_all(xy_df)
 
         return xy_df
 
@@ -558,8 +588,9 @@ class DataManager:
         focused_frame0 = xy.index.get_level_values(id_frame_name)[0]
         focused_frame1 = xy.index.get_level_values(id_frame_name)[-1]
 
-        list_id_ant = list(set(xy_df.index.get_level_values(id_ant_name)))
-        list_id_ant.remove(id_ant)
+        list_id_ant = np.array(list(set(xy_df.index.get_level_values(id_ant_name))))
+        # list_id_ant.remove(id_ant)
+        list_id_ant = list_id_ant[list_id_ant > id_ant]
 
         res = []
         for id_ant2 in list_id_ant:
@@ -634,7 +665,6 @@ class DataManager:
         return res
 
     def decross(self, xy_df, crossed_ant, crossing_ant, cross_frame):
-        print('1')
         exps = np.array(xy_df.index.get_level_values(id_exp_name))
         ants = np.array(xy_df.index.get_level_values(id_ant_name))
         frames = np.array(xy_df.index.get_level_values(id_frame_name))
@@ -659,7 +689,41 @@ class DataManager:
         xy_df = self.__interpolate_time_series1d(xy_df, crossing_ant)
         xy_df.sort_index(inplace=True)
 
-        print('2')
+        self.exp.get_df(self.decross_name).loc[
+            (self.id_exp, cross_frame, crossed_ant)] = crossing_ant
+
+        return xy_df
+
+    def cut(self, xy_df, id_ant_to_cut, frame):
+        exps = np.array(xy_df.index.get_level_values(id_exp_name))
+        ants = np.array(xy_df.index.get_level_values(id_ant_name))
+        frames = np.array(xy_df.index.get_level_values(id_frame_name))
+
+        xy_df2 = xy_df.loc[self.id_exp]
+        id_ant2 = max(xy_df2.index.get_level_values(id_ant_name))+1
+
+        is_focused_exp = (exps == self.id_exp)
+        is_ant_to_cut = (ants == id_ant_to_cut)
+        is_after_frame = (frames > frame)
+
+        mask_ant2 = np.where(is_focused_exp*is_ant_to_cut*is_after_frame)[0]
+
+        ants[mask_ant2] = id_ant2
+        xy_df.reset_index(inplace=True)
+        xy_df[id_ant_name] = ants
+        xy_df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        xy_df.sort_index(inplace=True)
+
+        return xy_df
+
+    def decross_all(self, xy_df):
+        if self.id_exp in self.exp.get_index(self.decross_name).get_level_values(id_exp_name):
+            df = self.exp.get_df(self.decross_name).loc[self.id_exp, :]
+            for cross_frame, crossed_ant in df.index:
+                print(cross_frame, crossed_ant)
+                crossing_ant = df.loc[(cross_frame, crossed_ant), 'id_ant2']
+                xy_df = self.decross(xy_df, crossed_ant, crossing_ant, cross_frame)
         return xy_df
 
     def __interpolate_time_series1d(self, df: pd.DataFrame, id_ant):
@@ -679,12 +743,25 @@ class DataManager:
                     val1 = df2.iloc[hole_locations[i]+1]
 
                     num = frame1-frame0+1
-                    val_range_x = np.around(np.linspace(val0.x, val1.x, num+2), 2)
-                    val_range_y = np.around(np.linspace(val0.y, val1.y, num+2), 2)
+                    val_range_x = np.around(np.linspace(val0.x, val1.x, num), 2)
+                    val_range_y = np.around(np.linspace(val0.y, val1.y, num), 2)
 
-                    for j, frame in enumerate(range(frame0+1, frame1)):
-                        df.loc[(self.id_exp, id_ant, frame), 'x'] = val_range_x[j+1]
-                        df.loc[(self.id_exp, id_ant, frame), 'y'] = val_range_y[j+1]
+                    index_df2 = [(self.id_exp, id_ant, frame) for frame in range(frame0 + 1, frame1)]
+                    index_df2 = pd.MultiIndex.from_tuples(index_df2)
+
+                    df2 = pd.DataFrame(np.array(list(zip(val_range_x[1:-1], val_range_y[1:-1]))), index=index_df2,
+                                       columns=['x', 'y'])
+
+                    df = df.append(df2)
+
+                    # df.loc[pd.IndexSlice[self.id_exp, id_ant, frame0+1:frame1-1], 'x'] = val_range_x[1:-1]
+                    # df.loc[pd.IndexSlice[self.id_exp, id_ant, frame0+1:frame1-1], 'y'] = val_range_y[1:-1]
+
+                    # for j, frame in enumerate(range(frame0+1, frame1)):
+                    #     df.loc[(self.id_exp, id_ant, frame), 'x'] = val_range_x[j+1]
+                    #     df.loc[(self.id_exp, id_ant, frame), 'y'] = val_range_y[j+1]
+
+                df.sort_index(inplace=True)
 
         return df
 
@@ -751,30 +828,34 @@ class DataManager:
 
         return xy_df, list_outside_ant
 
-    def write(self, xy_df):
+    # def write(self, xy_df):
+    #
+    #     xy_df = xy_df.loc[~xy_df.index.duplicated(keep='first')]
+    #     xy_df = xy_df - self.exp.get_df('traj_translation').loc[self.id_exp]
+    #
+    #     df = self.exp.get_df(self.name_xy).copy()
+    #     df = df.drop(index=self.id_exp, level=id_exp_name)
+    #     df = pd.concat([df.loc[:self.id_exp], xy_df, df.loc[self.id_exp:]])
+    #
+    #     self.exp.add_new1d_from_df(df=pd.DataFrame(df.x), name=self.res_name_x,
+    #                                object_type='TimeSeries1d', category='CleanedRaw',
+    #                                label='decrossed x coordinate (px, in the cropped image system)',
+    #                                description='x coordinate in px and in the cropped image system,'
+    #                                            'for which the trajectory of ant coming from outside has been manually'
+    #                                            ' corrected to have no crossing and is complete', replace=True)
+    #
+    #     self.exp.add_new1d_from_df(df=pd.DataFrame(df.y), name=self.res_name_y,
+    #                                object_type='TimeSeries1d', category='CleanedRaw',
+    #                                label='decrossed y coordinate (px, in the cropped image system)',
+    #                                description='y coordinate in px and in the cropped image system,'
+    #                                            'for which the trajectory of ant coming from outside has been manually'
+    #                                            ' corrected to have no crossing and is complete', replace=True)
+    #
+    #     self.exp.write([self.res_name_x, self.res_name_y], modify_index=True)
+    #     print('written')
 
-        xy_df = xy_df.loc[~xy_df.index.duplicated(keep='first')]
-        xy_df = xy_df - self.exp.get_df('traj_translation').loc[self.id_exp]
-
-        df = self.exp.get_df(self.name_xy).copy()
-        df = df.drop(index=self.id_exp, level=id_exp_name)
-        df = pd.concat([df.loc[:self.id_exp], xy_df, df.loc[self.id_exp:]])
-
-        self.exp.add_new1d_from_df(df=pd.DataFrame(df.x), name=self.res_name_x,
-                                   object_type='TimeSeries1d', category='CleanedRaw',
-                                   label='decrossed x coordinate (px, in the cropped image system)',
-                                   description='x coordinate in px and in the cropped image system,'
-                                               'for which the trajectory of ant coming from outside has been manually '
-                                               'corrected to have no crossing and is complete', replace=True)
-
-        self.exp.add_new1d_from_df(df=pd.DataFrame(df.y), name=self.res_name_y,
-                                   object_type='TimeSeries1d', category='CleanedRaw',
-                                   label='decrossed y coordinate (px, in the cropped image system)',
-                                   description='y coordinate in px and in the cropped image system,'
-                                               'for which the trajectory of ant coming from outside has been manually '
-                                               'corrected to have no crossing and is complete', replace=True)
-
-        self.exp.write([self.res_name_x, self.res_name_y], modify_index=True)
+    def write(self):
+        self.exp.write(self.decross_name)
         print('written')
 
 
@@ -817,9 +898,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.main_widget)
 
     def add_all_sliders(self):
-        self.movie_time_window_slider = self.create_slider(
-            0, 0, 'movie time window (frame)', min_val=40, max_val=1500, step=10,
-            value=self.movie_canvas.dt, release_func=self.update_movie_time_window, press_func=self.nothing)
 
         self.candidate_search_time_window_slider = self.create_slider(
             0, 1, 'candidate search time window (frame)', min_val=10, max_val=1500, step=10,
@@ -835,7 +913,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.crossing_search_time_window_slider = self.create_slider(
             1, 1, 'crossing search time window (frame)', min_val=5, max_val=50, step=1,
-            value=self.movie_canvas.data_manager.crossing_search_distance,
+            value=self.movie_canvas.data_manager.crossing_search_time_window,
             release_func=self.update_crossing_search_time_window,
             press_func=self.keep_previous_crossing_search_time_window)
 
@@ -867,8 +945,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.create_button(0, 10, "Crossings", self.search_crossings)
         # self.create_button(1, 10, "Reset", self.reset)
-
         self.create_button(1, 10, "Reset no crossing", self.reset_no_crossing)
+
+        self.create_button(1, 11, "Cut", self.cut)
 
     def add_group_box(self, layout):
         group_box = QtWidgets.QGroupBox()
@@ -934,20 +1013,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     def nothing(self):
         pass
 
-    def update_movie_time_window(self):
-        self.movie_canvas.dt = self.movie_time_window_slider.value()
-        self.movie_canvas.refresh()
-
     def update_candidate_search_time_window(self):
+        self.movie_canvas.dt = self.candidate_search_time_window_slider.value()
         if self.movie_canvas.mode == 1:
             self.movie_canvas.data_manager.candidate_search_time_window \
                 = self.candidate_search_time_window_slider.value()
-            if self.movie_canvas.dt < self.movie_canvas.data_manager.candidate_search_time_window:
-                self.movie_canvas.dt = self.movie_canvas.data_manager.candidate_search_time_window
-                self.movie_time_window_slider.setValue(self.movie_canvas.dt)
             self.search_candidate()
         else:
-            self.candidate_search_time_window_slider.setValue(self.prev_slider_value)
+            self.movie_canvas.refresh()
 
     def update_candidate_search_distance(self):
         if self.movie_canvas.mode == 1:
@@ -958,7 +1031,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def update_crossing_search_time_window(self):
         if self.movie_canvas.mode == 0:
-            self.movie_canvas.data_manager.crossing_search_distance = self.crossing_search_time_window_slider.value()
+            self.movie_canvas.data_manager.crossing_search_time_window = self.crossing_search_time_window_slider.value()
             self.search_crossings()
         else:
             self.crossing_search_time_window_slider.setValue(self.prev_slider_value)
@@ -1011,6 +1084,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.movie_canvas.decross()
         print('decrossing done')
 
+    def cut(self):
+        print('cutting')
+        self.movie_canvas.cut()
+        print('cutting done')
+
     def not_a_crossing(self):
         self.movie_canvas.not_a_cross()
 
@@ -1050,6 +1128,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=60)
+aw = ApplicationWindow(group0, id_exp=40)
 aw.show()
 sys.exit(qApp.exec_())
