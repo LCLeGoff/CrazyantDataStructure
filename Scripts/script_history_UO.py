@@ -53,6 +53,13 @@ FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_food_exit_distance(True)
 # FoodBase.compute_food_exit_distance_evol(True)
 
+# FoodBase.compute_food_r(True)
+# FoodBase.compute_food_r_mean_evol(True)
+# FoodBase.compute_food_r_mean_evol_around_first_attachment(True)
+# FoodBase.compute_food_r_var_evol(True)
+# FoodBase.compute_food_r_var_evol_around_first_attachment(True)
+# FoodBase.compute_food_phi_var_evol(True)
+# FoodBase.compute_food_phi_var_evol_around_first_attachment(True)
 
 AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_distance2food()

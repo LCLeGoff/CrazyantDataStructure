@@ -443,3 +443,260 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel='distance (mm)', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
+
+    def compute_food_r(self, redo=False):
+        res_name = 'food_r'
+        label = 'Radial coordinate of the food (mm)'
+        description = 'Radial coordinate of the food (mm)'
+
+        if redo:
+            name_x = 'food_x'
+            name_y = 'food_y'
+            self.exp.load_as_2d(name_x, name_y, 'food_xy')
+
+            d = distance_df(self.exp.get_df('food_xy'))
+
+            self.exp.add_new1d_from_df(df=d, name=res_name, object_type='CharacteristicTimeSeries1d',
+                                       category=self.category, label=label, description=description)
+            self.exp.write(res_name)
+
+    def compute_food_r_mean_evol(self, redo=False):
+
+        name = 'food_r'
+        result_name = name + '_mean_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 1/12.
+        start_frame_intervals = np.arange(0, 4., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Mean of the food radial coordinate over time'
+        description = 'Mean of the radial coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                    end_index_intervals=end_frame_intervals,
+                                    category=self.category, result_name=result_name,
+                                    label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean', label_suffix='s', label='Mean')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
+
+    def compute_food_r_mean_evol_around_first_attachment(self, redo=False):
+
+        name = 'food_r'
+        result_name = name + '_mean_evol_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 1/12.
+        start_frame_intervals = np.arange(-2, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Mean of the food radial coordinate over time'
+        description = 'Mean of the radial coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                    end_index_intervals=end_frame_intervals,
+                                    category=self.category, result_name=result_name,
+                                    label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean', label_suffix='s', label='Mean')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig)
+
+    def compute_food_r_var_evol(self, redo=False):
+
+        name = 'food_r'
+        result_name = name + '_var_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 4., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food radial coordinate over time'
+        description = 'Variance of the radial coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
+
+    def compute_food_r_var_evol_around_first_attachment(self, redo=False):
+
+        name = 'food_r'
+        result_name = name + '_var_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-2, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food radial coordinate over time'
+        description = 'Variance of the radial coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
+
+    def compute_food_phi_var_evol(self, redo=False):
+
+        name = 'food_phi'
+        result_name = name + '_var_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 4., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food angular coordinate over time'
+        description = 'Variance of the angular coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
+
+    def compute_food_phi_var_evol_around_first_attachment(self, redo=False):
+
+        name = 'food_phi'
+        result_name = name + '_var_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-2, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food angular coordinate over time'
+        description = 'Variance of the angular coordinate of the food over time'
+
+        if redo:
+            self.exp.load([name, init_frame_name])
+
+            new_times = 'new_times'
+            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.get_df(new_times).reset_index(inplace=True)
+
+            self.exp.get_df(name).reset_index(inplace=True)
+            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
+        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        plotter.save(fig)
