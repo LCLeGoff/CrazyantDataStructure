@@ -6,6 +6,8 @@ import pandas as pd
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
 from ExperimentGroups import ExperimentGroups
+from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
+from Tools.MiscellaneousTools.Geometry import angle_distance
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -88,9 +90,166 @@ class UOSimpleModel(BaseModels):
         self.name_column = str(self.para.get_parameter_tuple())
 
         self.res = []
-        a = self.para.var_orientation + self.para.p_attachment * self.para.c ** 2 * self.para.var_information
-        b = self.para.p_attachment*self.para.c*(2-self.para.c)
-        print(self.name_column, a / b)
+        # a = self.para.var_orientation + self.para.p_attachment * self.para.c ** 2 * self.para.var_information
+        # b = self.para.p_attachment*self.para.c*(2-self.para.c)
+        print(self.name_column)
+
+        for id_exp in range(1, self.n_replica + 1):
+            self.id_exp = id_exp
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
+            # self.orientation = np.around(rd.normalvariate(0, np.sqrt(self.para.var_orientation)), 3)
+            # self.orientation = 0
+            self.res.append(self.orientation)
+            self.t = 0
+            self.last_attachment_time = 0
+
+            for t in range(1, self.duration + 1):
+                self.step()
+
+        self.exp.get_df(self.name)[self.name_column] = self.res
+
+    def step(self):
+        self.t += 1
+
+        u = rd.random()
+        p_attachment = self.get_p_attachment()
+
+        if u < p_attachment:
+            theta_ant = rd.normalvariate(0, np.sqrt(self.para.var_information))
+
+            dtheta = theta_ant - self.orientation
+            self.orientation += self.para.c * dtheta
+
+            self.last_attachment_time = self.t
+
+        rho = rd.normalvariate(0, np.sqrt(self.para.var_orientation))
+        self.orientation += rho
+
+        self.res.append(np.around(self.orientation, 3))
+
+    def write(self):
+        self.exp.write(self.name)
+
+
+class UORWModel(BaseModels):
+    def __init__(self, root, group, duration=300, n_replica=500, new=False):
+
+        self.exp = ExperimentGroups(root, group)
+        self.name = 'UORWModel'
+        parameter_names = ['c', 'p_attachment', 'd_orientation', 'd_information']
+
+        BaseModels.__init__(self, parameter_names)
+
+        self.duration = duration
+        self.n_replica = n_replica
+
+        self.res = None
+
+        self.init(new)
+
+    def init(self, new):
+        if new is True or not self.exp.is_name_existing(self.name):
+            index = [(id_exp, t*100) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
+
+            self.exp.add_new_empty_dataset(name=self.name, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='UO RW model', description='UO random walk model ')
+        else:
+
+            self.exp.load(self.name)
+            self.n_replica = max(self.exp.get_index(self.name).get_level_values(id_exp_name))
+            self.duration = max(self.exp.get_index(self.name).get_level_values(self.time_name))
+
+    def run(self, para_value):
+
+        self.para.change_parameter_values(para_value)
+        self.name_column = str(self.para.get_parameter_tuple())
+
+        self.res = []
+        print(self.name_column)
+
+        for id_exp in range(1, self.n_replica + 1):
+            self.id_exp = id_exp
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
+            self.res.append(self.orientation)
+            self.t = 0
+            self.last_attachment_time = 0
+
+            for t in range(1, self.duration + 1):
+                self.step()
+
+        self.exp.get_df(self.name)[self.name_column] = self.res
+
+    def step(self):
+        self.t += 1
+
+        u = rd.random()
+        p_attachment = self.get_p_attachment()
+
+        if u < p_attachment:
+
+            if self.orientation < 0:
+                self.orientation += self.para.c*self.para.d_information
+            elif self.orientation > 0:
+                self.orientation -= self.para.c*self.para.d_information
+
+            self.last_attachment_time = self.t
+
+        else:
+            r = rd.random()
+            if r < 0.5:
+                self.orientation += self.para.d_orientation
+            else:
+                self.orientation -= self.para.d_orientation
+
+        self.res.append(np.around(self.orientation, 3))
+
+    def write(self):
+        self.exp.write(self.name)
+
+
+class UOSimpleExpModel(BaseModels):
+    def __init__(self, root, group, duration=300, n_replica=500, new=False):
+
+        self.exp = ExperimentGroups(root, group)
+        self.name = 'UOSimpleExpModel'
+        parameter_names = ['c', 'p_attachment', 'var_orientation', 'var_information']
+
+        BaseModels.__init__(self, parameter_names)
+
+        self.duration = duration
+        self.n_replica = n_replica
+
+        self.res = None
+
+        self.init(new)
+
+    def init(self, new):
+        if new is True or not self.exp.is_name_existing(self.name):
+            index = [(id_exp, t*100) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
+
+            self.exp.add_new_empty_dataset(name=self.name, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='UO simple exponential model',
+                                           description='UO simple model with parameter c, '
+                                                       'attachment probability = p_attachment,'
+                                                       'orientation variance = var_orientation, '
+                                                       'orientation information = var_information')
+        else:
+
+            self.exp.load(self.name)
+            self.n_replica = max(self.exp.get_index(self.name).get_level_values(id_exp_name))
+            self.duration = max(self.exp.get_index(self.name).get_level_values(self.time_name))
+
+    def run(self, para_value):
+
+        self.para.change_parameter_values(para_value)
+        self.name_column = str(self.para.get_parameter_tuple())
+
+        self.res = []
+        # a = self.para.var_orientation + self.para.p_attachment * self.para.c ** 2 * self.para.var_information
+        # b = self.para.p_attachment*self.para.c*(2-self.para.c)
+        print(self.name_column)
 
         for id_exp in range(1, self.n_replica + 1):
             self.id_exp = id_exp
@@ -302,6 +461,12 @@ class AnalyseUOModel(AnalyseClassDecorator):
         self._plot_hist_evol(name, n, m, 'simple', suff)
         self._plot_var_evol(name, n, m, 'simple', suff)
 
+    def plot_rw_model_evol(self, suff=None, n=None, m=None):
+
+        name = 'UORWModel'
+        self._plot_hist_evol(name, n, m, 'simple', suff)
+        self._plot_var_evol(name, n, m, 'simple', suff)
+
     def plot_confidence_model_evol(self, suff=None, n=None, m=None):
 
         name = 'UOConfidenceModel'
@@ -311,9 +476,10 @@ class AnalyseUOModel(AnalyseClassDecorator):
 
     def plot_persistence(self, suff=None):
         name = 'PersistenceModel'
-        self.__plot_cosinus_correlation(name, suff)
+        # self.__plot_cosinus_correlation_vs_length(name, suff)
+        self.__plot_cosinus_correlation_vs_arclength(name, suff)
 
-    def __plot_cosinus_correlation(self, name, suff=None):
+    def __plot_cosinus_correlation_vs_length(self, name, suff=None):
 
         self.exp.load(name)
         column_names = self.exp.get_data_object(name).get_column_names()
@@ -354,9 +520,68 @@ class AnalyseUOModel(AnalyseClassDecorator):
         ax.grid()
 
         if suff is None:
-            plotter.save(fig, name=name)
+            plotter.save(fig, name=name+'_length')
         else:
-            plotter.save(fig, name=name+'_'+suff)
+            plotter.save(fig, name=name+'_length_'+suff)
+
+    def __plot_cosinus_correlation_vs_arclength(self, name, suff=None):
+
+        self.exp.load(name)
+        column_names = self.exp.get_data_object(name).get_column_names()
+
+        radius = 0.85
+
+        dtheta = 1.
+        index_values = np.arange(0, 500, dtheta)
+
+        self.exp.add_new_empty_dataset('plot', index_names='lag', column_names=column_names,
+                                       index_values=index_values,
+                                       fill_value=0, category=self.category, replace=True)
+
+        for column_name in column_names:
+            df = pd.DataFrame(self.exp.get_df(name)[column_name])
+            norm = np.zeros(len(index_values))
+
+            for id_exp in range(1, max(df.index.get_level_values(id_exp_name))+1):
+                df2 = df.loc[id_exp, :]
+                orientations = np.array(df2).ravel()
+                d_orientations = angle_distance(orientations[1:], orientations[:-1])
+                arclength = np.cumsum(np.abs(d_orientations)) * radius
+
+                orientations2 = np.zeros(len(index_values))
+                idx = 0
+                for i, arc in enumerate(arclength):
+                    idx = get_index_interval_containing(arc, index_values)
+                    orientations2[idx:] = orientations[i]
+
+                orientations2 = orientations2[:idx+1]
+
+                corr = np.zeros(len(orientations2))
+                weight = np.zeros(len(orientations2))
+
+                for i in range(1, len(orientations2)):
+                    corr[:-i] += np.cos(orientations2[i] - orientations2[i:]).ravel()
+                    weight[:-i] += 1.
+
+                corr2 = np.zeros(len(index_values))
+                corr2[:len(corr)] = corr / weight
+
+                norm[:len(orientations2)] += 1
+                self.exp.get_df('plot')[column_name] += corr2
+
+            self.exp.get_df('plot')[column_name] /= norm
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('plot'))
+        fig, ax = plotter.plot(xlabel='Arclength along trajectory (cm)', ylabel='Cosine correlation', marker=None)
+        ax.axhline(0, ls='--', c='grey')
+        ax.set_xlim((0, 12.5))
+        ax.set_ylim((-0.1, 1.1))
+        ax.grid()
+
+        if suff is None:
+            plotter.save(fig, name=name+'_arclength')
+        else:
+            plotter.save(fig, name=name+'_arclength_'+suff)
 
     def _plot_confidence_evol(self, name, n=None, m=None, model=None, suff=None):
 
@@ -427,15 +652,19 @@ class AnalyseUOModel(AnalyseClassDecorator):
 
     def _plot_hist_evol(self, name, n=None, m=None, model=None, suff=None):
 
+        experimental_name = 'food_direction_error_hist_evol'
+        experimental_name_attach = 'food_direction_error_hist_evol_around_first_attachment'
+        self.exp.load([name, experimental_name, experimental_name_attach])
+
         self.exp.load(name)
         self.exp.get_data_object(name).df = np.abs(self.exp.get_df(name))
 
         time_name = 't'
         column_names = self.exp.get_data_object(name).get_column_names()
 
-        dx = 0.5
-        start_time_intervals = np.arange(0, 5., dx) * 60*100
-        end_time_intervals = start_time_intervals+dx*60*100
+        dx = 0.25
+        start_time_intervals = np.arange(0, 4., dx)*60*100
+        end_time_intervals = start_time_intervals + 200
 
         dtheta = np.pi / 25.
         bins = np.arange(0, np.pi, dtheta)
@@ -445,7 +674,13 @@ class AnalyseUOModel(AnalyseClassDecorator):
             m = int(np.ceil(len(column_names) / n))
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name))
-        fig, ax = plotter.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.95, bottom=0.05, left=0.05)
+        fig, ax = plotter.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.85, bottom=0.1, left=0.05)
+
+        plotter_exp = Plotter(root=self.exp.root, obj=self.exp.get_data_object(experimental_name))
+        fig2, ax2 = plotter_exp.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.85, bottom=0.1, left=0.05)
+
+        plotter_exp2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object(experimental_name_attach))
+        fig3, ax3 = plotter.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.85, bottom=0.1, left=0.05)
 
         for k, column_name in enumerate(column_names):
 
@@ -459,36 +694,62 @@ class AnalyseUOModel(AnalyseClassDecorator):
             if isinstance(ax, np.ndarray):
                 if len(ax.shape) == 1:
                     ax0 = ax[k]
+                    ax20 = ax2[k]
+                    ax30 = ax3[k]
                 else:
                     ax0 = ax[i, j]
+                    ax20 = ax2[i, j]
+                    ax30 = ax3[i, j]
             else:
                 ax0 = ax
+                ax20 = ax2
+                ax30 = ax3
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-            plotter.plot(xlabel='orientation', ylabel='PDF',  # yscale='log',
+            plotter.plot(xlabel='orientation', ylabel='PDF', yscale='log',
                          normed=True, preplot=(fig, ax0), title=column_name)
 
+            plotter_exp.plot(xlabel='orientation', ylabel='PDF', marker='', yscale='log',
+                             normed=True, preplot=(fig2, ax20), title=column_name)
+
+            plotter_exp2.plot(xlabel='orientation', ylabel='PDF', marker='', yscale='log',
+                              normed=True, preplot=(fig3, ax30), title=column_name)
+
             if model == 'simple':
+
                 c = float(column_name.split(',')[0][1:])
                 p_attach = float(column_name.split(',')[1])
                 var_orientation = float(column_name.split(',')[2])
                 var_info = float(column_name.split(',')[3][:-1])
 
+                b = var_orientation+p_attach*c**2*var_info
+                a = 1-p_attach*c*(2-c)
+                r = b/(1-a)
+
                 x = self.exp.get_df(hist_name).index
-                variance = (var_orientation+p_attach*c**2*var_info)/(p_attach*c*(2-c))
-                ax0.plot(x, 2*scs.norm.pdf(x, scale=np.sqrt(variance)))
+
+                ax0.plot(x, 2*scs.norm.pdf(x, scale=np.sqrt(r)))
+                ax20.plot(x, 2*scs.norm.pdf(x, scale=np.sqrt(r)))
+                ax30.plot(x, 2*scs.norm.pdf(x, scale=np.sqrt(r)))
 
         if model == 'simple':
-            fig.suptitle(r"Simple model, parameters $(c, p_{att}, \sigma_{orient}, \sigma_{info})$",
+            fig.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
                          fontsize=15)
+            fig2.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
+                          fontsize=15)
+            fig3.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
+                          fontsize=15)
         elif model == 'confidence':
             fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$",
                          fontsize=15)
 
         if suff is None:
-            plotter.save(fig, name=name+'_hist')
+            fig_name = name + '_hist'
         else:
-            plotter.save(fig, name=name+'_hist_'+suff)
+            fig_name = name + '_hist_' + suff
+        plotter.save(fig, name=fig_name)
+        plotter.save(fig2, name=fig_name+'_experiment')
+        plotter.save(fig3, name=fig_name+'_experiment_around_first_attachment')
 
         self.exp.remove_object(name)
 
@@ -513,7 +774,7 @@ class AnalyseUOModel(AnalyseClassDecorator):
             root=self.exp.root, obj=self.exp.get_data_object(experimental_name), category=self.category)
         plotter_experiment_attach = Plotter(
             root=self.exp.root, obj=self.exp.get_data_object(experimental_name_attach), category=self.category)
-        fig, ax = plotter_experiment.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.9, bottom=0.05)
+        fig, ax = plotter_experiment.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.85, bottom=0.01)
 
         for k, column_name in enumerate(column_names):
 
@@ -538,17 +799,28 @@ class AnalyseUOModel(AnalyseClassDecorator):
                 var_orientation = float(column_name.split(',')[2])
                 var_info = float(column_name.split(',')[3][:-1])
 
-                variance = (var_orientation+p_attach*c**2*var_info)/(p_attach*c*(2-c))
-                plotter_experiment.draw_horizontal_line(ax0, val=variance)
+                def variance(t):
+                    b = var_orientation+p_attach*c**2*var_info
+                    a = 1-p_attach*c*(2-c)
+                    r = b/(1-a)
+                    s = np.pi**2/3.
+                    return a**t*(s-r)+r
+
+                t_tab = np.array(self.exp.get_df(var_name).index)
+                ax0.plot(t_tab, variance(t_tab), label='Theory')
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(var_name))
-            plotter.plot(xlabel='Time', ylabel='Variance', preplot=(fig, ax0), title=column_name)
-            plotter_experiment.plot(xlabel='Time', ylabel='Variance', preplot=(fig, ax0), c='grey', title=column_name)
+            plotter.plot(xlabel='Time', ylabel='Variance', preplot=(fig, ax0), title=column_name, label='Model')
+            plotter_experiment.plot(
+                xlabel='Time', ylabel='Variance', preplot=(fig, ax0), c='grey', title=column_name, label='exp')
             plotter_experiment_attach.plot(
-                xlabel='Time', ylabel='Variance', preplot=(fig, ax0), c='w', title=column_name)
+                xlabel='Time', ylabel='Variance', preplot=(fig, ax0), c='w', title=column_name, label='exp 2')
+
+            ax0.legend()
+            plotter.draw_vertical_line(ax0)
 
         if model == 'simple':
-            fig.suptitle(r"Simple model, parameters $(c, p_{att}, \sigma_{orient}, \sigma_{info})$",
+            fig.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
                          fontsize=15)
         elif model == 'confidence':
             fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$",
