@@ -5,6 +5,8 @@ from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df
 from Tools.Plotter.Plotter import Plotter
+from Tools.MiscellaneousTools.Geometry import distance
+from shapely.geometry import LineString, Point
 
 
 class AnalyseAntFoodRelation(AnalyseClassDecorator):
@@ -528,3 +530,85 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         )
 
         self.exp.write(res_name)
+
+    def compute_attachment_xy(self):
+        result_name = 'attachment_xy'
+        print(result_name)
+
+        name_x = 'mm10_x'
+        name_y = 'mm10_y'
+        name_xy = 'xy'
+        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y')
+
+        name_food_x = 'mm10_food_x'
+        name_food_y = 'mm10_food_y'
+        name_food_xy = 'food_xy'
+        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y')
+
+        name_orientation = 'mm10_orientation'
+        name_radius = 'food_radius'
+        self.exp.load([name_orientation, name_radius])
+
+        self.exp.add_copy(old_name=name_xy, new_name=result_name, category=self.category,
+                          label='Coordinates of the attachment point',
+                          description='Coordinates of the intersection between the food boundary'
+                                      ' and the line following the ant body '
+                                      '(closest intersection of the ant position). When the ant is carrying, '
+                                      'this point correspond to the attachment point '
+                                      '(where the ant is attached to the food)')
+        self.exp.get_df(result_name)[:] = np.nan
+
+        def compute_attachment_point4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+            print(id_exp, id_ant)
+            radius = self.exp.get_value(name_radius, id_exp)
+
+            xys = df.loc[id_exp, id_ant, :]
+            food_xys = self.exp.get_df(name_food_xy).loc[id_exp, :]
+            food_xys = food_xys.reindex(xys.index).values
+
+            orientations = self.exp.get_df(name_orientation).loc[id_exp, id_ant, :]
+            orientations = orientations.loc[id_exp, id_ant, :]
+            orientations = orientations.reindex(xys.index).values.ravel()
+
+            xys = xys.values
+            res = np.full((len(xys), 2), np.nan)
+
+            alpha = np.tan(orientations)
+            beta = xys[:, 1]-alpha*xys[:, 0]
+
+            a = 1+alpha**2
+            b = alpha*(beta-food_xys[:, 1])-food_xys[:, 0]
+            c = food_xys[:, 0]**2+(beta-food_xys[:, 1])**2-radius**2
+
+            delta = b**2-a*c
+            mask = np.where(delta > 0)[0]
+            x1 = (-b[mask]+np.sqrt(delta[mask]))/a[mask]
+            x2 = (-b[mask]-np.sqrt(delta[mask]))/a[mask]
+            y1 = alpha[mask]*x1+beta[mask]
+            y2 = alpha[mask]*x2+beta[mask]
+            pts1 = np.c_[x1, y1]
+            pts2 = np.c_[x2, y2]
+
+            dist1 = distance(xys[mask], pts1)
+            dist2 = distance(xys[mask], pts2)
+            dist_compare = dist1 < dist2
+
+            mask_compare = np.where(dist_compare)[0]
+            mask2 = mask[mask_compare]
+            res[mask2, :] = pts1[mask_compare]
+
+            mask_compare = np.where(~dist_compare)[0]
+            mask2 = mask[mask_compare]
+            res[mask2, :] = pts2[mask_compare]
+
+            mask = np.where(delta == 0)[0]
+            res[mask, 0] = -b[mask]/a[mask]
+            res[mask, 1] = alpha[mask]*res[mask, 0]+beta[mask]
+
+            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = res
+
+        self.exp.groupby(name_xy, [id_exp_name, id_ant_name], compute_attachment_point4each_group)
+
+        self.exp.write(result_name)

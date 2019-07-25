@@ -63,7 +63,7 @@ FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_food_phi_var_evol(True)
 # FoodBase.compute_food_phi_var_evol_around_first_attachment(True)
 
-FoodBase.compute_food_angular_speed(True)
+# FoodBase.compute_food_angular_speed(True)
 
 
 AntFood = AnalyseAntFoodRelation(group)
@@ -101,7 +101,7 @@ AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_mm20_angle_body_food_next2food()
 
 # AntFood.compute_food_angular_component_ant_velocity()
-# AntFood.exp.load('food_angular_component_ant_velocity')
+AntFood.compute_attachment_xy()
 
 Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_carrying_next2food_with_svm()
