@@ -6,7 +6,6 @@ from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools.Geometry import distance
-from shapely.geometry import LineString, Point
 
 
 class AnalyseAntFoodRelation(AnalyseClassDecorator):
