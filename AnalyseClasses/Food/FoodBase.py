@@ -72,7 +72,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
     def compute_food_first_frame(self):
         result_name = 'food_first_frame'
         food_traj_name = 'food_x'
-        self.exp.load([food_traj_name, 'fps'])
+        self.exp.load([food_traj_name])
         self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category=self.category,
                                  label='First frame of food trajectory',
                                  description='First frame of the trajectory of the food')
@@ -478,7 +478,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         if redo:
             name_x = 'food_x'
             name_y = 'food_y'
-            self.exp.load_as_2d(name_x, name_y, 'food_xy')
+            self.exp.load_as_2d(name_x, name_y, 'food_xy', replace=True)
 
             d = distance_df(self.exp.get_df('food_xy'))
 
@@ -750,8 +750,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         if redo:
             food_name_x = 'mm10_food_x'
             food_name_y = 'mm10_food_y'
-            name_x = 'mm10_x'
-            name_y = 'mm10_y'
+            name_x = 'mm10_attachment_x'
+            name_y = 'mm10_attachment_y'
             food_name = 'food_xy'
             name_xy = 'xy'
             self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
@@ -762,7 +762,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
             def erode4each_group(df):
                 df_img = np.array(df, dtype=np.uint8)
-                df_img = cv2.erode(df_img, kernel=np.ones(400, np.uint8))
+                df_img = cv2.erode(df_img, kernel=np.ones(200, np.uint8))
                 df[:] = df_img
                 return df
 
@@ -778,6 +778,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             def get_speed4each_group(df: pd.DataFrame):
                 id_exp = df.index.get_level_values(id_exp_name)[0]
                 id_ant = df.index.get_level_values(id_ant_name)[0]
+                print(id_exp, id_ant)
                 frames = np.array(df.index.get_level_values(id_frame_name))
                 frame0 = frames[0]
                 frame1 = frames[-1]
@@ -795,19 +796,18 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 vect1.index -= dframe2
                 vect2.index += dframe2
 
-                df_angle = df2.copy()
-                df_angle.pop('y')
-                df_angle[:] = np.nan
-                df_angle.loc[vect1.index, 'x'] = angle_df(vect1, vect2)
+                idx = self.exp.get_df(temp_name).loc[id_exp, id_ant, :].index.get_level_values(id_frame_name)
+                vect1 = vect1.reindex(idx)
+                vect2 = vect2.reindex(idx)
 
-                dt = np.ones(len(df2))
-                dt[dframe2:-dframe2] = frames[dframe:]-frames[:-dframe]
+                df_angle = angle_df(vect1, vect2)
 
                 df_angle = np.array(df_angle).ravel()
-                df_angle /= dt
+                df_angle /= dframe
                 df_angle *= fps
+                df_angle = np.around(np.abs(df_angle), 6)
 
-                self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[np.around(np.abs(df_angle), 6)]
+                self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[df_angle]
 
             self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
 
