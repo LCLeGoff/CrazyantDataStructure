@@ -531,7 +531,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         self.exp.write(res_name)
 
     def compute_attachment_xy(self):
-        result_name = 'attachment_xy'
+        result_name = 'attachment'
         print(result_name)
 
         name_x = 'mm10_x'
@@ -548,14 +548,22 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         name_radius = 'food_radius'
         self.exp.load([name_orientation, name_radius])
 
-        self.exp.add_copy(old_name=name_xy, new_name=result_name, category=self.category,
-                          label='Coordinates of the attachment point',
-                          description='Coordinates of the intersection between the food boundary'
+        self.exp.add_copy(old_name=name_x, new_name=result_name+'_x', category=self.category,
+                          label='X coordinate of the attachment point',
+                          description='X coordinate of the intersection between the food boundary'
                                       ' and the line following the ant body '
                                       '(closest intersection of the ant position). When the ant is carrying, '
                                       'this point correspond to the attachment point '
                                       '(where the ant is attached to the food)')
-        self.exp.get_df(result_name)[:] = np.nan
+        self.exp.add_copy(old_name=name_y, new_name=result_name+'_y', category=self.category,
+                          label='Y coordinates of the attachment point',
+                          description='Y coordinates of the intersection between the food boundary'
+                                      ' and the line following the ant body '
+                                      '(closest intersection of the ant position). When the ant is carrying, '
+                                      'this point correspond to the attachment point '
+                                      '(where the ant is attached to the food)')
+        self.exp.get_df(result_name+'_x')[:] = np.nan
+        self.exp.get_df(result_name+'_y')[:] = np.nan
 
         def compute_attachment_point4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
@@ -606,8 +614,21 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             res[mask, 0] = -b[mask]/a[mask]
             res[mask, 1] = alpha[mask]*res[mask, 0]+beta[mask]
 
-            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = res
+            self.exp.get_df(result_name+'_x').loc[id_exp, id_ant, :] = np.c_[res[:, 0]]
+            self.exp.get_df(result_name+'_y').loc[id_exp, id_ant, :] = np.c_[res[:, 1]]
 
         self.exp.groupby(name_xy, [id_exp_name, id_ant_name], compute_attachment_point4each_group)
 
-        self.exp.write(result_name)
+        self.exp.write([result_name+'_x', result_name+'_y'])
+
+    def compute_mm10_attachment_xy(self):
+        time_window = 10
+
+        name = 'attachment'
+        names = [name+'_x', name+'_y']
+
+        self.exp.load(names)
+        for n in names:
+            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
+                name_to_average=n, time_window=time_window, category=self.category)
+            self.exp.write(result_name)

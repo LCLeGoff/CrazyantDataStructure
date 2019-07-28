@@ -103,7 +103,8 @@ AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_mm20_angle_body_food_next2food()
 
 # AntFood.compute_food_angular_component_ant_velocity()
-AntFood.compute_attachment_xy()
+# AntFood.compute_attachment_xy()
+# AntFood.compute_mm10_attachment_xy()
 
 Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_carrying_next2food_with_svm()
