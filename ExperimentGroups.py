@@ -957,7 +957,7 @@ class ExperimentGroups:
         return result_name
 
     def vs(self, xname, yname, result_name=None, xcolumn_to_hist=None, ycolumn_to_hist=None,
-           n_bins=10, category=None, label=None, description=None, replace=False):
+           n_bins=10, x_are_integers=False, category=None, label=None, description=None, replace=False):
 
         if result_name is None:
             result_name = yname+'_vs_'+xname
@@ -971,7 +971,7 @@ class ExperimentGroups:
         if description is None:
             description = self.get_label(xname)+' vs '+self.get_label(yname)
 
-        df = self.get_data_object(yname).vs(self.get_df(xname), n_bins=n_bins,
+        df = self.get_data_object(yname).vs(self.get_df(xname), n_bins=n_bins, x_are_integers=x_are_integers,
                                             column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
 
         self.add_new_dataset_from_df(df=df, name=result_name, category=category,

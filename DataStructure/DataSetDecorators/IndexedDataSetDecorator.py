@@ -149,15 +149,23 @@ class IndexedDataSetDecorator:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
         return column_name
 
-    def vs(self, df2, column_name=None, column_name2=None, n_bins=10):
+    def vs(self, df2, column_name=None, column_name2=None, n_bins=10, x_are_integers=False):
         column_name = self.get_column_name(column_name, self.df)
         column_name2 = self.get_column_name(column_name2, df2)
 
         x_min = float(self.df[column_name].min())
         x_max = float(self.df[column_name].max())
-        dx = (x_max - x_min) / n_bins
-        bins = np.arange(x_min, x_max+dx, dx)
-        m_bins = (bins[1:]+bins[:-1])/2.
+
+        if isinstance(n_bins, int):
+            dx = (x_max - x_min+1) / n_bins
+            bins = np.arange(x_min, x_max+dx, dx)
+        else:
+            bins = np.array(n_bins)
+
+        if x_are_integers:
+            m_bins = bins[:-1]
+        else:
+            m_bins = (bins[1:] + bins[:-1]) / 2.
 
         val_dict = dict()
         for x in m_bins:

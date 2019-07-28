@@ -887,7 +887,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = yname+'_vs_'+xname
         if redo:
             self.exp.load([xname, yname])
-            result_name = self.exp.vs(xname, yname, n_bins=20)
+            result_name = self.exp.vs(xname, yname, n_bins=range(20), x_are_integers=True)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
@@ -904,7 +904,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         if redo:
             self.exp.load([xname, yname])
 
-            result_name = self.exp.vs(xname, yname, n_bins=20)
+            result_name = self.exp.vs(xname, yname, n_bins=range(20), x_are_integers=True)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)

@@ -174,7 +174,7 @@ class BuilderDataObject:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
         return column_name2
 
-    def vs(self, df2, column_name=None, column_name2=None, n_bins=10):
+    def vs(self, df2, column_name=None, column_name2=None, n_bins=10, x_are_integers=False):
         column_name = self.get_column_name(column_name, self.df)
         column_name2 = self.get_column_name(column_name2, df2)
 
@@ -182,9 +182,18 @@ class BuilderDataObject:
 
         x_min = np.floor(float(np.nanmin(df3[column_name2])))
         x_max = np.ceil(float(np.nanmax(df3[column_name2])))
-        dx = (x_max - x_min+1) / n_bins
-        bins = np.arange(x_min, x_max + 2*dx, dx)
-        m_bins = (bins[1:] + bins[:-1]) / 2.
+
+        if isinstance(n_bins, int):
+            dx = (x_max - x_min+1) / n_bins
+            bins = np.arange(x_min, x_max+dx, dx)
+        else:
+            bins = np.array(n_bins)
+            dx = bins[1]-bins[0]
+
+        if x_are_integers:
+            m_bins = bins[:-1]
+        else:
+            m_bins = (bins[1:] + bins[:-1]) / 2.
         lg = len(m_bins)
 
         val_dict = dict()
