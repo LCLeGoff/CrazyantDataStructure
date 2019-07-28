@@ -19,6 +19,7 @@ class AnalyseStarter:
         self.group = group
         self.init_blobs = init_blobs
         self.characteristics = import_obj_json(self.root + 'Raw/Characteristics.json')
+        self.exp = ExperimentGroupBuilder(root).build(self.group)
 
     def start(self, redo, markings=True, dynamic_food=False):
         self.__fill_and_write_definition_dict(redo, markings=markings, dynamic_food=dynamic_food)
@@ -39,14 +40,13 @@ class AnalyseStarter:
         names = ['x0', 'y0', 'absoluteOrientation',
                  'area', 'eccentricity', 'major_axis_length', 'minor_axis_length', 'perimeter']
 
-        exps = ExperimentGroupBuilder(root).build(self.group)
-        exps.load(names[0])
+        self.exp.load(names[0])
 
         self.new_indexes = []
-        exps.groupby(names[0], [id_exp_name, id_ant_name], self.__complete_time_series1d)
+        self.exp.groupby(names[0], [id_exp_name, id_ant_name], self.__complete_time_series1d)
         new_indexes = pd.MultiIndex.from_tuples(self.new_indexes, names=[id_exp_name, id_ant_name, id_frame_name])
 
-        res_df = exps.data_manager.data_loader.timeseries1d_loader.categories['Raw']
+        res_df = self.exp.data_manager.data_loader.timeseries1d_loader.categories['Raw']
         res_df = res_df.reindex(new_indexes)
         res_df.to_csv(add)
 
@@ -56,15 +56,14 @@ class AnalyseStarter:
             name_food_x = 'food_x0'
             name_food_y = 'food_y0'
 
-            exps = ExperimentGroupBuilder(root).build(self.group)
-            exps.load([name_food_x, name_food_y])
+            self.exp.load([name_food_x, name_food_y])
 
-            res_df = exps.get_df(name_food_x)
-            res_df = res_df.join(exps.get_df(name_food_y))
+            res_df = self.exp.get_df(name_food_x)
+            res_df = res_df.join(self.exp.get_df(name_food_y))
             res_df.sort_index(inplace=True)
 
             self.new_indexes = []
-            exps.groupby(name_food_x, id_exp_name, self.__complete_chara_time_series1d)
+            self.exp.groupby(name_food_x, id_exp_name, self.__complete_chara_time_series1d)
             new_indexes = pd.MultiIndex.from_tuples(self.new_indexes, names=[id_exp_name, id_frame_name])
 
             res_df = res_df.reindex(new_indexes)
@@ -75,6 +74,7 @@ class AnalyseStarter:
     def __complete_time_series1d(self, df: pd.DataFrame):
         id_exp = df.index.get_level_values(id_exp_name)[0]
         id_ant = df.index.get_level_values(id_ant_name)[0]
+
         frame0, frame1 = df.index.get_level_values(id_frame_name)[[0, -1]]
 
         frames = range(frame0, frame1 + 1)
@@ -289,16 +289,15 @@ class AnalyseStarter:
     def compute_mm2px(self):
 
         mm2px = 'mm2px'
-        exps = ExperimentGroupBuilder(root).build(self.group)
-        exps.load(mm2px)
+        self.exp.load(mm2px)
 
         params = cv2.SimpleBlobDetector_Params()
         params.filterByArea = True
         params.minArea = 2
         detector = cv2.SimpleBlobDetector_create(params)
-        for id_exp in exps.get_index(mm2px):
+        for id_exp in self.exp.get_index(mm2px):
 
-            bg_img = exps.get_bg_img(id_exp)
+            bg_img = self.exp.get_bg_img(id_exp)
             bg_img = np.sqrt(bg_img[400:600, 900:1100]).astype(np.uint8)
             ret, bg_img = cv2.threshold(bg_img, 9.5, 255, cv2.THRESH_BINARY)
 
@@ -322,51 +321,49 @@ class AnalyseStarter:
             d1 = h[1][mask[0] + 1]
             d = np.max(ds[(ds >= d0) * (ds <= d1)])
 
-            exps.get_df(mm2px).loc[id_exp] = round(d/21., 3)
+            self.exp.get_df(mm2px).loc[id_exp] = round(d/21., 3)
 
-        exps.write(mm2px)
+        self.exp.write(mm2px)
 
     def compute_exit0(self):
         result_name1 = 'exit0_1'
         result_name2 = 'exit0_2'
 
-        exps = ExperimentGroupBuilder(root).build(self.group)
-        exps.load(['food_x0', 'food_y0', 'entrance1', 'entrance2', 'traj_translation'])
+        self.exp.load(['food_x0', 'food_y0', 'entrance1', 'entrance2', 'traj_translation'])
 
-        exps.add_copy(old_name='entrance1', new_name=result_name1,
-                      category='Raw', label='Exit position 1 (setup system)',
-                      xlabel='x coordinates', ylabel='y coordinates',
-                      description='Coordinates of one of the points defining the exit in the setup system')
+        self.exp.add_copy(old_name='entrance1', new_name=result_name1,
+                          category='Raw', label='Exit position 1 (setup system)',
+                          xlabel='x coordinates', ylabel='y coordinates',
+                          description='Coordinates of one of the points defining the exit in the setup system')
 
-        exps.add_copy(old_name='entrance2', new_name=result_name2,
-                      category='Raw', label='Exit position 2 (setup system)',
-                      xlabel='x coordinates', ylabel='y coordinates',
-                      description='Coordinates of one of the points defining the exit in the setup system')
+        self.exp.add_copy(old_name='entrance2', new_name=result_name2,
+                          category='Raw', label='Exit position 2 (setup system)',
+                          xlabel='x coordinates', ylabel='y coordinates',
+                          description='Coordinates of one of the points defining the exit in the setup system')
 
-        exps.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'x', 'x')
-        exps.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'y', 'y')
+        self.exp.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'x', 'x')
+        self.exp.operation_between_2names(result_name1, 'traj_translation', lambda x, y: x-y, 'y', 'y')
 
-        exps.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'x', 'x')
-        exps.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'y', 'y')
+        self.exp.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'x', 'x')
+        self.exp.operation_between_2names(result_name2, 'traj_translation', lambda x, y: x-y, 'y', 'y')
 
-        exps.write([result_name1, result_name2])
+        self.exp.write([result_name1, result_name2])
 
     def compute_is_from_outside(self):
         result_name = 'from_outside'
         category = 'CleanedRaw'
 
-        exps = ExperimentGroupBuilder(root).build(self.group)
-        if exps.is_name_existing('decrossed_x0'):
-            exps.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy', 'x', 'y')
+        if self.exp.is_name_existing('decrossed_x0'):
+            self.exp.load_as_2d('decrossed_x0', 'decrossed_y0', 'xy', 'x', 'y')
         else:
-            exps.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
+            self.exp.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
 
-        self.__compute_gate_pts(exps)
+        self.__compute_gate_pts(self.exp)
 
         def is_from_outside4each_group(df: pd.DataFrame):
             id_exp = int(df.index.get_level_values('id_exp')[0])
-            gate_path = Path([exps.gate1.df.loc[id_exp], exps.gate2.df.loc[id_exp],
-                              exps.gate3.df.loc[id_exp], exps.gate4.df.loc[id_exp]])
+            gate_path = Path([self.exp.gate1.df.loc[id_exp], self.exp.gate2.df.loc[id_exp],
+                              self.exp.gate3.df.loc[id_exp], self.exp.gate4.df.loc[id_exp]])
 
             xys = np.array(df)[:10]
             df[:] = np.nan
@@ -375,16 +372,16 @@ class AnalyseStarter:
 
             return df
 
-        exps.xy.df = exps.xy.df.groupby(['id_exp', 'id_ant']).apply(is_from_outside4each_group)
-        df_res = exps.xy.df.dropna()
+        self.exp.xy.df = self.exp.xy.df.groupby(['id_exp', 'id_ant']).apply(is_from_outside4each_group)
+        df_res = self.exp.xy.df.dropna()
         df_res.index = df_res.index.droplevel('frame')
         df_res = df_res.drop(columns='y')
 
-        exps.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
-                               category=category, label='Is the ant from outside?',
-                               description='Boolean saying if the ant is coming from outside or not')
+        self.exp.add_new1d_from_df(df=df_res.astype(int), name=result_name, object_type='AntCharacteristics1d',
+                                   category=category, label='Is the ant from outside?',
+                                   description='Boolean saying if the ant is coming from outside or not')
 
-        exps.write(result_name)
+        self.exp.write(result_name)
 
     @staticmethod
     def __compute_gate_pts(exps):
