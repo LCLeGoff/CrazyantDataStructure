@@ -1,4 +1,5 @@
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
+from AnalyseClasses.CleaningData import CleaningData
 from AnalyseClasses.Food.FoodInformationTrajectory import AnalyseFoodInformationTrajectory
 from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
@@ -18,11 +19,12 @@ starter = AnalyseStarter(root0=root, group=group)
 # starter.compute_exit0()
 # starter.compute_is_from_outside()
 
+CleaningData = CleaningData(root=root, group=group)
+# CleaningData.interpolate_xy_orientation_food(dynamic_food=True)
+# CleaningData.initialize_xy_orientation_food(dynamic_food=True)
+# starter.compute_is_from_outside()
 
 Traj = AnalyseTrajectory(group)
-# Traj.interpolate_xy_orientation_food(dynamic_food=True)
-# Traj.initialize_xy_orientation_food(dynamic_food=True)
-# starter.compute_is_from_outside()
 # Traj.compute_mm10_traj()
 # Traj.compute_speed(True)
 # Traj.compute_mm10_speed()

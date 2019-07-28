@@ -30,14 +30,14 @@ class DataFileManager:
 
     def _get_exp_ant_frame_index(self):
         if self.exp_ant_frame_index is None:
-            self.data_loader.timeseries1d_loader.load_category('Raw')
-            self.exp_ant_frame_index = self.data_loader.timeseries1d_loader.categories['Raw'].index
+            self.data_loader.timeseries1d_loader.load_category('CleanedRaw')
+            self.exp_ant_frame_index = self.data_loader.timeseries1d_loader.categories['CleanedRaw'].index
         return self.exp_ant_frame_index
 
     def _get_exp_frame_index(self):
         if self.exp_frame_index is None:
-            self.data_loader.characteristic_timeseries1d_loader.load_category('Raw')
-            self.exp_frame_index = self.data_loader.characteristic_timeseries1d_loader.categories['Raw'].index
+            self.data_loader.characteristic_timeseries1d_loader.load_category('CleanedRaw')
+            self.exp_frame_index = self.data_loader.characteristic_timeseries1d_loader.categories['CleanedRaw'].index
         return self.exp_frame_index
 
     def load(self, name):
