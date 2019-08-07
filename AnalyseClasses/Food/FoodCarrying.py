@@ -936,9 +936,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
         return df_d
 
-    def compute_nb_carrier(self, redo=False, redo_hist=False):
+    def compute_nb_carriers(self, redo=False, redo_hist=False):
 
-        result_name = 'nb_carrier'
+        result_name = 'nb_carriers'
 
         bins = range(20)
 
@@ -964,7 +964,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_food_angular_speed_vs_nb_carrier(self, redo=False):
 
-        xname = 'nb_carrier'
+        xname = 'nb_carriers'
         yname = 'food_angular_speed'
         result_name = yname+'_vs_'+xname
         if redo:
@@ -978,9 +978,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         fig, ax = plotter.plot_with_error(ms=10)
         plotter.save(fig)
 
-    def compute_food_speed_vs_nb_carrier(self, redo=False):
+    def compute_food_speed_vs_nb_carriers(self, redo=False):
 
-        xname = 'nb_carrier'
+        xname = 'nb_carriers'
         yname = 'food_speed'
         result_name = yname+'_vs_'+xname
         if redo:
