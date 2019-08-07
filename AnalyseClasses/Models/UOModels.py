@@ -753,7 +753,7 @@ class AnalyseUOModel(AnalyseClassDecorator):
 
         dx = 0.25
         start_time_intervals = np.arange(0, 4., dx)*60*100
-        end_time_intervals = start_time_intervals + 200
+        end_time_intervals = start_time_intervals + dx*60*100*2
 
         dtheta = np.pi / 25.
         bins = np.arange(0, np.pi, dtheta)
@@ -795,13 +795,13 @@ class AnalyseUOModel(AnalyseClassDecorator):
                 ax30 = ax3
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-            plotter.plot(xlabel='orientation', ylabel='PDF', yscale='log',
+            plotter.plot(xlabel='orientation', ylabel='PDF',
                          normed=True, preplot=(fig, ax0), title=column_name)
 
-            plotter_exp.plot(xlabel='orientation', ylabel='PDF', marker='', yscale='log',
+            plotter_exp.plot(xlabel='orientation', ylabel='PDF', marker='',
                              normed=True, preplot=(fig2, ax20), title=column_name)
 
-            plotter_exp2.plot(xlabel='orientation', ylabel='PDF', marker='', yscale='log',
+            plotter_exp2.plot(xlabel='orientation', ylabel='PDF', marker='',
                               normed=True, preplot=(fig3, ax30), title=column_name)
 
             if model == 'simple':
@@ -845,6 +845,88 @@ class AnalyseUOModel(AnalyseClassDecorator):
 
         self.exp.remove_object(name)
 
+    def plot_indiv_hist_evol(self, name, column_num, model='simple', suff=None):
+
+        experimental_name = 'food_direction_error_hist_evol'
+        experimental_name_attach = 'food_direction_error_hist_evol_around_first_attachment'
+        self.exp.load([name, experimental_name, experimental_name_attach])
+
+        self.exp.load(name)
+        self.exp.get_data_object(name).df = np.abs(self.exp.get_df(name))
+
+        time_name = 't'
+        column_name = self.exp.get_columns(name)[column_num]
+
+        dx = 0.25
+        start_time_intervals = np.arange(0, 4., dx)*60*100
+        end_time_intervals = start_time_intervals + dx*60*100*2
+
+        dtheta = np.pi / 25.
+        bins = np.arange(0, np.pi, dtheta)
+
+        n = m = 4
+
+        plotter_to_save = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name))
+        fig, ax = plotter_to_save.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.9, bottom=0.05, left=0.05)
+
+        hist_name = self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_time_intervals,
+                                              end_index_intervals=end_time_intervals, bins=bins,
+                                              index_name=time_name, column_to_hist=column_name, replace=True)
+        column_names = self.exp.get_columns(hist_name)
+
+        for k, column_name2 in enumerate(column_names):
+
+            i = int(np.floor(k / m))
+            j = k % m
+            ax0 = ax[i, j]
+
+            self.exp.add_new_dataset_from_df(self.exp.get_df(hist_name)[column_name2], 'temp', replace=True)
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+            plotter.plot(xlabel='orientation', ylabel='PDF', c='k', marker='', ls='--',
+                         normed=True, preplot=(fig, ax0), label='Model', title=r't$\in$' + column_name2)
+
+            if column_name2 in self.exp.get_columns(experimental_name):
+                self.exp.add_new_dataset_from_df(self.exp.get_df(experimental_name)[column_name2], 'temp', replace=True)
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+                plotter.plot(xlabel='orientation', ylabel='PDF', marker='', c='red',
+                             normed=True, preplot=(fig, ax0), label='Exp', title=r't$\in$' + column_name2)
+
+            if column_name2 in self.exp.get_columns(experimental_name_attach):
+                self.exp.add_new_dataset_from_df(
+                    self.exp.get_df(experimental_name_attach)[column_name2], 'temp', replace=True)
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'))
+                plotter.plot(xlabel='orientation', ylabel='PDF', c='orange', marker='',
+                             normed=True, preplot=(fig, ax0), label='Aligned Exp', title=r't$\in$' + column_name2)
+
+            if model == 'simple':
+
+                c = float(column_name.split(',')[0][1:])
+                p_attach = float(column_name.split(',')[1])
+                var_orientation = float(column_name.split(',')[2])
+                var_info = float(column_name.split(',')[3][:-1])
+                var0 = np.pi**2/3.
+
+                b = var_orientation+p_attach*c**2*var_info
+                a = 1-p_attach*c*(2-c)
+                r = b/(1-a)
+
+                t0 = float(column_name2.split(',')[0][1:])
+                t1 = float(column_name2.split(',')[1][:-1])
+                t = (t0+t1)/2.
+                var = a**t*(var0-r)+r
+
+                x = self.exp.get_df(hist_name).index
+
+                ax0.plot(x, 2*scs.norm.pdf(x, scale=np.sqrt(var)), label='Theory', c='w', ls='--')
+            ax0.legend()
+
+        if suff is None:
+            fig_name = name + 'indiv_hist'
+        else:
+            fig_name = name + 'indiv_hist_' + suff
+        plotter_to_save.save(fig, name=fig_name)
+        self.exp.remove_object(name)
+
     def _plot_var_evol(self, name, n=None, m=None, model=None, suff=None):
 
         experimental_name = 'food_direction_error_var_evol'
@@ -854,9 +936,10 @@ class AnalyseUOModel(AnalyseClassDecorator):
         time_name = 't'
         column_names = self.exp.get_data_object(name).get_column_names()
 
-        dx = 0.25
-        start_time_intervals = np.arange(0, 5., dx)*60*100
-        end_time_intervals = start_time_intervals + dx*60*2*100
+        dx = 0.1
+        dx2 = 0.01
+        start_time_intervals = np.arange(0, 3., dx2)*60*100
+        end_time_intervals = start_time_intervals + dx*60*100*2
 
         if n is None:
             n = int(np.floor(np.sqrt(len(column_names))))
@@ -912,15 +995,154 @@ class AnalyseUOModel(AnalyseClassDecorator):
             plotter.draw_vertical_line(ax0)
 
         if model == 'simple':
-            fig.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
-                         fontsize=15)
+            fig.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ", fontsize=15)
         elif model == 'outside':
             fig.suptitle(r"$(c, \sigma_{orient}, \sigma_{info})$ = ", fontsize=15)
         elif model == 'confidence':
-            fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$",
-                         fontsize=15)
+            fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$", fontsize=15)
 
         if suff is None:
             plotter_experiment.save(fig, name=name+'_var')
         else:
             plotter_experiment.save(fig, name=name+'_var_'+suff)
+
+    def plot_hist_model_pretty(self, name, n=None, m=None, display_title=True):
+
+        experimental_name = 'food_direction_error_hist_evol'
+        experimental_name_attach = 'food_direction_error_hist_evol_around_first_attachment'
+        self.exp.load([name, experimental_name, experimental_name_attach])
+
+        self.exp.load(name)
+        self.exp.get_data_object(name).df = np.abs(self.exp.get_df(name))
+
+        time_name = 't'
+        column_names = self.exp.get_data_object(name).get_column_names()
+
+        dx = 0.25
+        start_time_intervals = np.arange(0, 3., dx)*60*100
+        end_time_intervals = start_time_intervals + dx*60*100*2
+
+        dtheta = np.pi / 25.
+        bins = np.arange(0, np.pi, dtheta)
+
+        if n is None:
+            n = int(np.floor(np.sqrt(len(column_names))))
+            m = int(np.ceil(len(column_names) / n))
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name))
+        if name == 'UOSimpleModel':
+            fig, ax = plotter.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m, top=0.98, bottom=0.12, left=0.1)
+        else:
+            fig, ax = plotter.create_plot(figsize=(4*m, 4*n+1), nrows=n, ncols=m, top=0.95, bottom=0.08, left=0.06)
+
+        for k, column_name in enumerate(column_names):
+
+            hist_name = self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_time_intervals,
+                                                  end_index_intervals=end_time_intervals, bins=bins,
+                                                  index_name=time_name, column_to_hist=column_name, replace=True)
+
+            i = int(np.floor(k / m))
+            j = k % m
+            if isinstance(ax, np.ndarray):
+                if len(ax.shape) == 1:
+                    ax0 = ax[k]
+                else:
+                    ax0 = ax[i, j]
+            else:
+                ax0 = ax
+
+            if display_title:
+                c = float(column_name.split(',')[0][1:])
+                title = 'c = ' + str(c)
+            else:
+                title = ''
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+            plotter.plot(xlabel=r'$\theta$', ylabel='PDF', title=title, normed=True, preplot=(fig, ax0),
+                         display_legend=False)
+            if k == 0:
+                plotter.draw_legend(ax0, ncol=2)
+
+        fig_name = name + '_hist_pretty'
+        plotter.save(fig, name=fig_name)
+
+        self.exp.remove_object(name)
+
+    def plot_var_model_pretty(self, name, n=None, m=None, display_title=True):
+
+        name_exp_variance = 'food_direction_error_var_evol_around_first_attachment'
+        name_exp_fisher_info = 'fisher_info_evol_around_first_attachment'
+        self.exp.load([name, name_exp_variance, name_exp_fisher_info])
+
+        time_name = 't'
+        column_names = self.exp.get_data_object(name).get_column_names()
+
+        dx = 0.1
+        dx2 = 0.01
+        start_time_intervals = np.arange(0, 3., dx2)*60*100
+        end_time_intervals = start_time_intervals + dx*60*100*2
+
+        if n is None:
+            n = int(np.floor(np.sqrt(len(column_names))))
+            m = int(np.ceil(len(column_names) / n))
+
+        plotter_exp_variance = Plotter(
+            root=self.exp.root, obj=self.exp.get_data_object(name_exp_variance), category=self.category)
+        plotter_exp_fisher_info = Plotter(
+            root=self.exp.root, obj=self.exp.get_data_object(name_exp_fisher_info), category=self.category)
+        if name == 'UOSimpleModel':
+            fig, ax = plotter_exp_variance.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m,
+                                                       top=0.98, bottom=0.12, left=0.1)
+            fig2, ax2 = plotter_exp_fisher_info.create_plot(figsize=(4 * m, 4 * n), nrows=n, ncols=m,
+                                                            top=0.98, bottom=0.12, left=0.1)
+        else:
+            fig, ax = plotter_exp_variance.create_plot(figsize=(4*m, 4*n+1), nrows=n, ncols=m,
+                                                       top=0.95, bottom=0.08, left=0.06)
+            fig2, ax2 = plotter_exp_fisher_info.create_plot(figsize=(4 * m, 4 * n+1), nrows=n, ncols=m,
+                                                            top=0.97, bottom=0.1, left=0.05)
+
+        for k, column_name in enumerate(column_names):
+
+            c = float(column_name.split(',')[0][1:])
+            var_name = self.exp.variance_evolution(name_to_var=name,  start_index_intervals=start_time_intervals,
+                                                   end_index_intervals=end_time_intervals, index_name=time_name,
+                                                   column_to_var=column_name, replace=True)
+            self.exp.get_df(var_name).index = self.exp.get_index(var_name)/100.
+
+            i = int(np.floor(k / m))
+            j = k % m
+            if isinstance(ax, np.ndarray):
+                if len(ax.shape) == 1:
+                    ax0 = ax[k]
+                    ax02 = ax2[k]
+                else:
+                    ax0 = ax[i, j]
+                    ax02 = ax2[i, j]
+            else:
+                ax0 = ax
+                ax02 = ax2
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(var_name))
+            if display_title:
+                title = 'c = ' + str(c)
+            else:
+                title = ''
+
+            plotter.plot(
+                xlabel='Time (s)', ylabel='Variance', preplot=(fig, ax0), label='Model', marker='', title=title)
+            plotter_exp_variance.plot(
+                xlabel='Time (s)', ylabel='Variance', preplot=(fig, ax0),
+                c='w', label='Experiment', marker='', title=title)
+
+            plotter.plot(xlabel='Time (s)', ylabel='Fisher information', fct=lambda a: 1/a,
+                         preplot=(fig2, ax02), label='Model', marker='', title=title)
+            plotter_exp_variance.plot(
+                xlabel='Time (s)', ylabel='Fisher information', fct=lambda a: 1/a, preplot=(fig2, ax02),
+                c='w', label='Experiment', marker='', title=title)
+
+            ax0.legend()
+            plotter.draw_vertical_line(ax0)
+            ax02.legend()
+            plotter.draw_vertical_line(ax02)
+
+        plotter_exp_variance.save(fig, name=name+'_var_pretty')
+        plotter_exp_variance.save(fig2, name=name+'_fisher_info_pretty')
