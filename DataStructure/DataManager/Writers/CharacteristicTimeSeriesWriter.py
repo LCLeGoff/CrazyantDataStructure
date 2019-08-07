@@ -26,5 +26,6 @@ class CharacteristicTimeSeries1dWriter:
             if type_is_int64:
                 df[ts.name] = ts.df
                 df.to_csv(add)
+                return df
             else:
                 raise TypeError('Index are not int')

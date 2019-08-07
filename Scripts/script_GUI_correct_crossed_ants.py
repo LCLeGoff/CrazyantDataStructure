@@ -525,7 +525,7 @@ class DataManager:
         self.init()
 
     def init(self):
-        self.exp.load(['traj_translation', 'entrance1', 'entrance2', 'mm2px'])
+        self.exp.load(['traj_translation', 'entrance1', 'entrance2', 'mm2px'], reload=False)
         self.mm2px = self.exp.get_value('mm2px', self.id_exp)
 
         xmin = min(self.exp.entrance1.df.loc[self.id_exp].x, self.exp.entrance2.df.loc[self.id_exp].x)
@@ -544,14 +544,14 @@ class DataManager:
         # if self.exp.is_name_existing(self.res_name_x):
         #     name_x = self.res_name_x
         #     name_y = self.res_name_y
-        #     self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+        #     self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y', reload=False)
         # else:
         name_x = 'interpolated_x0'
         name_y = 'interpolated_y0'
-        self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y')
+        self.exp.load_as_2d(name_x, name_y, self.name_xy, 'x', 'y', reload=False)
 
         if self.exp.is_name_existing(self.decross_name):
-            self.exp.load(self.decross_name)
+            self.exp.load(self.decross_name, reload=False)
         else:
             self.exp.add_new_empty_dataset(
                 name=self.decross_name, index_names=[id_exp_name, id_frame_name, 'id_ant1'],
@@ -582,7 +582,6 @@ class DataManager:
         return list_outside_ant
 
     def get_crossing(self, id_ant, xy_df, not_crossing):
-        self.exp.load('mm2px')
 
         xy = xy_df.loc[self.id_exp, id_ant, :]
         focused_frame0 = xy.index.get_level_values(id_frame_name)[0]
@@ -819,7 +818,7 @@ class DataManager:
         return np.array(res)
 
     def reset(self):
-        self.exp.load_as_2d('interpolated_x0', 'interpolated_y0', 'interpolated_xy0', 'x', 'y')
+        self.exp.load_as_2d('interpolated_x0', 'interpolated_y0', 'interpolated_xy0', 'x', 'y', reload=False)
 
         xy_df = self.exp.get_df('interpolated_xy0').loc[self.id_exp, :, :]
         xy_df += self.exp.get_df('traj_translation').loc[self.id_exp]

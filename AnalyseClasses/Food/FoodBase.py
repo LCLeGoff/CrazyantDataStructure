@@ -523,6 +523,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                     label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -563,6 +564,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                     label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -604,6 +606,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                         label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -644,6 +647,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                         label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -684,6 +688,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                         label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -724,6 +729,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                         label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 

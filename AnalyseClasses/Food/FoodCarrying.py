@@ -229,6 +229,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], fill_attachment_events)
         self.exp.write(result_name)
+        self.exp.remove_object(carrying_name)
 
     def compute_attachment_intervals(self, redo=False, redo_hist=False):
 
@@ -260,6 +261,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                             result_name=result_name, label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
 
         else:
             self.exp.load(result_name)
@@ -608,6 +610,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                             description='Time intervals, while an ant is not carrying the food (s)')
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
 
             self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
             self.exp.write(hist_name)

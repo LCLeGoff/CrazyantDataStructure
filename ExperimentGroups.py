@@ -198,10 +198,10 @@ class ExperimentGroups:
             self.__dict__.pop(name)
             self.names.remove(name)
 
-    def load(self, names):
+    def load(self, names, reload=True):
         names = self.turn_to_list(names)
         for name in names:
-            if name not in self.__dict__.keys():
+            if reload or name not in self.__dict__.keys():
                 print('loading ', name)
                 self.add_object(name, self.data_manager.load(name), replace=True)
 
@@ -224,9 +224,9 @@ class ExperimentGroups:
 
     def load_as_2d(
             self, name1, name2, result_name, xname=None, yname=None, category=None,
-            label=None, xlabel=None, ylabel=None, description=None, replace=False):
+            label=None, xlabel=None, ylabel=None, description=None, replace=False, reload=True):
 
-        self.load([name1, name2])
+        self.load([name1, name2], reload=reload)
 
         if self.__is_a_time_series(name1) and self.__is_a_time_series(name2):
             self.add_2d_from_1ds(

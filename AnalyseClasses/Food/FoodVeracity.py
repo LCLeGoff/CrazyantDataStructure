@@ -149,6 +149,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                                         label=label, description=description)
 
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 
@@ -204,6 +205,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                                       result_name=result_name, category=self.category,
                                       label=result_label, description=result_description)
             self.exp.write(result_name)
+            self.exp.remove_object(name)
         else:
             self.exp.load(result_name)
 

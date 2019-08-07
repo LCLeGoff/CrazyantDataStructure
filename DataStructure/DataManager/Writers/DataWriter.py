@@ -29,8 +29,10 @@ class DataWriter:
 
     def write(self, obj, modify_index=False):
 
+        new_df_category = None
+
         if obj.object_type == 'TimeSeries1d':
-            self.timeseries1d_writer.write(obj, modify_index=modify_index)
+            new_df_category = self.timeseries1d_writer.write(obj, modify_index=modify_index)
 
         elif obj.object_type in ['Events1d', 'CharacteristicEvents1d']:
             self.events1d_writer.write(obj)
@@ -46,7 +48,7 @@ class DataWriter:
             self.ant_characteristics1d_writer.write(obj)
 
         elif obj.object_type == 'CharacteristicTimeSeries1d':
-            self.characteristic_timeseries1d_writer.write(obj)
+            new_df_category = self.characteristic_timeseries1d_writer.write(obj)
 
         elif obj.object_type == dataset_name:
             self.dataset_writer.write(obj)
@@ -55,3 +57,4 @@ class DataWriter:
             raise ValueError(obj.name + ' has no defined object type')
 
         self.definition_writer.write(obj.definition)
+        return new_df_category

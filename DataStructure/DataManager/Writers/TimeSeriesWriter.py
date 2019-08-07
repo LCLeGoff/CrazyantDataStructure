@@ -26,5 +26,6 @@ class TimeSeriesWriter:
 
                 df[ts.name] = ts.df
                 df.to_csv(add)
+                return df
             else:
                 raise TypeError('Index are not int')

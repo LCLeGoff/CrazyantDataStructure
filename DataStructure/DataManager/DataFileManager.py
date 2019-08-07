@@ -91,7 +91,12 @@ class DataFileManager:
                 raise ValueError(obj.name + ' definition not properly set: nb_indexes is missing')
             else:
                 self.create_new_category(obj.category)
-                self.data_writer.write(obj, modify_index=modify_index)
+                new_df_category = self.data_writer.write(obj, modify_index=modify_index)
+
+                if obj.object_type == 'TimeSeries1d':
+                    self.data_loader.timeseries1d_loader.categories[obj.category] = new_df_category
+                elif obj.object_type == 'CharacteristicTimeSeries1d':
+                    self.data_loader.characteristic_timeseries1d_loader.categories[obj.category] = new_df_category
 
     def rename(
             self, obj, name=None, xname=None, yname=None,
