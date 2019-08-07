@@ -59,7 +59,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
         end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
 
-        func = lambda x: np.abs(x)
+        func = lambda a: np.abs(a)
 
         hist_label = 'Food direction error distribution over time (rad)'
         hist_description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
@@ -71,7 +71,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             new_times = 'new_times'
             self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
             self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda a, b: a - b)
             self.exp.get_df(new_times).reset_index(inplace=True)
 
             self.exp.get_df(name).reset_index(inplace=True)
@@ -199,14 +199,14 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             new_times = 'new_times'
             self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
             self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda x, y: x - y)
+            self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda a, b: a - b)
             self.exp.get_df(new_times).reset_index(inplace=True)
 
             self.exp.get_df(name).reset_index(inplace=True)
             self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
             self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
 
-            self.exp.operation(name, lambda x: np.abs(x))
+            self.exp.operation(name, lambda a: np.abs(a))
 
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,

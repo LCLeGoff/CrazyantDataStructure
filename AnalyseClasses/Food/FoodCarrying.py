@@ -173,7 +173,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                 if not_from_outside == 0:
                     self.exp.get_df(result_name).drop(pd.IndexSlice[id_exp, id_ant], inplace=True)
 
-            self.exp.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(keep_only_non_outside_ants4each_group)
+            self.exp.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(
+                keep_only_non_outside_ants4each_group)
 
             self.exp.write(result_name)
 
@@ -674,7 +675,6 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_not_carrying_intervals(self, redo=False, redo_hist=False):
 
         result_name = 'not_carrying_intervals'
-        hist_name = result_name+'_hist'
 
         bins = np.arange(0.01, 1e2, 0.5)
         hist_label = 'Histogram of not carrying time intervals'
@@ -691,10 +691,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.write(result_name)
             self.exp.remove_object(name)
 
-            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
-            self.exp.write(hist_name)
-
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        hist_name = self.compute_hist(name=result_name, bins=bins, hist_label=hist_label,
+                                      hist_description=hist_description, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel='Not carrying intervals', ylabel='PDF',

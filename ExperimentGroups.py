@@ -287,11 +287,12 @@ class ExperimentGroups:
     def rename_category(self, old_name, new_name):
         self.data_manager.rename_category(old_name, new_name)
 
-    def rename(
+    def rename_in_exp(
             self, old_name, new_name=None, xname=None, yname=None, category=None,
             label=None, xlabel=None, ylabel=None, description=None):
 
         self.load(old_name)
+        print('renaming ', old_name, 'to', new_name)
 
         if self.__is_1d(old_name) or self.get_object_type(old_name) == dataset_name:
             self.rename1d(old_name=old_name, new_name=new_name, category=category, label=label, description=description)

@@ -816,7 +816,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 df_angle = np.array(df_angle).ravel()
                 df_angle /= dframe
                 df_angle *= fps
-                df_angle = np.around(np.abs(df_angle), 6)
+                df_angle = np.around(df_angle, 6)
 
                 self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[df_angle]
 

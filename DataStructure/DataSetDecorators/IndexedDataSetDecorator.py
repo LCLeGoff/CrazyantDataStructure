@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from DataStructure.VariableNames import id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -161,6 +160,7 @@ class IndexedDataSetDecorator:
             bins = np.arange(x_min, x_max+dx, dx)
         else:
             bins = np.array(n_bins)
+            dx = bins[1]-bins[0]
 
         if x_are_integers:
             m_bins = bins[:-1]
