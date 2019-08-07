@@ -591,7 +591,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = 'carrying'
 
         self.exp.load(name)
-        dt = 11
+        dt = 51
 
         def close_and_open4each_group(df):
             df_img = np.array(df, dtype=np.uint8)
