@@ -48,36 +48,33 @@ class DataFileManager:
 
     def create_new_category(self, category):
 
-        add = self.root + category + '/'
-        if category is not None and not (os.path.isdir(add)):
-            print('Create category '+category)
-            os.mkdir(add)
+        if category is not None:
+            add = self.root + category + '/'
 
-        if category is not None and not (os.path.isdir(add+'Plots/')):
-            os.mkdir(add+'Plots/')
+            if not (os.path.isdir(add)):
+                print('Create category '+category)
+                os.mkdir(add)
 
-        if category is not None and not (os.path.isdir(add+'DataSets/')):
-            os.mkdir(add+'DataSets/')
+            if not (os.path.isdir(add+'Plots/')):
+                os.mkdir(add+'Plots/')
 
-        if category is not None and category not in {'Raw, CleanedRaw'}\
-                and not (os.path.isfile(add+'Characteristics.json')):
+            if not (os.path.isdir(add+'DataSets/')):
+                os.mkdir(add+'DataSets/')
 
-            chara = dict()
-            for id_exp in self.id_exp_list:
-                chara[str(id_exp)] = dict()
-            write_obj_json(add + 'Characteristics.json', chara)
+            if category not in {'Raw, CleanedRaw'} and not (os.path.isfile(add+'Characteristics.json')):
 
-        if category is not None and category not in {'Raw, CleanedRaw'}\
-                and not (os.path.isfile(add+'TimeSeries.csv')):
+                chara = dict()
+                for id_exp in self.id_exp_list:
+                    chara[str(id_exp)] = dict()
+                write_obj_json(add + 'Characteristics.json', chara)
 
-            df = pd.DataFrame(index=self._get_exp_ant_frame_index())
-            df.to_csv(add + 'TimeSeries.csv')
+            if category not in {'Raw, CleanedRaw'} and not (os.path.isfile(add+'TimeSeries.csv')):
+                df = pd.DataFrame(index=self._get_exp_ant_frame_index())
+                df.to_csv(add + 'TimeSeries.csv')
 
-        if category is not None and category not in {'Raw, CleanedRaw'}\
-                and not (os.path.isfile(add+'CharacteristicTimeSeries.csv')):
-
-            df = pd.DataFrame(index=self._get_exp_frame_index())
-            df.to_csv(add + 'CharacteristicTimeSeries.csv')
+            if category not in {'Raw, CleanedRaw'} and not (os.path.isfile(add+'CharacteristicTimeSeries.csv')):
+                df = pd.DataFrame(index=self._get_exp_frame_index())
+                df.to_csv(add + 'CharacteristicTimeSeries.csv')
 
     def write(self, obj, modify_index=False):
         if obj.category is None:
