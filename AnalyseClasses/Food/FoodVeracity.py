@@ -278,6 +278,27 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter.draw_vertical_line(ax)
         plotter.save(fig, suffix='exp')
 
+    def compute_fisher_info_evol_around_first_attachment(self, redo=False):
+        name = 'food_direction_error_var_evol_around_first_attachment'
+        result_name = 'fisher_info_evol_around_first_attachment'
+
+        label = 'Fisher information over time'
+        description = 'Fisher information over time (inverse of the variance of the food direction error)'
+
+        if redo:
+            self.exp.load(name)
+            self.exp.add_copy(old_name=name, new_name=result_name, category=self.category,
+                              label=label, description=description)
+            self.exp.operation(result_name, lambda a: 1/a)
+            self.exp.write(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Fisher information',
+                               label_suffix='s', label='Fisher information', marker='', title='')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=True)
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig)
+
     def compute_mm1s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 
         name = 'food_direction_error'
