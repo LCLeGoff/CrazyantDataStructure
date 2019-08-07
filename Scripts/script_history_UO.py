@@ -138,10 +138,23 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_mean_food_velocity_vector_length_around_outside_ant_attachments(True)
 # Carrying.compute_mean_food_velocity_vector_length_vs_food_direction_error_around_outside_attachments()
 
-# Carrying.compute_nb_carrier(True)
-# Carrying.compute_food_angular_speed_vs_nb_carrier(True)
-# Carrying.compute_food_speed_vs_nb_carrier(True)
+# Carrying.compute_nb_carriers(True)
+# Carrying.compute_nb_outside_carriers(True)
+# Carrying.compute_nb_carriers_mean_evol_around_first_attachment(True)
+# Carrying.compute_food_angular_speed_vs_nb_carriers(True)
+# Carrying.compute_food_speed_vs_nb_carriers(True)
 
+# Carrying.compute_nb_carriers_mean_evol(True)
+# Carrying.compute_nb_outside_carriers_mean_evol(True)
+# Carrying.compute_nb_carriers_mean_evol_around_first_attachment()
+
+# Carrying.compute_nb_attachments_evol()
+# Carrying.compute_nb_outside_attachments_evol()
+# Carrying.compute_nb_attachments_evol_around_first_attachment()
+# Carrying.compute_nb_outside_attachments_evol_around_first_attachment()
+# Carrying.compute_nb_non_outside_attachments_evol_around_first_attachment()
+# Carrying.compute_ratio_outside_attachments_evol_around_first_attachment(True)
+#
 FoodInfo = AnalyseFoodInformation(group)
 # FoodInfo.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
 # FoodInfo.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
@@ -202,11 +215,15 @@ FoodConfidence = AnalyseFoodConfidence(group)
 # FoodConfidence.compute_w30s_food_path_efficiency(True)
 
 FoodVeracity = AnalyseFoodVeracity(group)
-# FoodVeracity.compute_food_direction_error(True)
+# FoodVeracity.compute_food_direction_error()
+
 # FoodVeracity.compute_food_direction_error_hist_evol()
 # FoodVeracity.compute_food_direction_error_variance_evol(True)
+
 # FoodVeracity.compute_food_direction_error_hist_evol_around_first_attachment()
-# FoodVeracity.compute_food_direction_error_variance_evol_around_first_attachment(True)
+# FoodVeracity.compute_food_direction_error_variance_evol_around_first_attachment()
+
+FoodVeracity.compute_fisher_info_evol_around_first_attachment(True)
 #
 # FoodVeracity.compute_mm1s_food_direction_error(True)
 # FoodVeracity.compute_mm10s_food_direction_error(True)
