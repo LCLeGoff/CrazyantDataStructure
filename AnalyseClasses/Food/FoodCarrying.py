@@ -187,47 +187,126 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.save(fig)
 
     def compute_ant_attachments(self):
-        carrying_name = 'carrying_intervals'
+        carrying_name = 'carrying'
         result_name = 'ant_attachments'
 
         label = 'ant attachment time series'
-        description = 'Time series where 1 is when an ant coming from attaches to the food and 0 when not'
+        description = 'Time series where 1 is when an ant attaches to the food and 0 when not'
 
-        self.__compute_attachments(carrying_name, description, label, result_name)
-
-    def compute_outside_ant_attachments(self):
-        carrying_name = 'outside_ant_carrying_intervals'
-        result_name = 'outside_ant_attachments'
-
-        label = 'Outside ant attachment time series'
-        description = 'Time series where 1 is when an ant coming from outside attaches to the food and 0 when not'
-
-        self.__compute_attachments(carrying_name, description, label, result_name)
-
-    def compute_non_outside_ant_attachments(self):
-        carrying_name = 'non_outside_ant_carrying_intervals'
-        result_name = 'non_outside_ant_attachments'
-
-        label = 'Non outside ant attachment time series'
-        description = 'Time series where 1 is when an ant coming from non outside attaches to the food and 0 when not'
-
-        self.__compute_attachments(carrying_name, description, label, result_name)
-
-    def __compute_attachments(self, carrying_name, description, label, result_name):
         food_name = 'food_x'
         self.exp.load([food_name, carrying_name])
         self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
                             label=label, description=description)
         self.exp.get_df(result_name)[:] = 0
-        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
 
-        def fill_attachment_events(df: pd.DataFrame):
-            if len(df) != 0:
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                frames = list(df.index.get_level_values(id_frame_name))
-                self.exp.get_df(result_name).loc[pd.IndexSlice[id_exp, frames], :] = 1
+        def diff4each_group(df: pd.DataFrame):
+            df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
+            df.iloc[-1, -1] = 0
+            return df
 
-        self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], fill_attachment_events)
+        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+
+        def interval4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            df2 = df.copy()
+            df2 = df2.mask(df2[carrying_name] < 0, 0)
+            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+
+            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+
+            df2 = df2.loc[id_exp, :]
+            df2 = df2.reindex(food_frames, fill_value=0)
+            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            return df
+
+        self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
+        self.exp.write(result_name)
+        self.exp.remove_object(carrying_name)
+
+    def compute_outside_ant_attachments(self):
+        carrying_name = 'carrying'
+        from_outside_name = 'from_outside'
+        result_name = 'outside_ant_attachments'
+
+        label = 'outside ant attachment time series'
+        description = 'Time series where 1 is when an ant coming from outside attaches to the food and 0 when not'
+
+        food_name = 'food_x'
+        self.exp.load([food_name, carrying_name, from_outside_name])
+        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
+                            label=label, description=description)
+        self.exp.get_df(result_name)[:] = 0
+
+        def diff4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+
+            from_outside = int(self.exp.get_value(from_outside_name, (id_exp, id_ant)))
+            df.iloc[:-1, :] = (np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :]))*from_outside
+            df.iloc[-1, -1] = 0
+            return df
+
+        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+
+        def interval4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            df2 = df.copy()
+            df2 = df2.mask(df2[carrying_name] < 0, 0)
+            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+
+            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+
+            df2 = df2.loc[id_exp, :]
+            df2 = df2.reindex(food_frames, fill_value=0)
+            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            return df
+
+        self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
+        self.exp.write(result_name)
+        self.exp.remove_object(carrying_name)
+
+    def compute_non_outside_ant_attachments(self):
+        carrying_name = 'carrying'
+        from_outside_name = 'from_outside'
+        result_name = 'non_outside_ant_attachments'
+
+        label = 'non outside ant attachment time series'
+        description = 'Time series where 1 is when an ant not coming from outside attaches to the food and 0 when not'
+
+        food_name = 'food_x'
+        self.exp.load([food_name, carrying_name, from_outside_name])
+        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
+                            label=label, description=description)
+        self.exp.get_df(result_name)[:] = 0
+
+        def diff4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+
+            from_outside = int(self.exp.get_value(from_outside_name, (id_exp, id_ant)))
+            df.iloc[:-1, :] = (np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :]))*(1-from_outside)
+            df.iloc[-1, -1] = 0
+            return df
+
+        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+
+        def interval4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            df2 = df.copy()
+            df2 = df2.mask(df2[carrying_name] < 0, 0)
+            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+
+            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+
+            df2 = df2.loc[id_exp, :]
+            df2 = df2.reindex(food_frames, fill_value=0)
+            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            return df
+
+        self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
@@ -267,8 +346,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.load(result_name)
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(yscale='log', xlabel='Attachment intervals (s)', ylabel='PDF')
-        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 45])
+        fig, ax = plotter.plot(yscale='log', xlabel='Intervals (s)', ylabel='PDF', title='', label='PDF')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 18])
         plotter.save(fig)
 
     def compute_isolated_ant_carrying_intervals(self):
