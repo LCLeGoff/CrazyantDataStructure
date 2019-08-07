@@ -31,9 +31,11 @@ class BasePlotters:
         fig.set_facecolor(bg_color)
         ax.patch.set_facecolor(bg_color)
 
-    def create_plot(self, preplot=None, figsize=(8, 8),
+    def create_plot(self, preplot=None, figsize=None,
                     left=0.13, right=0.98, bottom=0.1, top=0.95, wspace=0.2, hspace=0.2,
                     nrows=1, ncols=1):
+        if figsize is None:
+            figsize = (5, 5)
         if preplot is None:
             fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
             fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top, wspace=wspace, hspace=hspace)
@@ -90,10 +92,10 @@ class BasePlotters:
                 ax.set_title(title_prefix + ' ' + title)
 
     @staticmethod
-    def draw_horizontal_line(ax, val=0, c='k', ls='--'):
-        ax.axhline(val, ls=ls, c=c)
+    def draw_horizontal_line(ax, val=0, c='k', ls='--', label=None):
+        ax.axhline(val, ls=ls, c=c, label=label)
 
     @staticmethod
-    def draw_vertical_line(ax, val=0, c='k', ls='--'):
-        ax.axvline(val, ls=ls, c=c)
+    def draw_vertical_line(ax, val=0, c='k', ls='--', label=None):
+        ax.axvline(val, ls=ls, c=c, label=label)
 

@@ -41,14 +41,14 @@ class Plotter(BasePlotters):
 
     def plot(
             self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
-            preplot=None, figsize=None, **kwargs):
+            preplot=None, figsize=None, display_legend=True, **kwargs):
 
         fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
 
         x = self.obj.get_index_array()
 
         y = fct(self.__get_y(normed, x))
-        self.__plot_xy(ax, x, y, label)
+        self.__plot_xy(ax, x, y, label, display_legend=display_legend)
 
         return fig, ax
 
@@ -157,7 +157,7 @@ class Plotter(BasePlotters):
         self.set_axis_scales_and_labels(ax, self.axis)
         return fig, ax, label
 
-    def __plot_xy(self, ax, x, y, label):
+    def __plot_xy(self, ax, x, y, label, display_legend=True):
         if self.obj.get_dimension() == 1:
             ax.plot(x, y, label=label, **self.line)
         else:
@@ -169,11 +169,16 @@ class Plotter(BasePlotters):
                     self.line['c'] = cols[str(column_name)]
                     self.line['markeredgecolor'] = cols[str(column_name)]
                     ax.plot(x, y[i], label=label[i], **self.line)
-                ax.legend(loc=0, framealpha=0.2)
+                if display_legend:
+                    self.draw_legend(ax)
             else:
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
                 ax.plot(x, y, label=label, **self.line)
+
+    @staticmethod
+    def draw_legend(ax, loc=0, framealpha=0.2, ncol=1):
+        ax.legend(loc=loc, framealpha=framealpha, ncol=ncol)
 
     def __plot_xy_with_error(self, ax, x, y, label):
         ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=[label, 'error inf.', 'error sup.'], **self.line)
@@ -234,14 +239,14 @@ class Plotter(BasePlotters):
             plt.close()
 
     def plot_fit(self, preplot, label=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False,
-                 ls='-', marker='', c='w'):
+                 ls='-', marker='', c='w', fct=lambda x: x, cst=False):
         # ToDo: add the constant option to all fit
 
         if self.obj.get_dimension() == 1 or self.column_name is not None:
             fig, ax = preplot
 
             x = self.obj.get_index_array()
-            y = self.__get_y(normed, x)
+            y = fct(self.__get_y(normed, x))
 
             if window is None:
                 bound = [0, len(x)]
@@ -292,7 +297,7 @@ class Plotter(BasePlotters):
                 label = label+': '+label2+' = '+label3
 
             ax.plot(x_fit, y_fit, label=label, ls=ls, marker=marker, c=c)
-            ax.legend(loc=0)
+            self.draw_legend(ax)
             return res_fit
 
         else:
