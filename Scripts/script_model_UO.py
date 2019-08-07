@@ -1,41 +1,64 @@
 import numpy as np
 
 from Scripts.root import root
-from AnalyseClasses.Models.UOModels import UOSimpleModel, AnalyseUOModel, UOConfidenceModel, PersistenceModel, UORWModel
+from AnalyseClasses.Models.UOModels import UOSimpleModel, AnalyseUOModel, UOConfidenceModel, PersistenceModel, \
+    UORWModel, UOOutsideModel
 
 group = 'UO'
 AnalyseUOModel = AnalyseUOModel(group)
 
 
-# SimpleModel = UOSimpleModel(root, group, new=True, n_replica=500)
-#
-# p_attach = 0.6
+# SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
+# #
+# p_attach = 0.65
 # a = 0.98
-# r = 1.58
-# c = round(1-np.sqrt(1-(1-a)/p_attach), 5)
+# r = 1.72
+# c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
+# print((1-a)*r)
+# #
+# # min_var_orientation = (1-a)*r-p_attach*c**2
+# # max_var_orientation = 0.031
+# # var_orientation = np.around(np.mean([min_var_orientation, max_var_orientation]), 5)
+# var_orientation = np.around((1-a)*r-p_attach*c**2, 3)
+# var_info = 1
 #
-# min_var_orientation = (1-a)*r-p_attach*c**2
-# max_var_orientation = 0.0316
-# var_orientation = np.around(np.mean([min_var_orientation, max_var_orientation]), 5)
-# var_info = round(((1-a)*r-var_orientation)/p_attach/c**2, 5)
-#
-# SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
+# SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': 0})
 # SimpleModel.write()
 #
+#
 # AnalyseUOModel.plot_simple_model_evol(suff='high_persistence')
+# AnalyseUOModel.plot_indiv_hist_evol('UOSimpleModel', 0)
 # # # AnalyseUOModel.plot_simple_model_evol()
 
-RWModel = UORWModel(root, group, new=True, n_replica=500)
 
-c = 1
-p_attach = 0.5
-d_orientation = .1
-d_info = .1
+OutsideModel = UOOutsideModel(root, group, new=True, n_replica=1000, time0=0)
+#
+# var_info = 1.
+# var_orientation = 0.09
+# for c in [0.01, 0.02, 0.05, 0.075, 0.1, 0.2]:
+#     OutsideModel.run(
+#         {'c': c, 'var_orientation': var_orientation, 'var_information': var_info})
+#
+#
+# OutsideModel.write()
+#
+# AnalyseUOModel.plot_outside_model_evol()
+# AnalyseUOModel.plot_hist_model_pretty('UOOutsideModel')
+# AnalyseUOModel.plot_var_model_pretty('UOOutsideModel')
+# AnalyseUOModel.plot_hist_model_pretty('UOSimpleModel', display_title=False)
+AnalyseUOModel.plot_var_model_pretty('UOSimpleModel', display_title=False)
 
-RWModel.run({'c': c, 'p_attachment': p_attach, 'd_orientation': d_orientation, 'd_information': d_info})
-RWModel.write()
+# RWModel = UORWModel(root, group, new=True, n_replica=500)
 
-AnalyseUOModel.plot_rw_model_evol()
+# c = 1
+# p_attach = 0.5
+# d_orientation = .1
+# d_info = .1
+#
+# RWModel.run({'c': c, 'p_attachment': p_attach, 'd_orientation': d_orientation, 'd_information': d_info})
+# RWModel.write()
+
+# AnalyseUOModel.plot_rw_model_evol()
 
 
 # # # ConfidenceModel = UOConfidenceModel(root, group, new=True, n_replica=250)
