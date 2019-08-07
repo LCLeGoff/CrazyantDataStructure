@@ -541,10 +541,11 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
         self.exp.add_copy1d(name_to_copy=name_y, copy_name=result_velocity_y_name, category=self.category,
                             label=label_y, description=description_y)
 
-        for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+        def get_velocity4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
             fps = self.exp.get_value('fps', id_exp)
 
-            dx = np.array(self.exp.get_df(name_x).loc[id_exp, :]).ravel()
+            dx = np.array(df.loc[id_exp, :]).ravel()
             dx1 = dx[1].copy()
             dx2 = dx[-2].copy()
             dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
@@ -560,6 +561,8 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
             self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx * fps, 3)
             self.exp.get_df(result_velocity_y_name).loc[id_exp, :] = np.around(dy * fps, 3)
+
+        self.exp.groupby(name_x, id_exp_name, get_velocity4each_group)
 
         self.exp.write(result_velocity_x_name)
         self.exp.write(result_velocity_y_name)

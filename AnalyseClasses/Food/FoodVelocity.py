@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df
 from Tools.Plotter.Plotter import Plotter
 
@@ -46,10 +46,11 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 description='Y coordinate of the food velocity (rad, in the food system)'
             )
 
-            for id_exp in self.exp.characteristic_timeseries_exp_frame_index:
+            def get_velocity4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
                 fps = self.exp.get_value('fps', id_exp)
 
-                dx = np.array(self.exp.get_df(name_x).loc[id_exp, :]).ravel()
+                dx = np.array(df.loc[id_exp, :]).ravel()
                 dx1 = dx[1].copy()
                 dx2 = dx[-2].copy()
                 dx[1:-1] = (dx[2:] - dx[:-2]) / 2.
@@ -68,6 +69,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
                 self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx*fps, 3)
                 self.exp.get_df(result_velocity_y_name).loc[id_exp, :] = np.around(dy*fps, 3)
+
+            self.exp.groupby(name_x, id_exp_name, get_velocity4each_group)
 
             self.exp.write(result_velocity_phi_name)
             self.exp.write(result_velocity_x_name)

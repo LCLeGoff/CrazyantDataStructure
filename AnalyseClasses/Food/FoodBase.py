@@ -76,10 +76,15 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d', category=self.category,
                                  label='First frame of food trajectory',
                                  description='First frame of the trajectory of the food')
-        for id_exp in self.exp.id_exp_list:
-            frame0 = self.exp.get_index(food_traj_name).get_level_values(id_frame_name)[0]
+
+        def get_first_frame4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            frame0 = df.index.get_level_values(id_frame_name)[0]
             self.exp.change_value(name=result_name, idx=id_exp, value=frame0)
 
+        self.exp.groupby(food_traj_name, id_exp_name, get_first_frame4each_group)
+
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
         self.exp.write(result_name)
 
     def compute_food_exit_frames(self):
