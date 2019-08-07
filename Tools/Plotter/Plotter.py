@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
-from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
+from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -235,6 +235,7 @@ class Plotter(BasePlotters):
 
     def plot_fit(self, preplot, label=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False,
                  ls='-', marker='', c='w'):
+        # ToDo: add the constant option to all fit
 
         if self.obj.get_dimension() == 1 or self.column_name is not None:
             fig, ax = preplot
@@ -257,26 +258,42 @@ class Plotter(BasePlotters):
             else:
                 y_fit = y[bound[0]:bound[1]]
 
-            mask = np.where((y_fit != 0)*~(np.isnan(y_fit)))[0]
+            mask = np.where((y_fit != 0)*~(np.isnan(y_fit))*~(np.isinf(y_fit)))[0]
 
             if typ == 'linear':
-                af, bf, x_fit, y_fit = linear_fit(x_fit[mask], y_fit[mask])
+                res_fit = linear_fit(x_fit[mask], y_fit[mask])
             elif typ == 'exp':
-                af, bf, x_fit, y_fit = exp_fit(x_fit[mask], y_fit[mask])
+                res_fit = exp_fit(x_fit[mask], y_fit[mask], cst=cst)
             elif typ == 'power':
-                af, bf, x_fit, y_fit = power_fit(x_fit[mask], y_fit[mask])
+                res_fit = power_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'log':
+                res_fit = log_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'inverse':
+                res_fit = inverse_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'gauss':
+                res_fit = gauss_fit(x_fit[mask], y_fit[mask])
             else:
                 raise NameError('Type of fit unknown')
-            af, bf = np.around(af, 4), np.around(bf, 4)
+
+            res_fit = list(res_fit)
+            x_fit, y_fit = res_fit[-2], res_fit[-1]
+            res_fit[:-2] = np.around(res_fit[:-2], 4)
+
+            if cst:
+                label2 = '(a, b, c)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
+            else:
+                label2 = '(a, b)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
 
             if label is None:
-                label = '(a, b) = ('+str(af)+', '+str(bf)+')'
+                label = typ+' fit: '+label2+' = '+label3
             else:
-                label = label+': (a, b) ='+str(af)+', '+str(bf)+')'
+                label = label+': '+label2+' = '+label3
 
             ax.plot(x_fit, y_fit, label=label, ls=ls, marker=marker, c=c)
             ax.legend(loc=0)
-            return af, bf, x_fit, y_fit
+            return res_fit
 
         else:
             raise IndexError("object not one dimension")
