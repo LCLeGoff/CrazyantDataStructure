@@ -962,7 +962,47 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='Number of carriers', ylabel='PDF', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_food_angular_speed_vs_nb_carrier(self, redo=False):
+    def compute_nb_outside_carriers(self, redo=False, redo_hist=False):
+
+        result_name = 'nb_outside_carriers'
+
+        bins = range(20)
+
+        if redo:
+            carrying_name = 'carrying'
+            food_name = 'food_x'
+            from_outside_name = 'from_outside'
+            self.exp.load([carrying_name, food_name, from_outside_name])
+
+            def is_from_outside4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ant))
+
+                self.exp.get_data_object(carrying_name).df.loc[id_exp, id_ant, :] *= from_outside
+                return df
+
+            self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], is_from_outside4each_group)
+
+            self.exp.sum_over_exp_and_frames(name_to_average=carrying_name, result_name=result_name,
+                                             category=self.category, label='Number of outside carriers',
+                                             description='Number of ants from outside carrying the food')
+
+            self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).reindex(
+                self.exp.get_index(food_name), fill_value=0)
+            self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).astype(int)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(carrying_name)
+
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel='Number of outside carriers', ylabel='PDF', ls='', normed=True)
+        plotter.save(fig)
+
+    def compute_food_angular_speed_vs_nb_carriers(self, redo=False):
 
         xname = 'nb_carriers'
         yname = 'food_angular_speed'
@@ -993,4 +1033,287 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot_with_error(ms=10)
+        plotter.save(fig)
+
+    def compute_nb_carriers_mean_evol(self, redo=False):
+
+        name = 'nb_carriers'
+        result_name = name + '_mean_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Mean of the number of carriers over time'
+        description = 'Mean of the number of ants carrying the food over time'
+
+        if redo:
+
+            self._mean_evol_for_nb_carrier(name, result_name, init_frame_name, start_frame_intervals,
+                                           end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean', label_suffix='s', label='Mean', marker='')
+        ax.set_ylim((0, 10))
+        plotter.save(fig)
+
+    def _mean_evol_for_nb_carrier(self, name, result_name, init_frame_name, start_frame_intervals, end_frame_intervals,
+                                  label, description):
+        self.exp.load([name, init_frame_name])
+        new_times = 'new_times'
+        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+        self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
+        self.exp.get_df(new_times).reset_index(inplace=True)
+        self.exp.get_df(name).reset_index(inplace=True)
+        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+        self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+        self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                end_index_intervals=end_frame_intervals,
+                                category=self.category, result_name=result_name,
+                                label=label, description=description)
+        self.exp.write(result_name)
+        self.exp.remove_object(name)
+
+    def compute_nb_outside_carriers_mean_evol(self, redo=False):
+
+        name = 'nb_outside_carriers'
+        result_name = name + '_mean_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Mean of the number of outside carriers over time'
+        description = 'Mean of the number of ants coming from outside carrying the food over time'
+
+        if redo:
+
+            self._mean_evol_for_nb_carrier(name, result_name, init_frame_name, start_frame_intervals,
+                                           end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean', label_suffix='s', label='Mean', marker='')
+        plotter.save(fig)
+
+    def compute_nb_carriers_mean_evol_around_first_attachment(self, redo=False):
+
+        name = 'nb_carriers'
+        result_name = name + '_mean_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(-2, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Mean of the number of carries over time'
+        description = 'Mean of the number of ants carrying the food over time'
+
+        if redo:
+            self._mean_evol_for_nb_carrier(name, result_name, init_frame_name, start_frame_intervals,
+                                           end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean', label_suffix='s', label='Mean', marker='')
+        plotter.draw_vertical_line(ax, 0, label='first attachment')
+        ax.legend()
+        plotter.save(fig)
+
+    def compute_nb_attachments_evol(self, redo=False):
+
+        name = 'ant_attachments'
+        result_name = 'nb_attachments_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of attachments in a 10s period over time'
+        description = 'Number of ants attaching to the food in a 10s period over time'
+
+        if redo:
+            self._mean_evol_for_nb_attachment_in_10s(name, result_name, init_frame_name, start_frame_intervals,
+                                                     end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Number of attachments',
+                               label_suffix='s', marker='')
+        plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        plotter.save(fig)
+
+    def compute_nb_outside_attachments_evol(self, redo=False):
+
+        name = 'outside_ant_attachments'
+        result_name = 'nb_outside_attachments_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of outside attachments in a 10s period over time'
+        description = 'Number of outside ants attaching to the food in a 10s period over time'
+
+        if redo:
+            self._mean_evol_for_nb_attachment_in_10s(name, result_name, init_frame_name, start_frame_intervals,
+                                                     end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Number of attachments',
+                               label_suffix='s', marker='')
+        plotter.save(fig)
+
+    def _mean_evol_for_nb_attachment_in_10s(self, name, result_name, init_frame_name, start_frame_intervals,
+                                            end_frame_intervals, label, description):
+
+        self.exp.load([name, init_frame_name])
+        new_times = 'new_times'
+        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+        self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda a, b: a - b)
+        self.exp.get_df(new_times).reset_index(inplace=True)
+        self.exp.get_df(name).reset_index(inplace=True)
+        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+        self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+        x = (end_frame_intervals + start_frame_intervals) / 2. / 100.
+        y = np.zeros(len(start_frame_intervals))
+        for i in range(len(start_frame_intervals)):
+            frame0 = int(start_frame_intervals[i])
+            frame1 = int(end_frame_intervals[i])
+
+            df = self.exp.get_df(name).loc[pd.IndexSlice[:, frame0:frame1], :]
+            n_exp = len(set(df.index.get_level_values(id_exp_name)))
+            y[i] = np.sum(df) / float(n_exp)
+        df = pd.DataFrame(y, index=x)
+        self.exp.add_new_dataset_from_df(df=df, name=result_name, category=self.category,
+                                         label=label, description=description)
+        self.exp.write(result_name)
+        self.exp.remove_object(name)
+
+    def compute_nb_outside_attachments_evol_around_first_attachment(self, redo=False):
+
+        name = 'outside_ant_attachments'
+        result_name = 'nb_outside_attachments_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(0.01, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of outside attachments in a 10s period over time'
+        description = 'Number of outside ants attaching to the food in a 10s period over time'
+
+        if redo:
+            self._mean_evol_for_nb_attachment_in_10s(name, result_name, init_frame_name, start_frame_intervals,
+                                                     end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
+                               label_suffix='s', marker='', title='')
+        # plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        plotter.plot_fit(preplot=(fig, ax), typ='log', window=[0, 550], label='log fit')
+        plotter.draw_legend(ax)
+        ax.set_ylim((0, 7))
+        plotter.save(fig)
+
+    def compute_nb_non_outside_attachments_evol_around_first_attachment(self, redo=False):
+
+        name = 'non_outside_ant_attachments'
+        result_name = 'nb_non_outside_attachments_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(-2, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of non outside attachments in a 10s period over time'
+        description = 'Number of non outside ants attaching to the food in a 10s period over time'
+
+        if redo:
+            self._mean_evol_for_nb_attachment_in_10s(name, result_name, init_frame_name, start_frame_intervals,
+                                                     end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
+                               label_suffix='s', marker='')
+        plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        plotter.draw_vertical_line(ax, label='first outside attachment')
+        ax.legend()
+        plotter.save(fig)
+
+    def compute_ratio_outside_attachments_evol_around_first_attachment(self, redo=False):
+
+        result_name = 'ratio_outside_attachments_evol_around_first_attachment'
+        label = 'Ratio of outside attachments in a 10s period over time'
+        description = 'Ratio of number of outside attachments on total number of attachments in a 10s period over time'
+
+        if redo:
+            name = 'nb_attachments_evol_around_first_attachment'
+            outside_name = 'nb_outside_attachments_evol_around_first_attachment'
+            self.exp.load([name, outside_name])
+
+            self.exp.add_copy(old_name=outside_name, new_name=result_name, category=self.category,
+                              label=label, description=description)
+
+            self.exp.operation_between_2names(result_name, name, lambda a, b: a/b)
+            self.exp.write(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
+                               label_suffix='s', marker='')
+        plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        plotter.draw_vertical_line(ax, label='first outside attachment')
+        plotter.plot_fit(preplot=(fig, ax), typ='log', window=[220, 550], label='log fit')
+        ax.legend()
+        plotter.save(fig)
+
+    def compute_nb_attachments_evol_around_first_attachment(self, redo=False):
+
+        name = 'ant_attachments'
+        result_name = 'nb_attachments_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.01
+        dx2 = 1 / 6.
+        start_frame_intervals = np.arange(-2, 4., dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of attachments in a 10s period over time'
+        description = 'Number of ants attaching to the food in a 10s period over time'
+
+        if redo:
+            self._mean_evol_for_nb_attachment_in_10s(name, result_name, init_frame_name, start_frame_intervals,
+                                                     end_frame_intervals, label, description)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
+                               label_suffix='s', marker='', title='')
+        plotter.draw_vertical_line(ax, label='First outside ant attachment')
+        ax.set_ylim((0, 10))
         plotter.save(fig)
