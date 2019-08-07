@@ -15,12 +15,13 @@ from matplotlib.figure import Figure
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_frame_name, id_ant_name
+from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 
 
 class MovieCanvas(FigureCanvas):
 
-    def __init__(self, exp, outside=True, parent=None, id_exp=1, width=1920, height=1080*1.15):
+    def __init__(self, exp: ExperimentGroups, outside=True, parent=None, id_exp=1, width=1920, height=1080*1.15):
 
         self.exp = exp
         self.id_exp = id_exp
@@ -28,66 +29,86 @@ class MovieCanvas(FigureCanvas):
         self.frame_height = height/200.
         self.play = 0
         self.batch_length1 = 2
-        self.batch_length2 = 5
+        self.batch_length2 = 20
         self.outside = outside
+
+        self.exp.load(['food_radius', 'mm2px', 'fps'], reload=False)
+        self.radius = self.exp.get_value('food_radius', id_exp)*self.exp.get_value('mm2px', id_exp)
+        self.fps = self.exp.get_value('fps', id_exp)
 
         self.fig, self.ax = self.init_figure()
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
-        self.xy_df0, self.focused_carrying_df, self.not_focused_carrying_df, self.movie =\
-            self.get_traj_and_movie(id_exp)
-        self.list_frame_batch = self.get_frame_batches(id_exp)
+        self.xy_df0, self.food_xy_df0, self.food_angle_speed_df, self.focused_carrying_df,\
+            self.not_focused_carrying_df, self.movie = self.get_traj_and_movie()
+
+        self.list_frame_batch = self.get_frame_batches()
 
         self.iter_frame_batch = 0
         self.iter_frame = 0
         self.frame_graph = None
         self.xy_graph = None
+        self.food_spine = None
         self.batch_text = None
         self.clock_text = None
         self.next_frame_batch()
 
         self.frame_batch = self.get_frame_batch()
-        self.xy_df, self.id_ant_list, self.attachment_df, self.attachment_size_df,\
-            self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+        self.xy_df, self.food_xy_df, self.id_ant_list,\
+            self.attachment_df, self.attachment_size_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
         self.reset_play()
 
         self.set_canvas_size()
         self.time_loop()
 
-    def get_traj_and_movie(self, id_exp):
+    def get_traj_and_movie(self):
         name_outside_carrying_intervals = 'outside_ant_carrying_intervals'
         name_non_outside_carrying = 'non_outside_ant_carrying_intervals'
         name_xy = 'xy_next2food'
-        self.exp.load([name_outside_carrying_intervals, name_non_outside_carrying, name_xy])
+        self.exp.load([name_outside_carrying_intervals, name_non_outside_carrying, name_xy, 'carrying'], reload=False)
 
-        xy_df = self.exp.xy_next2food.df.loc[id_exp, :, :]
+        self.exp.load_as_2d('attachment_x', 'attachment_y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
+        attachment_xy = self.exp.get_df('attachment_xy').loc[self.id_exp, :, :]
+        carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
+        idx = carrying_df[carrying_df == 1].dropna().index
+
+        xy_df = self.exp.xy_next2food.df.loc[self.id_exp, :, :]
+        idx = idx.intersection(xy_df.index)
+        xy_df.loc[idx] = attachment_xy.loc[idx]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
 
-        outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[id_exp, :, :]
-        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[id_exp, :, :]
+        outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[self.id_exp, :, :]
+        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[self.id_exp, :, :]
 
         # outside_carrying_df = outside_carrying_df[outside_carrying_df > 1].dropna()
         # non_outside_carrying_df = non_outside_carrying_df[non_outside_carrying_df > 1].dropna()
 
-        movie = self.exp.get_movie(id_exp)
+        movie = self.exp.get_movie(self.id_exp)
+
+        self.exp.load_as_2d('food_x', 'food_y', 'food_xy', 'x', 'y', reload=False)
+        food_xy_df = self.exp.food_xy.df.loc[self.id_exp, :]
+        food_xy_df.x, food_xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, food_xy_df.x, food_xy_df.y)
+
+        self.exp.load('food_angular_speed', reload=False)
+        food_angle_speed_df = self.exp.food_angular_speed.df.loc[self.id_exp, :]
 
         if self.outside:
-            return xy_df, outside_carrying_df, non_outside_carrying_df, movie
+            return xy_df, food_xy_df, food_angle_speed_df, outside_carrying_df, non_outside_carrying_df, movie
         else:
-            return xy_df, non_outside_carrying_df, outside_carrying_df, movie
+            return xy_df, food_xy_df, food_angle_speed_df, non_outside_carrying_df, outside_carrying_df, movie
 
-    def get_frame_batches(self, id_exp):
+    def get_frame_batches(self):
 
-        self.exp.load('fps')
-        fps = self.exp.get_value('fps', id_exp)
+        self.exp.load('fps', reload=False)
+        fps = self.exp.get_value('fps', self.id_exp)
         frames = self.focused_carrying_df.index.get_level_values(id_frame_name)
         list_batch_frames = []
         lg1 = int((self.batch_length1*fps) / 2)
         lg2 = int((self.batch_length2*fps) / 2)
-        # for frame in frames:
-        #     list_batch_frames.append([frame - lg1, frame + lg2])
-        list_batch_frames = [[2700, 2900]]
+        for frame in frames:
+            list_batch_frames.append([frame - lg1, frame + lg2])
+        # list_batch_frames = [[2700, 2900]]
 
         return list_batch_frames
 
@@ -105,8 +126,8 @@ class MovieCanvas(FigureCanvas):
 
             self.frame_batch = self.get_frame_batch()
 
-            self.xy_df, self.id_ant_list, self.attachment_df, self.attachment_size_df, \
-                self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+            self.xy_df, self.food_xy_df, self.id_ant_list, \
+                self.attachment_df, self.attachment_size_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
             self.reset_play()
 
     def next_frame_batch(self):
@@ -122,8 +143,9 @@ class MovieCanvas(FigureCanvas):
                 self.iter_frame_batch = 0
 
             self.frame_batch = self.get_frame_batch()
-            self.xy_df, self.id_ant_list, self.attachment_df, self.attachment_size_df, \
-                self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
+
+            self.xy_df, self.food_xy_df, self.id_ant_list, \
+                self.attachment_df, self.attachment_size_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
             self.reset_play()
 
     def init_figure(self):
@@ -146,8 +168,10 @@ class MovieCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
     def cropping_xy(self):
+        food_xy_df = self.food_xy_df0.loc[self.frame_batch[0]:self.frame_batch[1]].copy()
+
         pd_slice = pd.IndexSlice[self.id_exp, :, self.frame_batch[0]:self.frame_batch[1]]
-        xy_df = self.xy_df0.loc[pd_slice, :]
+        xy_df = self.xy_df0.loc[pd_slice, :].copy()
 
         from_non_outside_color = 3*int(1-self.outside)
         from_outside_color = 3*int(self.outside)
@@ -157,13 +181,8 @@ class MovieCanvas(FigureCanvas):
         attachment_non_focused_color = 5*int(1-self.outside) + 2*int(self.outside)
         attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
 
-        self.exp.load(['carrying', 'from_outside'])  # , 'food_angular_component_ant_velocity'])
+        self.exp.load(['carrying', 'from_outside'], reload=False)
         carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
-        # marker_df = self.exp.get_df('food_angular_component_ant_velocity').loc[self.id_exp, :, :].abs()
-        # marker_df2 = marker_df.copy()
-        # marker_df[:] = 'r'
-        # marker_df[marker_df2 <= np.pi/2.*1.25] = 'b'
-        # marker_df[marker_df2 < np.pi/2.*0.75] = 'r'
 
         from_outside_df = carrying_df.copy()
         from_outside_df[:] = 0
@@ -193,20 +212,22 @@ class MovieCanvas(FigureCanvas):
             attachment_df.loc[id_exp, id_ant, frame] = attachment_non_focused_color
             attachment_size_df.loc[id_exp, id_ant, frame] = 50
 
-        # attachment_size_df *= 10
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
+        print(x0, y0)
         xy_df.x -= x0
         xy_df.y -= y0
-        # dx = int(max(np.nanmax(xy_df.x), -np.nanmin(xy_df.x)))
-        # dy = int(max(np.nanmax(xy_df.y), -np.nanmin(xy_df.y)))
+        food_xy_df.x -= x0
+        food_xy_df.y -= y0
         dx = 100
         dy = 100
         xy_df.x += dx
         xy_df.y += dy
+        food_xy_df.x += dx
+        food_xy_df.y += dy
 
         list_id_ant = set(xy_df.index.get_level_values(id_ant_name))
 
-        return xy_df, list_id_ant, attachment_df, attachment_size_df, x0, y0, dx, dy
+        return xy_df, food_xy_df, list_id_ant, attachment_df, attachment_size_df, x0, y0, dx, dy
 
     def reset_play(self):
         self.iter_frame = 0
@@ -217,15 +238,13 @@ class MovieCanvas(FigureCanvas):
         self.ax.cla()
         self.frame_graph = self.ax.imshow(frame_img, cmap='gray')
 
-        pd_slice = pd.IndexSlice[self.id_exp, :, :]
-        xy = self.xy_df.loc[pd_slice, :]
-        attach = np.array(self.attachment_df.loc[pd_slice, :]).ravel()
-        marker_size = np.array(self.attachment_size_df.loc[pd_slice, :]).ravel()
-        # marker = np.array(self.marker_df.loc[pd_slice, :]).ravel()
+        xy = self.xy_df.loc[self.id_exp, :, :]
+        food_xy = self.food_xy_df.loc[frame]
+        attach = np.array(self.attachment_df).ravel()
+        marker_size = np.array(self.attachment_size_df).ravel()
 
-        self.xy_graph = self.ax.scatter(xy.x, xy.y,
-                                        c=attach, s=marker_size,  # edgecolor=marker,
-                                        cmap='jet', norm=colors.Normalize(0, 5))
+        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach, s=marker_size, cmap='jet', norm=colors.Normalize(0, 5))
+        self.food_spine, = self.ax.plot([food_xy.x, food_xy.x+self.radius], [food_xy.y, food_xy.y], c='r')
 
         self.batch_text = self.ax.text(
             self.dx, 0, 'Batch '+str(self.frame_batch[0])+' to '+str(self.frame_batch[1]),
@@ -240,7 +259,11 @@ class MovieCanvas(FigureCanvas):
         self.draw()
 
     def crop_frame_img(self, frame_img):
-        return frame_img[self.y0 - self.dy:self.y0 + self.dy, self.x0 - self.dx:self.x0 + self.dx]
+        y0 = self.y0 - self.dy
+        y1 = self.y0 + self.dy
+        x0 = self.x0 - self.dx
+        x1 = self.x0 + self.dx
+        return frame_img[y0:y1, x0:x1]
 
     def update_figure(self):
         if self.play == 1:
@@ -256,12 +279,30 @@ class MovieCanvas(FigureCanvas):
                 xy = self.xy_df.loc[pd_slice, :]
                 attach = np.array(self.attachment_df.loc[pd_slice]).ravel()
                 marker_size = np.array(self.attachment_size_df.loc[pd_slice]).ravel()
-                # marker = np.array(self.marker_df.loc[pd_slice]).ravel()
 
                 self.xy_graph.set_offsets(np.c_[xy.x, xy.y])
                 self.xy_graph.set_array(attach)
                 self.xy_graph.set_sizes(marker_size)
-                # self.xy_graph.set_edgecolors(marker)
+
+                try:
+                    food_angle_speed = float(self.food_angle_speed_df.loc[frame]/self.fps)
+                    x2, y2 = self.food_xy_df.loc[frame]
+                    (x0, x1), (y0, y1) = self.food_spine.get_data()
+
+                    vx = x1-x0
+                    vy = y1-y0
+
+                    speed_cos = np.cos(food_angle_speed)
+                    speed_sin = np.sin(food_angle_speed)
+
+                    spine_x = vx*speed_cos+vy*speed_sin + x2
+                    spine_y = -vx*speed_sin+vy*speed_cos + y2
+
+                    self.food_spine.set_xdata([x2, spine_x])
+                    self.food_spine.set_ydata([y2, spine_y])
+                except KeyError:
+                    pass
+
                 self.clock_text.set_text(frame)
 
                 self.draw()
@@ -358,6 +399,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=1, outside=True)
+aw = ApplicationWindow(group0, id_exp=24, outside=True)
 aw.show()
 sys.exit(qApp.exec_())
