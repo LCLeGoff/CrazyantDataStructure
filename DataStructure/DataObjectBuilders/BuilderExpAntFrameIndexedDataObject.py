@@ -72,6 +72,12 @@ class BuilderExpAntFrameIndexedDataObject:
                 array=h, index_names='bins', column_names=column_names)
         return df.astype(int)
 
+    def sum_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
+        fct = np.nansum
+        df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)
+
+        return df
+
     def mean_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
         fct = np.nanmean
         df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)

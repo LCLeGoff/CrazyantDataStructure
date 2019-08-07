@@ -234,6 +234,13 @@ class IndexedDataSetDecorator:
 
         return df
 
+    def sum_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals):
+
+        fct = np.nansum
+        df = self._apply_function_on_evolution(index_name, column_name, fct, start_index_intervals, end_index_intervals)
+
+        return df
+
     def _apply_function_on_evolution(self, index_name, column_name, fct, start_index_intervals, end_index_intervals):
         if column_name is None:
             if len(self.df.columns) == 1:
