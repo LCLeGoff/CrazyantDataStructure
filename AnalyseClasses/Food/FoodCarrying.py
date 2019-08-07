@@ -331,7 +331,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
 
     def __compute_attachment_intervals(self, description, label, name, redo, redo_hist, result_name):
-        bins = np.arange(0, 20, 0.2)
+        bins = np.arange(0, 20, 0.5)
         if redo is True:
             self.exp.load(name)
             self.exp.get_data_object(name).df = 1 - self.exp.get_df(name)
@@ -1009,6 +1009,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = yname+'_vs_'+xname
         if redo:
             self.exp.load([xname, yname])
+            self.exp.operation(yname, np.abs)
             result_name = self.exp.vs(xname, yname, n_bins=range(20), x_are_integers=True)
             self.exp.write(result_name)
         else:
