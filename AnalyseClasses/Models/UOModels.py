@@ -131,6 +131,89 @@ class UOSimpleModel(BaseModels):
         self.exp.write(self.name)
 
 
+class UOOutsideModel(BaseModels):
+    def __init__(self, root, group, time0=-60, time1=200, n_replica=500, new=False):
+
+        self.exp = ExperimentGroups(root, group)
+        self.name = 'UOOutsideModel'
+        parameter_names = ['c', 'var_orientation', 'var_information']
+
+        BaseModels.__init__(self, parameter_names)
+
+        self.time0 = time0
+        self.time1 = time1
+        self.n_replica = n_replica
+
+        self.res = None
+
+        self.init(new)
+
+    def get_p_attachment_model(self):
+        p_attachment = (1.05*np.log(self.t)-1.04)/10.
+        return p_attachment
+
+    def init(self, new):
+        if new is True or not self.exp.is_name_existing(self.name):
+            index = [(id_exp, t*100) for id_exp in range(1, self.n_replica+1) for t in range(self.time0, self.time1+1)]
+
+            self.exp.add_new_empty_dataset(name=self.name, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='UO outside model',
+                                           description='UO outside model with parameter c, '
+                                                       'attachment probability = p_attachment,'
+                                                       'orientation variance = var_orientation, '
+                                                       'orientation information = var_information')
+        else:
+
+            self.exp.load(self.name)
+            self.n_replica = max(self.exp.get_index(self.name).get_level_values(id_exp_name))
+            self.time0 = min(self.exp.get_index(self.name).get_level_values(self.time_name))
+            self.time1 = max(self.exp.get_index(self.name).get_level_values(self.time_name))
+
+    def run(self, para_value):
+
+        self.para.change_parameter_values(para_value)
+        self.name_column = str(self.para.get_parameter_tuple())
+
+        self.res = []
+        print(self.name_column)
+
+        for id_exp in range(1, self.n_replica + 1):
+            self.id_exp = id_exp
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
+            self.res.append(self.orientation)
+            self.t = self.time0
+            self.last_attachment_time = 0
+
+            for _ in range(self.time0+1, self.time1+1):
+                self.step()
+
+        self.exp.get_df(self.name)[self.name_column] = self.res
+
+    def step(self):
+        self.t += 1
+
+        u = rd.random()
+        p_attachment = self.get_p_attachment_model()
+
+        if self.t >= 0:
+            if u < p_attachment:
+                theta_ant = rd.normalvariate(0, np.sqrt(self.para.var_information))
+
+                dtheta = theta_ant - self.orientation
+                self.orientation += self.para.c * dtheta
+
+                self.last_attachment_time = self.t
+
+        rho = rd.normalvariate(0, np.sqrt(self.para.var_orientation))
+        self.orientation += rho
+
+        self.res.append(np.around(self.orientation, 3))
+
+    def write(self):
+        self.exp.write(self.name)
+
+
 class UORWModel(BaseModels):
     def __init__(self, root, group, duration=300, n_replica=500, new=False):
 
@@ -461,6 +544,12 @@ class AnalyseUOModel(AnalyseClassDecorator):
         self._plot_hist_evol(name, n, m, 'simple', suff)
         self._plot_var_evol(name, n, m, 'simple', suff)
 
+    def plot_outside_model_evol(self, suff=None, n=None, m=None):
+
+        name = 'UOOutsideModel'
+        self._plot_hist_evol(name, n, m, 'outside', suff)
+        self._plot_var_evol(name, n, m, 'outside', suff)
+
     def plot_rw_model_evol(self, suff=None, n=None, m=None):
 
         name = 'UORWModel'
@@ -739,6 +828,9 @@ class AnalyseUOModel(AnalyseClassDecorator):
                           fontsize=15)
             fig3.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
                           fontsize=15)
+        if model == 'outside':
+            fig.suptitle(r"$(c, \sigma_{orient}, \sigma_{info})$ = ",
+                         fontsize=15)
         elif model == 'confidence':
             fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$",
                          fontsize=15)
@@ -822,6 +914,8 @@ class AnalyseUOModel(AnalyseClassDecorator):
         if model == 'simple':
             fig.suptitle(r"$(c, p_{att}, \sigma_{orient}, \sigma_{info})$ = ",
                          fontsize=15)
+        elif model == 'outside':
+            fig.suptitle(r"$(c, \sigma_{orient}, \sigma_{info})$ = ", fontsize=15)
         elif model == 'confidence':
             fig.suptitle(r"Confidence model, parameters $(p_{att}, \sigma_{orient}, \sigma_{info})$",
                          fontsize=15)
