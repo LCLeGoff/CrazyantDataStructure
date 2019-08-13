@@ -146,6 +146,10 @@ def angle_distance(phi, theta):
     return np.angle(np.exp(1j*(phi-theta)))
 
 
+def angle_sum(phi, theta):
+    return np.angle(np.exp(1j*(phi+theta)))
+
+
 def distance_between_point_and_line(p, line):
     p0 = np.array(p)
     p1 = np.array(line[0])
@@ -183,6 +187,50 @@ def is_intersecting_df(a, b, c, d):
 
     return (is_counter_clockwise(a2, c2, d2) != is_counter_clockwise(b2, c2, d2))\
         & (is_counter_clockwise(a2, b2, c2) != is_counter_clockwise(a2, b2, d2))
+
+
+def rotation(pts, theta, pts0=None):
+    if pts0 is None:
+        pts0 = [0, 0]
+    pts1 = pts-pts0
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    pts1[0] = pts1[0]*cos_theta+pts1[1]*sin_theta
+    pts1[1] = -pts1[0]*sin_theta+pts1[1]*cos_theta
+    return pts1+pts0
+
+
+def rotation_tab(pts, theta, pts0=None):
+    if pts0 is None:
+        pts0 = [0, 0]
+    pts1 = pts-pts0
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    pts1[:, 0] = pts1[:, 0]*cos_theta+pts1[:, 1]*sin_theta
+    pts1[:, 1] = -pts1[:, 0]*sin_theta+pts1[:, 1]*cos_theta
+    return pts1+pts0
+
+
+def rotation_df(pts, theta, pts0=None):
+
+    if pts0 is None:
+        pts0 = pd.Series(data={'x': [0], 'y': [0]})
+
+    pts1 = pts.copy()
+    pts1.columns = ['x', 'y']
+    pts1 = pts1-pts0
+
+    cos_theta = np.cos(theta[theta.columns[0]])
+    sin_theta = np.sin(theta[theta.columns[0]])
+
+    pts2 = pts1.copy()
+    pts2.x = pts1.x*cos_theta+pts1.y*sin_theta
+    pts2.y = -pts1.x*sin_theta+pts1.y*cos_theta
+
+    pts2.x += pts0.x
+    pts2.y += pts0.y
+    return pts2+pts0
+
 
 # def projection_on_line(p, line):
 #

@@ -25,6 +25,7 @@ CleaningData = CleaningData(root=root, group=group)
 # starter.compute_is_from_outside()
 
 Traj = AnalyseTrajectory(group)
+# Traj.compute_mm10_bodyLength()
 # Traj.compute_mm10_traj()
 # Traj.compute_speed(True)
 # Traj.compute_mm10_speed()
@@ -65,19 +66,19 @@ FoodBase = AnalyseFoodBase(group)
 # FoodBase.compute_food_phi_var_evol(True)
 # FoodBase.compute_food_phi_var_evol_around_first_attachment(True)
 
-# FoodBase.compute_food_angular_speed(True)
-
+# FoodBase.compute_food_phi_hist_evol(True)
+# FoodBase.compute_food_phi_hist_evol_around_first_outside_attachment(True)
 
 AntFood = AnalyseAntFoodRelation(group)
-# AntFood.compute_distance2food()
-# AntFood.compute_mm10_distance2food()
-# AntFood.compute_mm20_distance2food()
+AntFood.compute_ant_body_end()
+AntFood.compute_distance2food()
+AntFood.compute_mm10_distance2food()
+AntFood.compute_mm20_distance2food()
 #
 # AntFood.compute_is_xy_next2food()
 # AntFood.compute_xy_next2food()
 #
 # AntFood.compute_speed_xy_next2food()
-# AntFood.compute_mm10_distance2food_speed_next2food()
 # AntFood.compute_speed_next2food()
 # AntFood.compute_mm10_speed_next2food()
 # AntFood.compute_mm20_speed_next2food()
@@ -85,11 +86,11 @@ AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_distance2food_next2food()
 # AntFood.compute_mm10_distance2food_next2food()
 # AntFood.compute_mm20_distance2food_next2food()
-
+#
 # AntFood.compute_distance2food_next2food_diff()
 # AntFood.compute_mm10_distance2food_next2food_diff()
 # AntFood.compute_mm20_distance2food_next2food_diff()
-
+#
 # AntFood.compute_orientation_next2food()
 # AntFood.compute_mm10_orientation_next2food()
 # AntFood.compute_mm20_orientation_next2food()
@@ -97,11 +98,11 @@ AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_angle_body_food()
 # AntFood.compute_mm10_angle_body_food()
 # AntFood.compute_mm20_angle_body_food()
-
+#
 # AntFood.compute_angle_body_food_next2food()
 # AntFood.compute_mm10_angle_body_food_next2food()
 # AntFood.compute_mm20_angle_body_food_next2food()
-
+#
 # AntFood.compute_food_angular_component_ant_velocity()
 # AntFood.compute_attachment_xy()
 # AntFood.compute_mm10_attachment_xy()
@@ -109,8 +110,18 @@ AntFood = AnalyseAntFoodRelation(group)
 Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_carrying_next2food_with_svm()
 # Carrying.compute_carrying_from_svm()
+# Carrying.compute_food_angular_speed(True)
+# Carrying.compute_mm10_food_angular_speed()
+Carrying.compute_ant_angular_speed()
+Carrying.compute_ant_food_relative_angular_speed()
+Carrying.compute_carrying_next2food_with_svm_with_angular_speed()
+Carrying.compute_carrying()
 
-# Carrying.compute_carrying()
+# Carrying.compute_food_angular_speed_evol(True)
+# Carrying.compute_food_angular_speed_evol_around_first_outside_attachment()
+# Carrying.compute_food_angular_speed_variance_evol()
+# Carrying.compute_food_angular_speed_variance_evol_around_first_outside_attachment()
+#
 # Carrying.compute_carried_food()
 # Carrying.compute_carrying_intervals(True)
 # Carrying.compute_not_carrying_intervals(True)
@@ -154,40 +165,13 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_nb_outside_attachments_evol_around_first_attachment()
 # Carrying.compute_nb_non_outside_attachments_evol_around_first_attachment()
 # Carrying.compute_ratio_outside_attachments_evol_around_first_attachment(True)
-#
-FoodInfo = AnalyseFoodInformation(group)
-# FoodInfo.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-# FoodInfo.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
-#
-#
-# FoodInfo.compute_mm1s_food_direction_error_around_outside_attachments()
-# FoodInfo.compute_mm1s_food_direction_error_around_isolated_outside_attachments()
-# FoodInfo.compute_mm1s_food_direction_error_around_isolated_non_outside_attachments()
-# FoodInfo.compute_mm1s_food_direction_error_around_non_outside_attachments()
-#
-#
-# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(False)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(False)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(False)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(False)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(False)
-#
-# FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(False)
-# FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(False)
-
-
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(True)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(True)
-#
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(False)
-# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(False)
 
 FoodVelocity = AnalyseFoodVelocity(group)
 # FoodVelocity.compute_food_velocity(True)
-# FoodVelocity.compute_food_velocity_phi_evol(True)
+# FoodVelocity.compute_food_velocity_phi_hist_evol(True)
+# FoodVelocity.compute_food_velocity_phi_hist_evol_around_first_outside_attachment(True)
+# FoodVelocity.compute_food_velocity_phi_variance_evol()
+# FoodVelocity.compute_food_velocity_phi_variance_evol_around_first_outside_attachment()
 #
 # FoodVelocity.compute_mm1s_food_velocity_phi()
 #
@@ -217,17 +201,46 @@ FoodConfidence = AnalyseFoodConfidence(group)
 FoodVeracity = AnalyseFoodVeracity(group)
 # FoodVeracity.compute_food_direction_error()
 
-# FoodVeracity.compute_food_direction_error_hist_evol()
-# FoodVeracity.compute_food_direction_error_variance_evol(True)
+# FoodVeracity.compute_food_direction_error_hist_evol(True)
+# FoodVeracity.compute_food_direction_error_variance_evol()
 
 # FoodVeracity.compute_food_direction_error_hist_evol_around_first_attachment()
 # FoodVeracity.compute_food_direction_error_variance_evol_around_first_attachment()
 
-FoodVeracity.compute_fisher_info_evol_around_first_attachment(True)
+# FoodVeracity.compute_fisher_info_evol_around_first_attachment(True)
 #
 # FoodVeracity.compute_mm1s_food_direction_error(True)
 # FoodVeracity.compute_mm10s_food_direction_error(True)
 # FoodVeracity.compute_mm30s_food_direction_error(True)
+
+FoodInfo = AnalyseFoodInformation(group)
+# FoodInfo.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+# FoodInfo.compute_w1s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
+
+# FoodInfo.compute_mm1s_food_direction_error_around_outside_attachments()
+# FoodInfo.compute_mm1s_food_direction_error_around_isolated_outside_attachments()
+# FoodInfo.compute_mm1s_food_direction_error_around_isolated_non_outside_attachments()
+# FoodInfo.compute_mm1s_food_direction_error_around_non_outside_attachments()
+
+
+# FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments(False)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(False)
+
+# FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(True)
+# FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
+
+
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_isolated_non_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_non_outside_attachments(True)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_attachments(True)
+#
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(False)
+# FoodInfo.compute_fisher_information_mm1s_food_direction_error_around_the_first_outside_attachment(False)
 
 FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 # FoodInfoTraj.compute_w10s_food_direction_error_vs_path_efficiency()

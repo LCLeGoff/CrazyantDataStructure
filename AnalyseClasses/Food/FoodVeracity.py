@@ -3,6 +3,7 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
+from Tools.MiscellaneousTools.ArrayManipulation import get_entropy
 from Tools.MiscellaneousTools.Geometry import angle_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
@@ -66,17 +67,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                            'which gives in radian how much the food is not going in the good direction (rad)'
 
         if redo:
-            self.exp.load([name, init_frame_name])
-
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda a, b: a - b)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, func)
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
@@ -139,17 +131,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                       'which gives in radian how much the food is not going in the good direction'
 
         if redo:
-            self.exp.load([name, init_frame_name])
+            self.exp.load(init_frame_name)
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -163,19 +147,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(
-            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='')
-        plotter.plot_fit(typ='linear', preplot=(fig, ax), window=[0, 12])
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 400], cst=(-0.01, .1, .1))
         plotter.save(fig)
-
-        min_var = np.min(self.exp.get_df(result_name))
-        self.exp.get_data_object(result_name).df = self.exp.get_df(result_name) - min_var
-        self.exp.get_data_object(result_name).df[self.exp.get_df(result_name) < 0] = np.nan
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', yscale='log',
-                               label=r'$\sigma^2$ - '+str(float(np.around(min_var, 2))), title='')
-        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 10])
-        ax.set_ylim((0.1, 2))
-        plotter.save(fig, suffix='exp')
 
     def compute_food_direction_error_hist_evol_around_first_attachment(self, redo=False):
         name = 'food_direction_error'
@@ -194,17 +169,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                              ' correspond to periods before the first attachment of an outside ant'
 
         if redo:
-            self.exp.load([name, first_attachment_name])
+            self.exp.load(name)
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=first_attachment_name, func=lambda a, b: a - b)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.change_first_frame(name, first_attachment_name)
 
             self.exp.operation(name, lambda a: np.abs(a))
 
@@ -257,17 +224,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                       'which gives in radian how much the food is not going in the good direction'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -279,16 +238,11 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance',
-                               label_suffix='s', label='Variance', marker='', title='')
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-0.01, .1, .1))
         plotter.draw_vertical_line(ax)
-        plotter.plot_fit(typ='linear', preplot=(fig, ax), window=[4, 10])
         plotter.save(fig)
-
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='PDF', label_suffix='s', label='Variance', marker='', title='')
-        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=True)
-        plotter.draw_vertical_line(ax)
-        plotter.save(fig, suffix='exp')
 
     def compute_fisher_info_evol_around_first_attachment(self, redo=False):
         name = 'food_direction_error_var_evol_around_first_attachment'

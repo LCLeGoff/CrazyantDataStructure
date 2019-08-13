@@ -13,6 +13,15 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'Trajectory'
 
+    def compute_mm10_bodyLength(self):
+        name = 'bodyLength'
+        self.exp.load(name)
+        time_window = 10
+
+        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name, time_window=time_window,
+                                                                    category=self.category)
+        self.exp.write(result_name)
+
     def compute_r_phi(self):
         print('r, phi')
         self.exp.load(['x', 'y'])

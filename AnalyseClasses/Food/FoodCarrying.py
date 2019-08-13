@@ -7,6 +7,7 @@ from sklearn import svm
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing, get_index_interval_containing
+from Tools.MiscellaneousTools.Geometry import angle_df, rotation_df
 from Tools.Plotter.Plotter import Plotter
 from Tools.Plotter.ColorObject import ColorObject
 
@@ -498,12 +499,12 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def compute_carrying_next2food_with_svm(self):
         name_result = 'carrying_next2food_from_svm'
 
-        # speed_name = 'speed_next2food'
+        speed_name = 'speed_next2food'
         orientation_name = 'angle_body_food_next2food'
         distance_name = 'distance2food_next2food'
         distance_diff_name = 'distance2food_next2food_diff'
         angle_velocity_food_name = 'food_angular_component_ant_velocity'
-        list_feature_name = [orientation_name, distance_name, distance_diff_name, angle_velocity_food_name]
+        list_feature_name = [speed_name, orientation_name, distance_name, distance_diff_name, angle_velocity_food_name]
 
         training_set_name = 'carrying_training_set'
 
@@ -513,23 +514,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.get_data_object(angle_velocity_food_name).\
             change_values(self.exp.get_df(angle_velocity_food_name).abs())
 
-        df_features, df_labels = self.__get_training_features_and_labels4carrying(list_feature_name, training_set_name)
-
-        df_to_predict = self.__get_df_to_predict_carrying(list_feature_name)
-
-        clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[:2, :, :], :], df_labels.loc[pd.IndexSlice[:2, :, :], :])
-        prediction1 = clf.predict(df_to_predict.loc[pd.IndexSlice[:2, :, :], :])
-
-        clf = svm.SVC(kernel='rbf', gamma='auto')
-        clf.fit(df_features.loc[pd.IndexSlice[3:, :, :], :], df_labels.loc[pd.IndexSlice[3:, :, :], :])
-        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[3:, :, :], :])
-
-        prediction = np.zeros(len(prediction1)+len(prediction2), dtype=int)
-        prediction[:len(prediction1)] = prediction1
-        prediction[len(prediction1):] = prediction2
-
-        df = pd.DataFrame(prediction, index=df_to_predict.index)
+        df = self.use_svm(list_feature_name, training_set_name)
 
         self.exp.add_new1d_from_df(
             df=df, name=name_result, object_type='TimeSeries1d', category=self.category, label='Is ant carrying?',
@@ -571,6 +556,236 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         return df_features, df_labels
 
+    def compute_food_angular_speed(self, redo=False, redo_hist=False):
+        result_name = 'food_angular_speed'
+        temp_name = 'temp'
+
+        bins = np.arange(0, 3, 0.1)
+
+        if redo:
+            food_name_x = 'mm10_food_x'
+            food_name_y = 'mm10_food_y'
+            name_x = 'mm10_attachment_x'
+            name_y = 'mm10_attachment_y'
+            food_name = 'food_xy'
+            name_xy = 'xy'
+            self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
+            self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
+
+            carrying_name = 'carrying_next2food_from_svm'
+            self.exp.load([carrying_name, 'fps'])
+
+            def erode4each_group(df):
+                df_img = np.array(df, dtype=np.uint8)
+                df_img = cv2.erode(df_img, kernel=np.ones(200, np.uint8))
+                df[:] = df_img
+                return df
+
+            df_carrying = self.exp.get_df(carrying_name).groupby([id_exp_name, id_ant_name]).apply(erode4each_group)
+            self.exp.change_df(carrying_name, df_carrying)
+
+            self.exp.filter_with_values(
+                name_to_filter=name_xy, filter_name=carrying_name, result_name=name_xy, replace=True)
+            self.exp.remove_object(carrying_name)
+
+            self.exp.add_new1d_from_df(self.exp.get_df(name_xy)['x'], name=temp_name, object_type='Events1d')
+
+            def get_speed4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+                print(id_exp, id_ant)
+                frames = np.array(df.index.get_level_values(id_frame_name))
+                frame0 = frames[0]
+                frame1 = frames[-1]
+
+                df2 = df.loc[id_exp, id_ant, :]
+                df2 -= self.exp.get_df(food_name).loc[id_exp, :]
+
+                fps = self.exp.get_value('fps', id_exp)
+                dframe = int(fps/2)
+                vect1 = df2.loc[frame0+dframe:].copy()
+                vect2 = df2.loc[:frame1-dframe].copy()
+
+                dframe2 = int(dframe/2)
+                vect1.index -= dframe2
+                vect2.index += dframe2
+
+                idx = self.exp.get_df(temp_name).loc[id_exp, id_ant, :].index.get_level_values(id_frame_name)
+                vect1 = vect1.reindex(idx)
+                vect2 = vect2.reindex(idx)
+
+                df_angle = angle_df(vect1, vect2)
+
+                df_angle = np.array(df_angle).ravel()
+                df_angle /= dframe
+                df_angle *= fps
+                df_angle = np.around(df_angle, 6)
+
+                self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[df_angle]
+
+            self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
+
+            self.exp.mean_over_exp_and_frames(name_to_average=temp_name, result_name=result_name,
+                                              category=self.category, label='Food angular speed',
+                                              description='Angular speed of the food (rad/s)', replace=True)
+            self.exp.change_df(result_name, np.around(self.exp.get_df(result_name), 6))
+
+            self.exp.write(result_name)
+
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel='Angular speed (rad/s)', ylabel='PDF', ls='', normed=True)
+        plotter.save(fig)
+
+    def compute_mm10_food_angular_speed(self):
+        name = 'food_angular_speed'
+        time_window = 10
+
+        self.exp.load(name)
+        result_name = self.exp.moving_mean4exp_frame_indexed_1d(
+            name_to_average=name, time_window=time_window, category=self.category
+        )
+
+        self.exp.write(result_name)
+
+    def compute_ant_angular_speed(self):
+        result_name = 'ant_angular_speed'
+        print(result_name)
+
+        food_angular_speed_name = 'mm10_food_angular_speed'
+        self.exp.load([food_angular_speed_name, 'fps'])
+
+        food_name_x = 'mm10_food_x'
+        food_name_y = 'mm10_food_y'
+        food_name = 'food_xy'
+        self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
+
+        name_x = 'ant_body_length_x'
+        name_y = 'ant_body_length_y'
+        name_xy = 'xy'
+        self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
+
+        self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
+                          label='Ant angular speed',
+                          description='Ant angular speed relative to the food center')
+
+        self.exp.get_df(result_name)[:] = np.nan
+
+        def get_speed4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+            print(id_exp, id_ant)
+            frames = np.array(df.index.get_level_values(id_frame_name))
+            frame0 = frames[0]
+            frame1 = frames[-1]
+
+            df2 = df.loc[id_exp, id_ant, :]
+            df2 -= self.exp.get_df(food_name).loc[id_exp, :]
+
+            fps = self.exp.get_value('fps', id_exp)
+            dframe = int(fps / 2)
+            vect1 = df2.loc[frame0 + dframe:].copy()
+            vect2 = df2.loc[:frame1 - dframe].copy()
+
+            dframe2 = int(dframe / 2)
+            vect1.index -= dframe2
+            vect2.index += dframe2
+
+            idx = df.index.get_level_values(id_frame_name)
+            vect1 = vect1.reindex(idx)
+            vect2 = vect2.reindex(idx)
+
+            df_angle = angle_df(vect1, vect2)
+
+            df_angle = np.array(df_angle).ravel()
+            df_angle /= dframe
+            df_angle *= fps
+            df_angle = np.around(df_angle, 6)
+
+            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = np.c_[df_angle]
+
+        self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
+
+        self.exp.write(result_name)
+
+    def compute_ant_food_relative_angular_speed(self):
+        result_name = 'ant_food_relative_angular_speed'
+        print(result_name)
+
+        ant_angular_speed_name = 'ant_angular_speed'
+        food_angular_speed_name = 'food_angular_speed'
+        self.exp.load([ant_angular_speed_name, food_angular_speed_name, 'fps'])
+
+        df_food = self.__reindexing(food_angular_speed_name, ant_angular_speed_name, column_names=['temp'])
+
+        self.exp.add_copy(ant_angular_speed_name, result_name, category=self.category,
+                          label='Ant minus food angular speed',
+                          description='Difference between the ant angular speed and the food angular speed')
+        self.exp.get_data_object(result_name).df[result_name] -= df_food['temp']
+
+        self.exp.write(result_name)
+
+    def __reindexing(self, name_to_reindex, name2, column_names=None):
+        if column_names is None:
+            column_names = ['x', 'y']
+        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+
+        df = self.exp.get_df(name_to_reindex).copy()
+        df = df.reindex(idxs)
+        df[id_ant_name] = id_ants
+        df.reset_index(inplace=True)
+        df.columns = [id_exp_name, id_frame_name]+column_names+[id_ant_name]
+        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        return df
+
+    def compute_carrying_next2food_with_svm_with_angular_speed(self):
+        name_result = 'carrying_next2food_from_svm_with_angular_speed'
+
+        orientation_name = 'angle_body_food_next2food'
+        distance_name = 'distance2food_next2food'
+        minus_angular_speed_name = 'ant_food_relative_angular_speed'
+        list_feature_name = [orientation_name, distance_name, minus_angular_speed_name]
+
+        training_set_name = 'carrying_training_set'
+
+        self.exp.load(list_feature_name + [training_set_name, 'mm2px'])
+
+        self.exp.operation(minus_angular_speed_name, np.abs)
+
+        df = self.use_svm(list_feature_name, training_set_name)
+
+        self.exp.add_new1d_from_df(
+            df=df, name=name_result, object_type='TimeSeries1d', category=self.category, label='Is ant carrying?',
+            description='Boolean giving if ants are carrying or not, for the ants next to the food. Using svm and '
+                        'the angular speed gotten by a previous svm on carrying'
+        )
+        self.exp.write(name_result)
+
+    def use_svm(self, list_feature_name, training_set_name):
+
+        df_features, df_labels = self.__get_training_features_and_labels4carrying(list_feature_name, training_set_name)
+        df_to_predict = self.__get_df_to_predict_carrying(list_feature_name)
+
+        clf = svm.SVC(kernel='rbf', gamma='auto')
+        clf.fit(df_features.loc[pd.IndexSlice[:2, :, :], :], df_labels.loc[pd.IndexSlice[:2, :, :], :])
+        prediction1 = clf.predict(df_to_predict.loc[pd.IndexSlice[:2, :, :], :])
+
+        clf = svm.SVC(kernel='rbf', gamma='auto')
+        clf.fit(df_features.loc[pd.IndexSlice[3:, :, :], :], df_labels.loc[pd.IndexSlice[3:, :, :], :])
+        prediction2 = clf.predict(df_to_predict.loc[pd.IndexSlice[3:, :, :], :])
+
+        prediction = np.zeros(len(prediction1) + len(prediction2), dtype=int)
+        prediction[:len(prediction1)] = prediction1
+        prediction[len(prediction1):] = prediction2
+
+        df = pd.DataFrame(prediction, index=df_to_predict.index)
+        return df
+
     def compute_carrying_from_svm(self):
         name = 'carrying_next2food_from_svm'
         result_name = 'carrying_from_svm'
@@ -611,6 +826,133 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.get_data_object(result_name).df = df_smooth
 
         self.exp.write(result_name)
+
+    def compute_food_angular_speed_evol(self, redo=False):
+        name = 'food_angular_speed'
+        result_name = name + '_hist_evol'
+        init_frame_name = 'food_first_frame'
+
+        bins = np.arange(0, 3, 0.1)
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 5., dx)*60*100
+        end_frame_intervals = start_frame_intervals+dx*60*100*2
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+            self.exp.operation(name, lambda x: np.abs(x))
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label='Food angular speed distribution over time (rad)',
+                                      description='Histogram of the instantaneous angular speed of the food trajectory'
+                                                  ' over time (rad)')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$v (mm/s)$', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_food_angular_speed_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_angular_speed'
+        result_name = name + '_hist_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        bins = np.arange(0, 3, 0.1)
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 4, dx)*60*100
+        end_frame_intervals = start_frame_intervals+dx*60*100*2
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+            self.exp.operation(name, lambda x: np.abs(x))
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label='Food angular speed distribution over time (rad)',
+                                      description='Histogram of the instantaneous angular speed of the food trajectory'
+                                                  ' over time (rad)')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$v (mm/s)$', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_food_angular_speed_variance_evol(self, redo=False):
+        name = 'food_angular_speed'
+        result_name = name + '_var_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(0, 3.5, dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food angular speed distribution over time'
+        description = 'Variance of the food angular speed distribution over time'
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_smooth(50, c='orange', preplot=(fig, ax), label='smooth')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), cst=[-.1, 0.05, 0.02], window=[50, 1000])
+        plotter.save(fig)
+
+    def compute_food_angular_speed_variance_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_angular_speed'
+        result_name = name + '_var_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-1, 3.5, dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food angular speed distribution over time'
+        description = 'Variance of the food angular speed distribution over time'
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_smooth(50, c='orange', preplot=(fig, ax), label='smooth')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), cst=(-1, 1, 1), window=[90, 1000])
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig)
 
     def compute_carried_food(self):
         result_name = 'carried_food'
@@ -1062,15 +1404,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def _mean_evol_for_nb_carrier(self, name, result_name, init_frame_name, start_frame_intervals, end_frame_intervals,
                                   label, description):
-        self.exp.load([name, init_frame_name])
-        new_times = 'new_times'
-        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-        self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-        self.exp.get_df(new_times).reset_index(inplace=True)
-        self.exp.get_df(name).reset_index(inplace=True)
-        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-        self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+        self.exp.load(name)
+
+        self.change_first_frame(name, init_frame_name)
+
         self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                 end_index_intervals=end_frame_intervals,
                                 category=self.category, result_name=result_name,
@@ -1183,15 +1520,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
     def _mean_evol_for_nb_attachment_in_10s(self, name, result_name, init_frame_name, start_frame_intervals,
                                             end_frame_intervals, label, description):
 
-        self.exp.load([name, init_frame_name])
-        new_times = 'new_times'
-        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-        self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda a, b: a - b)
-        self.exp.get_df(new_times).reset_index(inplace=True)
-        self.exp.get_df(name).reset_index(inplace=True)
-        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-        self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+        self.exp.load(name)
+
+        self.change_first_frame(name, init_frame_name)
+
         x = (end_frame_intervals + start_frame_intervals) / 2. / 100.
         y = np.zeros(len(start_frame_intervals))
         for i in range(len(start_frame_intervals)):

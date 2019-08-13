@@ -42,7 +42,7 @@ class CleaningData(AnalyseClassDecorator):
         # else:
         self.exp.load_as_2d('x0', 'y0', 'xy', 'x', 'y')
         self.exp.load([
-            'x0', 'y0', 'absoluteOrientation'])
+            'x0', 'y0', 'absoluteOrientation', 'major_axis_length'])
 
     def __copy_xy0_to_interpolated_xy0(self, dynamic_food):
         print('coping xy0, absoluteOrientation and food0')
@@ -61,6 +61,11 @@ class CleaningData(AnalyseClassDecorator):
             label='orientation (rad)', description='ant orientation, linearly interpolated (rad, in the camera system)'
         )
 
+        self.exp.add_copy1d(
+            name_to_copy='major_axis_length', copy_name='interpolatedBodyLength', category=self.category,
+            label='Body length (px)', description='Body length, linearly interpolated (px)'
+        )
+
         if dynamic_food is True:
             self.exp.add_copy1d(
                 name_to_copy='food_x0', copy_name='interpolated_food_x0', category=self.category,
@@ -74,17 +79,10 @@ class CleaningData(AnalyseClassDecorator):
     def __interpolate_xy_and_orientation(self, dynamic_food):
         print('interpolating interpolated xy0, absoluteOrientation and food0')
 
-        self.focused_name = 'interpolated_x0'
-        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
-        self.exp.change_df(self.focused_name, res_df)
-
-        self.focused_name = 'interpolated_y0'
-        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
-        self.exp.change_df(self.focused_name, res_df)
-
-        self.focused_name = 'interpolatedAbsoluteOrientation'
-        res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
-        self.exp.change_df(self.focused_name, res_df)
+        for name in ['interpolated_x0', 'interpolated_y0', 'interpolatedAbsoluteOrientation', 'interpolatedBodyLength']:
+            self.focused_name = name
+            res_df = self.exp.groupby(self.focused_name, [id_exp_name, id_ant_name], self.__interpolate_time_series1d)
+            self.exp.change_df(self.focused_name, res_df)
 
         if dynamic_food:
             self.focused_name = 'interpolated_food_x0'
@@ -135,6 +133,7 @@ class CleaningData(AnalyseClassDecorator):
         res_df = self.exp.get_df('interpolated_x0')
         res_df = res_df.join(self.exp.get_df('interpolated_y0'))
         res_df = res_df.join(self.exp.get_df('interpolatedAbsoluteOrientation'))
+        res_df = res_df.join(self.exp.get_df('interpolatedBodyLength'))
         res_df.sort_index(inplace=True)
         add = self.root + 'CleanedRaw/TimeSeries.csv'
         res_df.to_csv(add)
@@ -143,7 +142,8 @@ class CleaningData(AnalyseClassDecorator):
         if dynamic_food is True:
             self.exp.load(['interpolated_food_x0', 'interpolated_food_y0'])
         self.exp.load([
-            'interpolated_x0', 'interpolated_y0', 'interpolatedAbsoluteOrientation',
+            'interpolated_x0', 'interpolated_y0',
+            'interpolatedAbsoluteOrientation', 'interpolatedBodyLength',
             'entrance1', 'entrance2', 'exit0_1', 'exit0_2',
             'food_center', 'mm2px'])
 
@@ -174,6 +174,11 @@ class CleaningData(AnalyseClassDecorator):
             label='orientation (rad)', description='ant orientation (in the initial food system)'
         )
 
+        self.exp.add_copy1d(
+            name_to_copy='interpolatedBodyLength', copy_name='bodyLength', category='Trajectory',
+            label='Body length (mm)', description='Body length in mm'
+        )
+
         if dynamic_food is True:
             self.exp.add_copy1d(
                 name_to_copy='interpolated_food_x0', copy_name='food_x', category='FoodBase',
@@ -199,7 +204,7 @@ class CleaningData(AnalyseClassDecorator):
     def __get_new_indexes(self, df: pd.DataFrame):
         id_exp = df.index.get_level_values(id_exp_name)[0]
         frame0, frame1 = df.index.get_level_values(id_frame_name)[[0, -1]]
-        self.exp.load('fps')
+        self.exp.load('fps', reload=False)
         fps = self.exp.get_value('fps', id_exp)
 
         frame0 += 5*fps
@@ -231,6 +236,7 @@ class CleaningData(AnalyseClassDecorator):
 
         self.exp.operation_between_2names('x', 'mm2px', lambda x, y: round(x / y, 3))
         self.exp.operation_between_2names('y', 'mm2px', lambda x, y: round(x / y, 3))
+        self.exp.operation_between_2names('bodyLength', 'mm2px', lambda x, y: round(x / y, 3))
         if dynamic_food is True:
             self.exp.operation_between_2names('food_x', 'mm2px', lambda x, y: round(x / y, 3))
             self.exp.operation_between_2names('food_y', 'mm2px', lambda x, y: round(x / y, 3))
@@ -287,5 +293,4 @@ class CleaningData(AnalyseClassDecorator):
         if dynamic_food is True:
             self.exp.write(['food_x', 'food_y'])
         self.exp.write(['exit1', 'exit2', 'traj_reoriented',
-                        'orientation', 'x', 'y'
-                        ])
+                        'orientation', 'x', 'y', 'bodyLength'])

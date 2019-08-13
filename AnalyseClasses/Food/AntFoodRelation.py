@@ -3,7 +3,8 @@ import numpy as np
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df, angle_distance, \
+    angle_sum
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools.Geometry import distance
 
@@ -13,29 +14,116 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'AntFoodRelation'
 
-    def compute_distance2food(self):
-        name = 'distance2food'
-        print(name)
-        food_name_x = 'mm10_food_x'
-        food_name_y = 'mm10_food_y'
+    def compute_ant_body_end(self):
+        result_name = 'ant_body_end'
+        print(result_name)
+
+        name_orientation = 'mm10_orientation'
+        name_body_length = 'mm10_bodyLength'
+        self.exp.load([name_orientation, name_body_length])
+
         name_x = 'mm10_x'
         name_y = 'mm10_y'
-        self.exp.load_as_2d(name_x, name_y, result_name='xy', xname='x', yname='y', replace=True)
-        self.exp.load_as_2d(food_name_x, food_name_y, result_name='food_xy', xname='x', yname='y', replace=True)
+        name_xy = 'xy'
+        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y', replace=True)
 
-        id_exps = self.exp.get_df(name_x).index.get_level_values(id_exp_name)
-        id_ants = self.exp.get_df(name_x).index.get_level_values(id_ant_name)
-        frames = self.exp.get_df(name_x).index.get_level_values(id_frame_name)
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+        name_food_x = 'mm10_food_x'
+        name_food_y = 'mm10_food_y'
+        name_food_xy = 'food_xy'
+        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y', replace=True)
 
-        df_d = self.__reindexing_food_xy(id_ants, idxs)
-        df_d = self.__compute_distance_from_food(df_d)
+        self.exp.add_copy(old_name=name_x, new_name=result_name+'_x', category=self.category,
+                          label='X coordinates of the ant body end',
+                          description='X coordinates of end of the body ant closest to the food')
+        self.exp.add_copy(old_name=name_x, new_name=result_name+'_y', category=self.category,
+                          label='Y coordinates of the ant body end',
+                          description='Y coordinates of end of the body ant closest to the food')
 
-        self.exp.add_new1d_from_df(
-            df=df_d, name=name, object_type='TimeSeries1d',
-            category=self.category, label='Food to distance', description='Distance between the food and the ants'
-        )
-        self.exp.write(name)
+        self.exp.get_df(result_name+'_x')[:] = np.nan
+        self.exp.get_df(result_name+'_y')[:] = np.nan
+
+        def compute_end_point4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+            print(id_exp, id_ant)
+
+            xys = df.loc[id_exp, id_ant, :]
+            food_xys = self.exp.get_df(name_food_xy).loc[id_exp, :]
+            food_xys = food_xys.reindex(xys.index).values
+
+            orientations = self.exp.get_df(name_orientation).loc[id_exp, id_ant, :]
+            orientations = orientations.loc[id_exp, id_ant, :]
+            orientations = orientations.reindex(xys.index).values.ravel()
+
+            body_lgs = self.exp.get_df(name_body_length).loc[id_exp, id_ant, :]
+            body_lgs = body_lgs.loc[id_exp, id_ant, :]
+            body_lgs = body_lgs.reindex(xys.index).values.ravel()
+
+            xys = xys.values
+
+            x1 = xys[:, 0]+np.cos(orientations)*body_lgs/2.
+            y1 = xys[:, 1]+np.sin(orientations)*body_lgs/2.
+            x2 = xys[:, 0]+np.cos(orientations+np.pi)*body_lgs/2.
+            y2 = xys[:, 1]+np.sin(orientations+np.pi)*body_lgs/2.
+
+            res = np.full((len(xys), 2), np.nan)
+
+            pts1 = np.c_[x1, y1]
+            pts2 = np.c_[x2, y2]
+
+            dist1 = distance(food_xys, pts1)
+            dist2 = distance(food_xys, pts2)
+            dist_compare = dist1 < dist2
+
+            mask_compare = np.where(dist_compare)[0]
+            res[mask_compare, :] = pts1[mask_compare]
+
+            mask_compare = np.where(~dist_compare)[0]
+            res[mask_compare, :] = pts2[mask_compare]
+
+            self.exp.get_df(result_name+'_x').loc[id_exp, id_ant, :] = np.c_[res[:, 0]]
+            self.exp.get_df(result_name+'_y').loc[id_exp, id_ant, :] = np.c_[res[:, 1]]
+
+        self.exp.groupby(name_xy, [id_exp_name, id_ant_name], compute_end_point4each_group)
+
+        self.exp.write([result_name+'_x', result_name+'_y'])
+
+    def compute_distance2food(self):
+        result_name = 'distance2food'
+        print(result_name)
+
+        name_x = 'ant_body_end_x'
+        name_y = 'ant_body_end_y'
+        name_xy = 'ant_body_end_xy'
+        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y', replace=True)
+
+        name_food_x = 'mm10_food_x'
+        name_food_y = 'mm10_food_y'
+        name_food_xy = 'food_xy'
+        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y', replace=True)
+
+        self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
+                          label='Distance between the food and the ant',
+                          description='Distance between the food and the closed part of the ant body')
+
+        self.exp.get_df(result_name)[:] = np.nan
+
+        def compute_distance4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            id_ant = df.index.get_level_values(id_ant_name)[0]
+            print(id_exp, id_ant)
+
+            xys = df.loc[id_exp, id_ant, :]
+            food_xys = self.exp.get_df(name_food_xy).loc[id_exp, :]
+            food_xys = food_xys.reindex(xys.index).values
+
+            xys = xys.values
+
+            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = distance(food_xys, xys)
+
+        self.exp.groupby(name_xy, [id_exp_name, id_ant_name], compute_distance4each_group)
+
+        self.exp.write(result_name)
 
     def __reindexing_food_xy(self, id_ants, idxs):
         df_d = self.exp.get_df('food_xy').copy()
@@ -120,20 +208,6 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         )
 
         self.exp.write(name)
-
-    def compute_mm10_distance2food_speed_next2food(self):
-        name = 'mm10_distance2food_speed'
-        res_name = name+'_next2food'
-
-        self.exp.load([name, 'is_xy_next2food'])
-
-        self.exp.filter_with_values(
-            name_to_filter=name, filter_name='is_xy_next2food', result_name=res_name,
-            category=self.category, label='distance ant-food speed next to food',
-            description='Instantaneous speed fo distance ant-food of ant next to food'
-        )
-
-        self.exp.write(res_name)
 
     def compute_speed_next2food(self):
         name = 'speed'
@@ -339,13 +413,17 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         name_x = 'mm10_x'
         name_y = 'mm10_y'
+        name_xy = 'xy'
+        self.exp.load_as_2d(name1=name_x, name2=name_y, result_name=name_xy, xname='x', yname='y', replace=True)
+
         food_name_x = 'mm10_food_x'
         food_name_y = 'mm10_food_y'
-
-        self.exp.load([food_name_x, food_name_y, 'orientation'])
-        self.exp.load_as_2d(name1=name_x, name2=name_y, result_name='xy', xname='x', yname='y', replace=True)
-        self.exp.load_as_2d(name1=food_name_x, name2=food_name_y, result_name='food_xy',
+        food_name_xy = 'food_xy'
+        self.exp.load_as_2d(name1=food_name_x, name2=food_name_y, result_name=food_name_xy,
                             xname='x', yname='y', replace=True)
+
+        name_orientation = 'mm10_orientation'
+        self.exp.load(name_orientation)
 
         id_exps = self.exp.xy.df.index.get_level_values(id_exp_name)
         id_ants = self.exp.xy.df.index.get_level_values(id_ant_name)
@@ -354,21 +432,18 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         df_food = self.__reindexing_food_xy(id_ants, idxs)
 
-        df_ant_vector = df_food.copy()
-        df_ant_vector.x = df_food.x - self.exp.xy.df.x
-        df_ant_vector.y = df_food.y - self.exp.xy.df.y
-        self.exp.add_copy('orientation', 'ant_food_orientation')
-        self.exp.ant_food_orientation.change_values(angle_df(df_ant_vector))
+        df_food_ant_vector = self.exp.get_df(name_xy) - df_food
+        tab_food_ant_angle = np.around(angle_df(df_food_ant_vector), 6)
 
-        self.exp.add_copy(
-            old_name='orientation', new_name=name, category=self.category, label='Body theta_res to food',
-            description='Angle between the ant-food vector and the body vector', replace=True
+        tab_orientations = self.exp.get_df(name_orientation).values.ravel()
+
+        tab_angle_body = norm_angle_tab(angle_distance(np.pi, tab_food_ant_angle) + tab_orientations)
+
+        self.exp.add_new1d_from_array(
+            array=np.c_[id_exps, id_ants, frames, tab_angle_body],
+            name=name, object_type='TimeSeries1d', category=self.category,
+            label='Body theta_res to food', description='Angle between the ant-food vector and the body vector'
         )
-        self.exp.get_data_object(name).change_values(norm_angle_tab(
-            self.exp.ant_food_orientation.df.ant_food_orientation
-            - self.exp.orientation.df.orientation))
-
-        self.exp.operation(name, lambda x: np.around(norm_angle_tab2(x), 3))
 
         self.exp.write(name)
 

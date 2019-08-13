@@ -232,7 +232,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
-        ylim_zoom = (0.35, 0.55)
+        ylim_zoom = (0.2, 0.55)
         dpi = 1/12.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
@@ -281,7 +281,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals,' \
                            ' which are times around isolated non outside ant attachments'
 
-        ylim_zoom = (0.4, 1.)
+        ylim_zoom = (0., 0.4)
         dpi = 1/6.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
@@ -333,7 +333,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around ant attachments'
 
-        ylim_zoom = (0.2, 0.3)
+        ylim_zoom = (0.15, 0.3)
         dpi = 1/12.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,

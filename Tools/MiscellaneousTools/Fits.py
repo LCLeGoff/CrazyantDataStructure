@@ -11,14 +11,7 @@ def linear_fit(x, y):
 
 
 def exp_fit(x, y, cst=False):
-    if cst:
-        fct = lambda t, a, b, c: b*np.exp(a*t)+c
-        res = scopt.curve_fit(fct,  x,  y, p0=(-1, 1, 1))
-        af, bf, cf = res[0]
-        x_fit = x
-        y_fit = fct(x_fit, af, bf, cf)
-        return af, bf, cf, x_fit, y_fit
-    else:
+    if cst is False:
 
         log_y = np.log(y)
         [af, bf] = sc.polyfit(x, log_y, 1)
@@ -26,6 +19,13 @@ def exp_fit(x, y, cst=False):
         x_fit = x
         y_fit = np.exp(log_y_fit)
         return af, bf, x_fit, y_fit
+    else:
+        fct = lambda t, a, b, c: b*np.exp(a*t)+c
+        res = scopt.curve_fit(fct,  x,  y, p0=cst)
+        af, bf, cf = res[0]
+        x_fit = x
+        y_fit = fct(x_fit, af, bf, cf)
+        return af, bf, cf, x_fit, y_fit
 
 
 def power_fit(x, y):

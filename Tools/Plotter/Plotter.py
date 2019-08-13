@@ -284,12 +284,12 @@ class Plotter(BasePlotters):
             x_fit, y_fit = res_fit[-2], res_fit[-1]
             res_fit[:-2] = np.around(res_fit[:-2], 4)
 
-            if cst:
-                label2 = '(a, b, c)'
-                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
-            else:
+            if cst is False:
                 label2 = '(a, b)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
+            else:
+                label2 = '(a, b, c)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
 
             if label is None:
                 label = typ+' fit: '+label2+' = '+label3

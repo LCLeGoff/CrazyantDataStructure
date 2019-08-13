@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
-from cv2 import cv2
 from matplotlib.path import Path
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools.Geometry import angle_df, angle, dot2d_df, distance_between_point_and_line_df, \
-    distance_df, norm_vect_df
+    distance_df
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -261,7 +260,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         name = 'food_speed'
         result_name = name + '_hist_evol'
 
-        bins = np.arange(0, 200, 1)
+        bins = np.arange(0, 25, 1)
         dx = 0.5
         start_frame_intervals = np.arange(0, 5., dx)*60*100
         end_frame_intervals = start_frame_intervals+dx*60*100
@@ -273,15 +272,14 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food speed distribution over time (rad)',
-                                      description='Histogram of the instantaneous speed of the food trajectory over ' \
+                                      description='Histogram of the instantaneous speed of the food trajectory over '
                                                   'time (rad)')
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$v (mm/s)$', ylabel='PDF',
-                               normed=True, label_suffix='s', marker='', lw=1)
-        ax.set_xlim((0, 80))
+        fig, ax = plotter.plot(xlabel=r'$v (mm/s)$', ylabel='PDF',
+                               normed=True, label_suffix='s')
         plotter.save(fig)
 
     def compute_food_phi(self, redo=False, redo_hist=False):
@@ -304,7 +302,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                 label='food trajectory phi', description='angular coordinate of the food trajectory'
                                                                          ' (in the food system)')
 
-            phi = np.around(angle([1, 0], self.exp.food_xy.get_array()), 3)
+            phi = np.around(angle(self.exp.food_xy.get_array()), 3)
             self.exp.get_data_object(result_name).replace_values(phi)
 
             self.exp.write(result_name)
@@ -505,17 +503,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         description = 'Mean of the radial coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
-
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                     end_index_intervals=end_frame_intervals,
@@ -546,17 +535,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         description = 'Mean of the radial coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                     end_index_intervals=end_frame_intervals,
@@ -588,17 +569,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         description = 'Variance of the radial coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -629,17 +602,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         description = 'Variance of the radial coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -670,17 +635,9 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         description = 'Variance of the angular coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -703,25 +660,18 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name = name + '_var_evol_around_first_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
-        dx = 0.25
-        start_frame_intervals = np.arange(-2, 3., dx)*60*100
+        dx = 0.1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-1, 3., dx2)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
         label = 'Variance of the food angular coordinate over time'
         description = 'Variance of the angular coordinate of the food over time'
 
         if redo:
-            self.exp.load([name, init_frame_name])
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
-
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
             self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                         end_index_intervals=end_frame_intervals,
@@ -734,8 +684,10 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance')
-        plotter.plot_fit(preplot=(fig, ax), typ='linear')
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel='Variance', label_suffix='s', label='Variance', yscale='log', marker='')
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', window=[90, 400])
+        plotter.draw_vertical_line(ax)
         plotter.save(fig)
 
     def __reindexing_food_xy(self, name):
@@ -752,85 +704,76 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
         return df_d
 
-    def compute_food_angular_speed(self, redo=False, redo_hist=False):
-        result_name = 'food_angular_speed'
-        temp_name = 'temp'
+    def compute_food_phi_hist_evol(self, redo=False):
+        name = 'food_phi'
+        result_name = name+'_hist_evol'
+        init_frame_name = 'food_first_frame'
 
-        bins = np.arange(0, 3, 0.1)
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.array(np.arange(0, 3., dx)*60*100, dtype=int)
+        end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
+
+        func = lambda a: np.abs(a)
+
+        hist_label = 'Food phi distribution over time (rad)'
+        hist_description = 'Histogram of the angular coordinate of the food (rad)'
 
         if redo:
-            food_name_x = 'mm10_food_x'
-            food_name_y = 'mm10_food_y'
-            name_x = 'mm10_attachment_x'
-            name_y = 'mm10_attachment_y'
-            food_name = 'food_xy'
-            name_xy = 'xy'
-            self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
-            self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
 
-            carrying_name = 'carrying'
-            self.exp.load([carrying_name, 'fps'])
-
-            def erode4each_group(df):
-                df_img = np.array(df, dtype=np.uint8)
-                df_img = cv2.erode(df_img, kernel=np.ones(200, np.uint8))
-                df[:] = df_img
-                return df
-
-            df_carrying = self.exp.get_df(carrying_name).groupby([id_exp_name, id_ant_name]).apply(erode4each_group)
-            self.exp.change_df(carrying_name, df_carrying)
-
-            self.exp.filter_with_values(
-                name_to_filter=name_xy, filter_name=carrying_name, result_name=name_xy, replace=True)
-            self.exp.remove_object(carrying_name)
-
-            self.exp.add_new1d_from_df(self.exp.get_df(name_xy)['x'], name=temp_name, object_type='Events1d')
-
-            def get_speed4each_group(df: pd.DataFrame):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                id_ant = df.index.get_level_values(id_ant_name)[0]
-                print(id_exp, id_ant)
-                frames = np.array(df.index.get_level_values(id_frame_name))
-                frame0 = frames[0]
-                frame1 = frames[-1]
-
-                df2 = df.loc[id_exp, id_ant, :]
-                df2 -= self.exp.get_df(food_name).loc[id_exp, :]
-                df2 *= -1
-
-                fps = self.exp.get_value('fps', id_exp)
-                dframe = int(fps/2)
-                vect1 = df2.loc[frame0+dframe:].copy()
-                vect2 = df2.loc[:frame1-dframe].copy()
-
-                dframe2 = int(dframe/2)
-                vect1.index -= dframe2
-                vect2.index += dframe2
-
-                idx = self.exp.get_df(temp_name).loc[id_exp, id_ant, :].index.get_level_values(id_frame_name)
-                vect1 = vect1.reindex(idx)
-                vect2 = vect2.reindex(idx)
-
-                df_angle = angle_df(vect1, vect2)
-
-                df_angle = np.array(df_angle).ravel()
-                df_angle /= dframe
-                df_angle *= fps
-                df_angle = np.around(df_angle, 6)
-
-                self.exp.get_df(temp_name).loc[id_exp, id_ant, :] = np.c_[df_angle]
-
-            self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
-
-            self.exp.mean_over_exp_and_frames(name_to_average=temp_name, result_name=result_name,
-                                              category=self.category, label='Food angular speed',
-                                              description='Angular speed of the food (rad/s)', replace=True)
-            self.exp.change_df(result_name, np.around(self.exp.get_df(result_name), 6))
+            self.exp.operation(name, func)
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
 
             self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
 
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\phi$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
 
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel='Angular speed (rad/s)', ylabel='PDF', ls='', normed=True)
+    def compute_food_phi_hist_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_phi'
+        result_name = name+'_hist_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.array(np.arange(-1, 3., dx)*60*100, dtype=int)
+        end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
+
+        func = lambda a: np.abs(a)
+
+        hist_label = 'Food phi distribution over time (rad)'
+        hist_description = 'Histogram of the angular coordinate of the food (rad)'
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.operation(name, func)
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\phi$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)

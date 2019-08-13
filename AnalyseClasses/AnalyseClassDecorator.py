@@ -1,4 +1,5 @@
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
+from DataStructure.VariableNames import id_frame_name, id_exp_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 
@@ -26,3 +27,14 @@ class AnalyseClassDecorator:
             self.exp.load(hist_name)
 
         return hist_name
+
+    def change_first_frame(self, name, frame_name):
+        self.exp.load(frame_name)
+        new_times = 'new_times'
+        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+        self.exp.operation_between_2names(name1=new_times, name2=frame_name, func=lambda a, b: a - b)
+        self.exp.get_df(new_times).reset_index(inplace=True)
+        self.exp.get_df(name).reset_index(inplace=True)
+        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+        self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)

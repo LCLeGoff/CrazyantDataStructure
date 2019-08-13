@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name
 from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df
 from Tools.Plotter.Plotter import Plotter
 
@@ -83,7 +83,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
         plotter.save(fig)
 
-    def compute_food_velocity_phi_evol(self, redo=False):
+    def compute_food_velocity_phi_hist_evol(self, redo=False):
         name = 'food_velocity_phi'
         result_name = name+'_hist_evol'
         init_frame_name = 'food_first_frame'
@@ -91,24 +91,16 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        dx = 0.5
-        start_frame_intervals = np.arange(0, 5., dx)*60*100
-        end_frame_intervals = start_frame_intervals + dx*60*100
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 3.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
 
         if redo:
-            self.exp.load([name, init_frame_name])
+            self.exp.load(name)
 
-            new_times = 'new_times'
-            self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
-            self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
-            self.exp.operation_between_2names(name1=new_times, name2=init_frame_name, func=lambda x, y: x - y)
-            self.exp.get_df(new_times).reset_index(inplace=True)
+            self.change_first_frame(name, init_frame_name)
 
-            self.exp.get_df(name).reset_index(inplace=True)
-            self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
-            self.exp.get_df(name).set_index([id_exp_name, id_frame_name], inplace=True)
-
-            self.exp.operation(name, lambda x: np.abs(x))
+            self.exp.operation(name, lambda a: np.abs(a))
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
@@ -121,6 +113,107 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             self.exp.load(result_name)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_food_velocity_phi_hist_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_velocity_phi'
+        result_name = name+'_hist_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        if redo:
+            self.exp.load(name)
+
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.operation(name, lambda a: np.abs(a))
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label='Food velocity phi distribution over time (rad)',
+                                      description='Histogram of the absolute value of the angular coordinate'
+                                                  ' of the velocity of the food trajectory over time (rad)')
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True, label_suffix='s')
+        plotter.save(fig)
+
+    def compute_food_velocity_phi_variance_evol(self, redo=False):
+        name = 'food_velocity_phi'
+        result_name = name + '_var_evol'
+        init_frame_name = 'food_first_frame'
+
+        dx = 0.1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(0, 3.5, dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food velocity phi over time'
+        description = 'Variance of the angular coordinate of the food velocity'
+
+        if redo:
+            self.exp.load(name)
+
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 400], cst=(-0.01, .1, .1))
+        plotter.save(fig)
+
+    def compute_food_velocity_phi_variance_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_velocity_phi'
+        result_name = name + '_var_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-1, 3.5, dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        label = 'Variance of the food velocity phi over time'
+        description = 'Variance of the angular coordinate of the food velocity'
+
+        if redo:
+            self.exp.load(name)
+
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.variance_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
+                                        end_index_intervals=end_frame_intervals,
+                                        category=self.category, result_name=result_name,
+                                        label=label, description=description)
+
+            self.exp.write(result_name)
+            self.exp.remove_object(name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-0.01, .1, .1))
+        plotter.draw_vertical_line(ax)
         plotter.save(fig)
 
     def compute_dotproduct_food_velocity_exit(self, redo=False, redo_hist=False, redo_plot_indiv=False):

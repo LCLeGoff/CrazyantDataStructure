@@ -6,7 +6,7 @@ from DataStructure.DataManager.Loaders.DataLoader import DataLoader
 from DataStructure.DataManager.Renamers.DataRenamer import DataRenamer
 from DataStructure.DataManager.Writers.DataWriter import DataWriter
 from DataStructure.VariableNames import dataset_name
-from Tools.MiscellaneousTools.PickleJsonFiles import import_id_exp_list, write_obj_json
+from Tools.MiscellaneousTools.PickleJsonFiles import import_id_exp_list, write_obj_json, import_obj_json
 
 
 class DataFileManager:
@@ -44,7 +44,17 @@ class DataFileManager:
         if self.is_name_in_data(name) == 1:
             return self.data_loader.load(name)
         else:
-            raise NameError(name + ' does not exist')
+            self._reload_definitions()
+            if self.is_name_in_data(name) == 1:
+                return self.data_loader.load(name)
+            else:
+                raise NameError(name + ' does not exist')
+
+    def _reload_definitions(self):
+        self.data_loader.definition_loader.definition_dict = import_obj_json(self.root + '/definition_dict.json')
+        self.existing_categories = set([
+            self.data_loader.definition_loader.definition_dict[key]['category']
+            for key in self.data_loader.definition_loader.definition_dict.keys()])
 
     def create_new_category(self, category):
 
