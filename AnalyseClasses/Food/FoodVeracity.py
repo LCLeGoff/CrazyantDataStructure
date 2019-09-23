@@ -60,8 +60,6 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
         end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
 
-        func = lambda a: np.abs(a)
-
         hist_label = 'Food direction error distribution over time (rad)'
         hist_description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
                            'which gives in radian how much the food is not going in the good direction (rad)'
@@ -70,7 +68,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(name)
             self.change_first_frame(name, init_frame_name)
 
-            self.exp.operation(name, func)
+            self.exp.operation(name, lambda a: np.abs(a))
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,

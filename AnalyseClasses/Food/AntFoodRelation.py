@@ -3,8 +3,7 @@ import numpy as np
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_angle_tab2, norm_vect_df, angle_distance, \
-    angle_sum
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_vect_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools.Geometry import distance
 
@@ -707,3 +706,84 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
                 name_to_average=n, time_window=time_window, category=self.category)
             self.exp.write(result_name)
+
+    def compute_ant_food_phi(self):
+        result_name = 'ant_food_phi'
+
+        name_x = 'x'
+        name_y = 'y'
+        name_xy = 'xy'
+        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y')
+
+        name_food_x = 'food_x'
+        name_food_y = 'food_y'
+        name_food_xy = 'food_xy'
+        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y')
+
+        df = self.__reindexing(name_food_xy, name_xy)
+
+        self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
+                          label='Angle of the (food, ant) vector',
+                          description='Angle of the (food, ant) vector')
+
+        df = self.exp.get_df(name_xy) - df
+        self.exp.change_df(result_name, angle_df(df))
+
+        self.exp.write(result_name)
+
+    def compute_ant_density_around_food_evol(self, redo=False):
+        result_name = 'ant_density_around_food_evol'
+        dist = 100
+
+        dtheta = np.pi/25.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
+        end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
+
+        hist_label = 'Ant density around the food over time'
+        hist_description = 'Ant density around the food over time'
+
+        if redo:
+            phi_name = 'ant_food_phi'
+            dist_name = 'distance2food'
+            init_frame_name = 'food_first_frame'
+            name_mm2px = 'mm2px'
+            name_radius = 'food_radius'
+            self.exp.load([dist_name, phi_name, init_frame_name, name_mm2px, name_radius])
+
+            def filter4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                id_ant = df.index.get_level_values(id_ant_name)[0]
+                print(id_exp, id_ant)
+
+                mm2px = self.exp.get_value(name_mm2px, id_exp)
+                radius = self.exp.get_value(name_radius, id_exp)
+
+                df_dist = self.exp.get_df(dist_name).loc[id_exp, id_ant, :]
+                df_dist2 = df_dist < dist*mm2px
+                df_dist2 &= (radius+5)*mm2px < df_dist
+
+                df = df.where(df_dist2[dist_name], np.nan)
+
+                return df
+
+            self.exp.groupby(phi_name, [id_exp_name, id_ant_name], filter4each_group)
+
+            self.change_first_frame(phi_name, init_frame_name)
+
+            self.exp.hist1d_evolution(name_to_hist=phi_name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
