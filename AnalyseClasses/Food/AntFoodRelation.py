@@ -134,7 +134,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         return df_d
 
     def __compute_distance_from_food(self, df_f):
-        df_d = np.around(np.sqrt((df_f.x - self.exp.xy.df.x) ** 2 + (df_f.y - self.exp.xy.df.y) ** 2), 3)
+        df_d = np.around(np.sqrt((df_f.x - self.exp.xy.df.x) ** 2 + (df_f.y - self.exp.xy.df.y) ** 2), 6)
         df_d = pd.DataFrame(df_d)
         return df_d
 

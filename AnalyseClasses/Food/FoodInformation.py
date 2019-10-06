@@ -417,7 +417,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             entropy = get_entropy(hist)
             max_entropy = get_max_entropy(hist)
 
-            self.exp.get_df(info_result_name).loc[t] = np.around(max_entropy - entropy, 2)
+            self.exp.get_df(info_result_name).loc[t] = np.around(max_entropy - entropy, 6)
 
     def compute_information_mm1s_food_direction_error_around_first_outside_attachments(
             self, redo=False, redo_info=False, redo_plot_hist=False):
@@ -576,7 +576,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             entropy = get_entropy(hist)
             max_entropy = get_max_entropy(hist)
 
-            self.exp.get_df(info_result_name).loc[t, th] = np.around(max_entropy - entropy, 2)
+            self.exp.get_df(info_result_name).loc[t, th] = np.around(max_entropy - entropy, 6)
 
     def __extract_10first_attachments(self, first_attach_name, variable_name):
         first_attach_index = [(id_exp, th) for id_exp in self.exp.id_exp_list for th in range(1, 11)]

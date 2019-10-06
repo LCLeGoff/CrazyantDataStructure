@@ -1510,7 +1510,7 @@ class ExperimentGroups:
                     mm_val = running_mean(values_array, time_window)[mask1]
                     mm_time = running_mean(time_array, time_window)[mask1]
 
-                    df[name] = np.around(mm_val / mm_time, 3)
+                    df[name] = np.around(mm_val / mm_time, 6)
 
                 return df
 

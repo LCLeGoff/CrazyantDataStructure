@@ -34,7 +34,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.add_copy1d(name_to_copy=food_phi_name, copy_name=result_name, category=self.category,
                                 label=result_label, description=result_description)
 
-            self.exp.change_values(result_name, np.around(tab, 5))
+            self.exp.change_values(result_name, np.around(tab, 6))
 
             self.exp.write(result_name)
 
@@ -317,7 +317,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.add_copy1d(name_to_copy=vel_name_x, copy_name=result_name, category=category,
                                 label=result_label, description=result_description)
 
-            self.exp.change_values(result_name, np.around(tab, 3))
+            self.exp.change_values(result_name, np.around(tab, 6))
 
             self.exp.write(result_name)
         else:

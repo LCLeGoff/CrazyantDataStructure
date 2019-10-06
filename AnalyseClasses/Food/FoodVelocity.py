@@ -65,7 +65,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 dy[-1] = dy[-1] - dy2
 
                 dvel_phi = angle(np.array(list(zip(dx, dy))))
-                self.exp.get_df(result_velocity_phi_name).loc[id_exp, :] = np.around(dvel_phi, 3)
+                self.exp.get_df(result_velocity_phi_name).loc[id_exp, :] = np.around(dvel_phi, 6)
 
                 self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx*fps, 3)
                 self.exp.get_df(result_velocity_y_name).loc[id_exp, :] = np.around(dy*fps, 3)

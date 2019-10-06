@@ -227,7 +227,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                 dy[dt > 2] = np.nan
 
                 fps = self.exp.get_value('fps', id_exp)
-                self.exp.get_df(name).loc[id_exp, :] = np.around(np.sqrt(dx ** 2 + dy ** 2) * fps, 3)
+                self.exp.get_df(name).loc[id_exp, :] = np.around(np.sqrt(dx ** 2 + dy ** 2) * fps, 6)
                 self.exp.get_df(name + '_x').loc[id_exp, :] = np.c_[np.around(dx * fps, 3)]
                 self.exp.get_df(name + '_y').loc[id_exp, :] = np.c_[np.around(dy * fps, 3)]
 
@@ -302,7 +302,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                 label='food trajectory phi', description='angular coordinate of the food trajectory'
                                                                          ' (in the food system)')
 
-            phi = np.around(angle(self.exp.food_xy.get_array()), 3)
+            phi = np.around(angle(self.exp.food_xy.get_array()), 6)
             self.exp.get_data_object(result_name).replace_values(phi)
 
             self.exp.write(result_name)
@@ -353,7 +353,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             return df
 
         df2 = self.exp.get_df(result_name).groupby(id_exp_name).apply(compute_angle4each_group)
-        self.exp.get_data_object(result_name).df = df2
+        self.exp.get_data_object(result_name).df = np.around(df2, 6)
 
         self.exp.write(result_name)
 
