@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import cmath
 
 
 def pts2vect(p, q):
@@ -8,6 +9,36 @@ def pts2vect(p, q):
 
 def segment_center(p, q):
     return (np.array(p) + np.array(q)) / 2.
+
+
+def get_line_df(pts1, pts2):
+    if pts1.x == pts2.x:
+        if pts1.y == pts2.y:
+            raise ValueError('pts1 and pts2 are identical')
+        else:
+            return np.nan, pts1.x
+    else:
+        if pts1.y == pts2.y:
+            return 0, pts1.y
+        else:
+            a = (pts1.y-pts2.y)/(pts1.x-pts2.x)
+            b = pts1.y-a*pts1.x
+            return a, b
+
+
+def get_line(pts1, pts2):
+    if pts1[0] == pts2[0]:
+        if pts1[1] == pts2[1]:
+            raise ValueError('pts1 and pts2 are identical')
+        else:
+            return np.nan, pts1[0]
+    else:
+        if pts1[1] == pts2[1]:
+            return 0, pts1[1]
+        else:
+            a = (pts1[1]-pts2[1])/(pts1[0]-pts2[0])
+            b = pts1[1]-a*pts1[0]
+            return a, b
 
 
 def convert2vect(u):
@@ -146,8 +177,12 @@ def angle_distance(phi, theta):
     return np.angle(np.exp(1j*(phi-theta)))
 
 
-def angle_sum(phi, theta):
-    return np.angle(np.exp(1j*(phi+theta)))
+def angle_sum(phis):
+    return cmath.phase(sum(cmath.rect(1, phi) for phi in phis))
+
+
+def angle_mean(phis):
+    return cmath.phase(sum(cmath.rect(1, phi) for phi in phis)/len(phis))
 
 
 def distance_between_point_and_line(p, line):
