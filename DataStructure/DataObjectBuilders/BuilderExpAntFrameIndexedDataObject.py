@@ -67,7 +67,8 @@ class BuilderExpAntFrameIndexedDataObject:
             h[:, i+1] = y
 
         column_names = [
-            str([start_frame_intervals[i], end_frame_intervals[i]]) for i in range(len(start_frame_intervals))]
+            str([start_frame_intervals[i]/100, end_frame_intervals[i]/100])
+            for i in range(len(start_frame_intervals))]
         df = PandasIndexManager().convert_array_to_df(
                 array=h, index_names='bins', column_names=column_names)
         return df.astype(int)

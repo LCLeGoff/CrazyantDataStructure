@@ -73,7 +73,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
-
+            self.exp.remove_object(name)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)

@@ -362,6 +362,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
                 self.exp.get_df(hists_result_name)[t] = hist
 
+            self.exp.remove_object(variable_name)
             self.exp.write(hists_result_name)
 
         else:
@@ -482,6 +483,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
             fct(hists_result_name, info_result_name)
 
+            self.exp.remove_object(variable_name)
             self.exp.write(info_result_name)
 
         else:

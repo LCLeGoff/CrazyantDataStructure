@@ -356,6 +356,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         self.exp.get_data_object(result_name).df = np.around(df2, 6)
 
         self.exp.write(result_name)
+        self.exp.remove_object(result_name)
 
     def compute_mm1s_food_exit_angle(self):
         name = 'food_exit_angle'

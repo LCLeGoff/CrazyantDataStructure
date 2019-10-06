@@ -58,9 +58,9 @@ class IndexedDataSetDecorator:
 
     def operation_with_data_obj(self, obj, func, self_name_col=None, obj_name_col=None):
         if self_name_col is None:
-            self_name_col = self.df.columns
+            self_name_col = self.df.columns[0]
         if obj_name_col is None:
-            obj_name_col = self.df.columns
+            obj_name_col = obj.df.columns[0]
 
         self.df[self_name_col] = func(self.df[self_name_col], obj.df[obj_name_col])
 

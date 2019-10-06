@@ -44,7 +44,7 @@ class ExperimentGroups:
         return self.__dict__[name]
 
     def get_columns(self, name):
-        return self.get_data_object(name).df.columns
+        return list(self.get_data_object(name).df.columns)
 
     def get_xname(self, name):
         return self.get_data_object(name).df.columns[0]
@@ -824,10 +824,10 @@ class ExperimentGroups:
             self.get_data_object(name1).operation_with_data_obj(obj=self.get_data_object(name2), func=func)
         elif self.__is_1d(name1) and not self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), func=func, obj_name_col=col_name1)
+                obj=self.get_data_object(name2), func=func, obj_name_col=col_name2)
         elif not self.__is_1d(name1) and self.__is_1d(name2):
             self.get_data_object(name1).operation_with_data_obj(
-                obj=self.get_data_object(name2), func=func, self_name_col=col_name2)
+                obj=self.get_data_object(name2), func=func, self_name_col=col_name1)
         else:
             self.get_data_object(name1).operation_with_data_obj(
                 obj=self.get_data_object(name2), func=func, self_name_col=col_name1, obj_name_col=col_name2)
