@@ -3,7 +3,7 @@ import numpy as np
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_vect_df, angle_distance
+from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_vect_df, angle_distance, angle_mean
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools.Geometry import distance
 
@@ -132,6 +132,50 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         df_d.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
         df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
         return df_d
+
+    def __reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
+        if column_names is None:
+            column_names = self.exp.get_columns(name_to_reindex)
+
+        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+
+        df = self.exp.get_df(name_to_reindex).copy()
+        df = df.reindex(idxs)
+        df[id_ant_name] = id_ants
+        df.reset_index(inplace=True)
+        df.columns = [id_exp_name, id_frame_name]+column_names+[id_ant_name]
+        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        return df
+
+    def __reindexing_exp_ant_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
+        if column_names is None:
+            column_names = self.exp.get_columns(name_to_reindex)
+
+        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, id_ants)), names=[id_exp_name, id_ant_name])
+
+        df = self.exp.get_df(name_to_reindex).copy()
+        df = df.reindex(idxs)
+        df[id_frame_name] = frames
+        df.reset_index(inplace=True)
+        df.columns = [id_exp_name, id_ant_name]+column_names+[id_frame_name]
+        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        return df
+
+    def reindexing_exp_indexed_by_exp_ant_frame_indexed(self, name2reindex, name_of_index):
+        df = self.exp.get_df(name_of_index).copy()
+        df[:] = np.nan
+        for id_exp in self.exp.get_index(name2reindex):
+            df.loc[id_exp, :, :] = self.exp.get_value(name2reindex, id_exp)
+
+        return df
 
     def __compute_distance_from_food(self, df_f):
         df_d = np.around(np.sqrt((df_f.x - self.exp.xy.df.x) ** 2 + (df_f.y - self.exp.xy.df.y) ** 2), 6)
@@ -512,21 +556,6 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         self.exp.write(res_name)
 
-    def __reindexing(self, name_to_reindex, name2):
-        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
-        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
-        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
-
-        df = self.exp.get_df(name_to_reindex).copy()
-        df = df.reindex(idxs)
-        df[id_ant_name] = id_ants
-        df.reset_index(inplace=True)
-        df.columns = [id_exp_name, id_frame_name, 'x', 'y', id_ant_name]
-        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
-
-        return df
-
     def compute_food_angular_component_ant_velocity(self, redo=False, redo_hist=False):
         result_name = 'food_angular_component_ant_velocity'
         print(result_name)
@@ -557,8 +586,8 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             speed_name = 'speed_xy'
             self.exp.load_as_2d(name_speed_x, name_speed_y, result_name=speed_name, xname='x', yname='y', replace=True)
 
-            df_food = self.__reindexing(food_name, name_xy)
-            df_food_speed = self.__reindexing(food_speed_name, speed_name)
+            df_food = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_name, name_xy)
+            df_food_speed = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, speed_name)
 
             df_food_ant = norm_vect_df(self.exp.get_df(name_xy)-df_food)
             df_velocity = norm_vect_df(self.exp.get_df(speed_name)-df_food_speed)
@@ -720,7 +749,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         name_food_xy = 'food_xy'
         self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y')
 
-        df = self.__reindexing(name_food_xy, name_xy)
+        df = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(name_food_xy, name_xy)
 
         self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
                           label='Angle of the (food, ant) vector',
@@ -733,57 +762,340 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
     def compute_ant_density_around_food_evol(self, redo=False):
         result_name = 'ant_density_around_food_evol'
-        dist = 100
+        init_frame_name = 'food_first_frame'
 
-        dtheta = np.pi/25.
-        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        hist_label = 'Evolution of ant density around the food over time'
+        hist_description = 'Evolution of ant density around the food over time'
 
         dx = 0.25
-        start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
-        end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
-
-        hist_label = 'Ant density around the food over time'
-        hist_description = 'Ant density around the food over time'
-
-        if redo:
-            phi_name = 'ant_food_phi'
-            dist_name = 'distance2food'
-            init_frame_name = 'food_first_frame'
-            name_mm2px = 'mm2px'
-            name_radius = 'food_radius'
-            self.exp.load([dist_name, phi_name, init_frame_name, name_mm2px, name_radius])
-
-            def filter4each_group(df: pd.DataFrame):
-                id_exp = df.index.get_level_values(id_exp_name)[0]
-                id_ant = df.index.get_level_values(id_ant_name)[0]
-                print(id_exp, id_ant)
-
-                mm2px = self.exp.get_value(name_mm2px, id_exp)
-                radius = self.exp.get_value(name_radius, id_exp)
-
-                df_dist = self.exp.get_df(dist_name).loc[id_exp, id_ant, :]
-                df_dist2 = df_dist < dist*mm2px
-                df_dist2 &= (radius+5)*mm2px < df_dist
-
-                df = df.where(df_dist2[dist_name], np.nan)
-
-                return df
-
-            self.exp.groupby(phi_name, [id_exp_name, id_ant_name], filter4each_group)
-
-            self.change_first_frame(phi_name, init_frame_name)
-
-            self.exp.hist1d_evolution(name_to_hist=phi_name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
-                                      result_name=result_name, category=self.category,
-                                      label=hist_label, description=hist_description)
-
-            self.exp.write(result_name)
-        else:
-            self.exp.load(result_name)
+        start_frame_intervals = np.array(np.arange(0, 3.5, dx) * 60 * 100, dtype=int)
+        end_frame_intervals = np.array(start_frame_intervals + dx * 60 * 100 * 2, dtype=int)
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            redo=redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
                                title='')
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
+
+    def compute_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of ant density around the food over time'
+        hist_description = 'Evolution of ant density around the food over time,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_outside_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'outside_ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of outside ant density around the food over time'
+        hist_description = 'Evolution of outside ant density around the food over time,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            outside=True, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_non_outside_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'non_outside_ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of inside ant density around the food over time'
+        hist_description = 'Evolution of inside ant density around the food over time,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            outside=False, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_slowing_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'slowing_ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of slowing ant density around the food over time'
+        hist_description = 'Evolution of slowing ant density around the food over time,' \
+                           ' means density of the position sof ants slowing down, i.e. which may marking,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            speed=True, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_slowing_outside_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'slowing_outside_ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of slowing outside ant density around the food over time'
+        hist_description = 'Evolution of slowing outside ant density around the food over time,' \
+                           ' means density of the position sof ants slowing down, i.e. which may marking,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            speed=True, outside=True, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_slowing_non_outside_ant_density_around_food_evol_first_outside_attachment(self, redo=False):
+        result_name = 'slowing_non_outside_ant_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of slowing inside ant density around the food over time'
+        hist_description = 'Evolution of slowing inside ant density around the food over time,' \
+                           ' means density of the position sof ants slowing down, i.e. which may marking,' \
+                           ' time 0 being the first outside attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self.__compute_ant_density_around_food(
+            result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label, hist_description,
+            speed=True, outside=False, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def __compute_ant_density_around_food(
+            self, result_name, init_frame_name, start_frame_intervals, end_frame_intervals,
+            hist_label, hist_description, outside=None, speed=False, redo=False):
+
+        dist = 60
+        speed_min = 1.
+
+        dtheta = 2*np.pi / 25.
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+
+        if redo:
+            df_dist = self.get_times_for_ant_density(
+                init_frame_name=init_frame_name, dist=dist, speed_min=speed_min, outside=outside, speed=speed)
+
+            ant_food_phi_name = 'ant_food_phi'
+            exit_angle_name = 'food_exit_angle'
+            dist2food_name = 'distance2food'
+
+            df_exit_angle = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+                exit_angle_name, dist2food_name, column_names=self.exp.get_columns(ant_food_phi_name))
+
+            df = self.exp.get_df(ant_food_phi_name).where(df_dist[dist2food_name], np.nan)
+            arr = angle_distance(df_exit_angle, df)
+            df[:] = np.abs(arr)
+            self.exp.change_df(ant_food_phi_name, df.dropna())
+
+            self.change_first_frame(ant_food_phi_name, init_frame_name)
+
+            self.exp.hist1d_evolution(name_to_hist=ant_food_phi_name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+
+            self.exp.remove_object(ant_food_phi_name)
+            self.exp.remove_object(dist2food_name)
+            self.exp.remove_object(exit_angle_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+    def get_times_for_ant_density(self, init_frame_name, dist, speed_min=None, outside=None, speed=None):
+
+        exit_angle_name = 'food_exit_angle'
+        ant_food_phi_name = 'ant_food_phi'
+        dist2food_name = 'distance2food'
+        dist2border_name = 'food_border_distance'
+        name_radius = 'food_radius'
+
+        self.exp.load([dist2food_name, dist2border_name, exit_angle_name,
+                       ant_food_phi_name, init_frame_name, name_radius])
+
+        df_radius = self.reindexing_exp_indexed_by_exp_ant_frame_indexed(name_radius, dist2food_name)
+        df_border_dist = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            dist2border_name, dist2food_name, column_names=self.exp.get_columns(dist2food_name))
+
+        df_dist = self.exp.get_df(dist2food_name).copy()
+        df_dist2 = df_dist < dist
+        df_dist2 &= df_radius * 1.1 < df_dist
+        df_dist2 &= df_border_dist > dist
+
+        if outside is not None:
+            outside_name = 'from_outside'
+            self.exp.load(outside_name)
+            df_from_outside = self.__reindexing_exp_ant_indexed_by_exp_ant_frame_indexed(
+                outside_name, dist2food_name, column_names=self.exp.get_columns(dist2food_name))
+            if outside is True:
+                df_dist2 &= df_from_outside.astype(bool)
+            else:
+                df_dist2 &= (1 - df_from_outside).astype(bool)
+
+        if speed is True:
+            speed_name = 'speed'
+            self.exp.load(speed_name)
+
+            df_speed = self.exp.get_df(speed_name) < speed_min
+            df_speed.columns = df_dist2.columns
+            df_speed = df_speed.reindex(df_dist2.index)
+            df_dist2 &= df_speed
+
+        return df_dist2
+
+    def loop_density_around_food_evol(self, redo=True):
+        result_name = 'loop_density_around_food_evol'
+        init_frame_name = 'food_first_frame'
+
+        hist_label = 'Evolution of loop density around the food'
+        hist_description = 'Evolution of the mean of ant positions (radial coordinate),' \
+                           ' while the ant is looping around the food'
+
+        dx = 0.5
+        start_frame_intervals = np.arange(0, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self._get_loop_density(result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label,
+                               hist_description, outside=None, speed=False, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def loop_density_around_food_evol_first_outside_attachment(self, redo=True):
+        result_name = 'loop_density_around_food_evol_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hist_label = 'Evolution of loop density around the food'
+        hist_description = 'Evolution of the mean of ant positions (radial coordinate),' \
+                           ' while the ant is looping around the food'
+
+        dx = 0.5
+        start_frame_intervals = np.arange(-1, 3., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        self._get_loop_density(result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label,
+                               hist_description, outside=None, speed=False, redo=redo)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def _get_loop_density(self, result_name, init_frame_name, start_frame_intervals, end_frame_intervals, hist_label,
+                          hist_description, outside, speed, redo):
+        speed_min = 1.
+        dist = 60
+        dtheta = np.pi / 25.
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+        if redo:
+            df_dist = self.get_times_for_ant_density(
+                init_frame_name=init_frame_name, dist=dist, speed_min=speed_min, outside=outside, speed=speed)
+
+            ant_food_phi_name = 'ant_food_phi'
+            exit_angle_name = 'food_exit_angle'
+            dist2food_name = 'distance2food'
+
+            df_exit_angle = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+                exit_angle_name, dist2food_name, column_names=self.exp.get_columns(ant_food_phi_name))
+
+            df_phi = self.exp.get_df(ant_food_phi_name).where(df_dist[dist2food_name], np.nan)
+            arr = angle_distance(df_exit_angle, df_phi)
+            df_phi[:] = np.abs(arr)
+            df_phi = df_phi.dropna()
+            self.exp.change_df(ant_food_phi_name, df_phi)
+
+            not_carrying_interval_name = 'not_carrying_intervals'
+            self.exp.load([not_carrying_interval_name, 'fps'])
+            mean_pos_name = 'means'
+            self.exp.add_copy(old_name=not_carrying_interval_name, new_name=mean_pos_name, replace=True)
+            self.exp.get_df(mean_pos_name)[:] = np.nan
+
+            def add_loop_index4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp)
+                fps = self.exp.get_value('fps', id_exp)
+                intervals = self.exp.get_df(not_carrying_interval_name).loc[id_exp, :, :].reset_index().values
+                intervals[:, -1] *= fps
+                intervals[:, -1] += intervals[:, -2]
+
+                for id_exp, id_ant, frame0, frame1 in intervals.astype(int):
+                    temp_df = df.loc[id_exp, id_ant, frame0:frame1]
+                    if len(temp_df) != 0:
+                        angle_tab = temp_df.values
+                        m = round(angle_mean(angle_tab[~np.isnan(angle_tab)]), 6)
+                        self.exp.get_df(mean_pos_name).loc[id_exp, id_ant, frame0] = m
+
+                return df
+
+            self.exp.groupby(ant_food_phi_name, id_exp_name, add_loop_index4each_group)
+
+            self.change_first_frame(mean_pos_name, init_frame_name)
+
+            self.exp.hist1d_evolution(name_to_hist=mean_pos_name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+
+            self.exp.remove_object(ant_food_phi_name)
+            self.exp.remove_object(dist2food_name)
+            self.exp.remove_object(exit_angle_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)

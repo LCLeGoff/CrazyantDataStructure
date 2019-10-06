@@ -3,7 +3,7 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_entropy, get_max_entropy
+from Tools.MiscellaneousTools.ArrayManipulation import get_entropy, get_max_entropy, get_interval_containing
 from Tools.Plotter.ColorObject import ColorObject
 from Tools.Plotter.Plotter import Plotter
 
@@ -412,6 +412,14 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         ax[1].set_ylim(ylim_zoom)
         plotter.save(fig)
 
+    def __plot_info_vs_nb_attach(self, info_result_name, xlabel, ylabel):
+
+        self.exp.remove_object(info_result_name)
+        self.exp.load(info_result_name)
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='')
+        plotter.save(fig)
+
     def __compute_entropy(self, time_intervals, hists_result_name, info_result_name):
         for t in time_intervals:
             hist = self.exp.get_df(hists_result_name)[t]
@@ -517,6 +525,533 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         ax[1].set_xlim((-2, 8))
         ax[1].set_ylim(ylim)
         plotter.save(fig)
+
+    def __compute_entropy_evol(self, time_intervals, hists_result_name, info_result_name):
+        column_names = self.exp.get_columns(info_result_name)
+        for inter in column_names:
+            for dt in time_intervals:
+                hist = self.exp.get_df(hists_result_name).loc[pd.IndexSlice[dt, :], inter]
+                entropy = get_entropy(hist)
+                max_entropy = get_max_entropy(hist)
+
+                self.exp.get_df(info_result_name).loc[dt, inter] = np.around(max_entropy - entropy, 3)
+
+    def __plot_info_evol(self, info_result_name, ylabel, ylim_zoom):
+
+        self.exp.remove_object(info_result_name)
+        self.exp.load(info_result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
+        plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel=ylabel, title='')
+
+        ax[0].axvline(0, ls='--', c='k')
+        plotter.plot(preplot=(fig, ax[1]), title='')
+        ax[1].axvline(0, ls='--', c='k')
+        ax[1].set_xlim((-2, 8))
+        ax[1].set_ylim(ylim_zoom)
+        plotter.save(fig)
+
+    def __plot_info_evol_vs_nbr_attach(self, info_result_name, xlabel, ylabel):
+
+        self.exp.remove_object(info_result_name)
+        self.exp.load(info_result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='')
+        plotter.save(fig)
+
+    def __compute_information_around_attachments_evol(
+            self, fct, dpi, start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info):
+
+        t0, t1, dt = -60, 60, 0.5
+        time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+
+        dtheta = np.pi * dpi
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+        hists_index_values = np.around((bins[1:] + bins[:-1]) / 2., 3)
+
+        column_names = [
+            str([start_frame_intervals[i] / 100., end_frame_intervals[i] / 100.])
+            for i in range(len(start_frame_intervals))]
+
+        if redo:
+
+            index_values = [(dt, theta) for dt in time_intervals for theta in hists_index_values]
+
+            self.exp.add_new_empty_dataset(name=hists_result_name, index_names=['dt', 'food_direction_error'],
+                                           column_names=column_names, index_values=index_values,
+                                           category=self.category, label=hists_label, description=hists_description)
+            self.exp.load(init_frame_name)
+            self.change_first_frame(variable_name, init_frame_name)
+
+            for t in time_intervals:
+                for i in range(len(start_frame_intervals)):
+                    index0 = start_frame_intervals[i]
+                    index1 = end_frame_intervals[i]
+
+                    df = self.exp.get_df(variable_name)[str(t)]
+                    frames = df.index.get_level_values(id_frame_name)
+                    index_location = (frames > index0) & (frames < index1)
+
+                    df = df.loc[index_location]
+                    hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
+                    s = float(np.sum(hist))
+                    hist = hist / s
+
+                    self.exp.get_df(hists_result_name).loc[pd.IndexSlice[t, :], column_names[i]] = hist
+
+            self.exp.remove_object(variable_name)
+            self.exp.write(hists_result_name)
+
+        else:
+            self.exp.load(hists_result_name)
+
+        if redo or redo_info:
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='dt', column_names=column_names,
+                                           index_values=time_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+
+            fct(time_intervals, hists_result_name, info_result_name)
+
+            self.exp.write(info_result_name)
+
+        else:
+            self.exp.load(info_result_name)
+
+        ylabel = 'Information (bit)'
+
+        self.__plot_info_evol(info_result_name, ylabel, ylim_zoom)
+
+    def compute_information_mm1s_food_direction_error_around_outside_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.1, 0.7)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_around_non_outside_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_non_outside_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around non outside ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around non outside ant attachments'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.1, 0.8)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_around_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_attachments'
+        variable_name2 = 'mm1s_food_direction_error_around_non_outside_attachments'
+        self.exp.load([variable_name, variable_name2])
+        self.exp.get_data_object(variable_name).df =\
+            pd.concat([self.exp.get_df(variable_name), self.exp.get_df(variable_name2)])
+
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_mm1s_food_direction_error_around_attachments_evol'
+        info_result_name = 'information_mm1s_food_direction_error_around_attachments_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around ant attachments'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.1, 0.7)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_over_nbr_new_attachments(
+            self, redo=False, redo_info=False):
+
+        attachment_name = 'carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self.__compute_entropy
+        fct_info_evol = self.__compute_entropy_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_mm1s_food_direction_error_over_nb_new_attachments'
+        info_result_name = 'information_mm1s_food_direction_error_over_nb_new_attachments'
+
+        hists_label = 'Histograms of the food direction error over the number of attachments'
+        explanation = " over the number of attachments occurred the last 8 seconds. More precisely, to report an "\
+                      " attachment influence, we count that an attachment is happening up to 8 seconds" \
+                      " (or less if the attachment lasts less) after it occurs."
+        hists_description = "Histograms of the food direction error"+explanation
+
+        info_label = 'Information of the food over the number of attachments'
+        info_description = "Information of the food (max entropy - entropy of the food direction error)"+explanation
+
+        hists_result_evol_name = hists_result_name+'_evol'
+        info_result_evol_name = info_result_name+'_evol'
+        hists_label_evol = hists_label+' over time'
+        hists_description_evol = 'Time evolution of '+hists_description
+        info_label_evol = info_label+' over time'
+        info_description_evol = 'Time evolution of '+info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        dpi = 1/12.
+
+        attach_intervals = range(20)
+
+        xlabel = 'Number of attachments'
+        self.__compute_information_over_nb_new_attachments(
+            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
+            hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_over_nbr_new_outside_attachments(
+            self, redo=False, redo_info=False):
+
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self.__compute_entropy
+        fct_info_evol = self.__compute_entropy_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_mm1s_food_direction_error_over_nb_new_outside_attachments'
+        info_result_name = 'information_mm1s_food_direction_error_over_nb_new_outside_attachments'
+
+        hists_label = 'Histograms of the food direction error over the number of outside attachments'
+        explanation = " over the number of outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an outside attachment influence, we count that an outside attachment is happening" \
+                      " up to  8 seconds (or less if the attachment lasts less) after it occurs."
+        hists_description = "Histograms of the food direction error" + explanation
+
+        info_label = 'Information of the food over the number of outside attachments'
+        info_description = "Information of the food (max entropy - entropy of the food direction error)" + explanation
+
+        hists_result_evol_name = hists_result_name + '_evol'
+        info_result_evol_name = info_result_name + '_evol'
+        hists_label_evol = hists_label + ' over time'
+        hists_description_evol = 'Time evolution of ' + hists_description
+        info_label_evol = info_label + ' over time'
+        info_description_evol = 'Time evolution of ' + info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx * 60 * 100 * 2
+
+        dpi = 1 / 12.
+
+        attach_intervals = range(20)
+
+        xlabel = 'Number of attachments'
+        self.__compute_information_over_nb_new_attachments(
+            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
+            hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_over_nbr_new_non_outside_attachments(
+            self, redo=False, redo_info=False):
+
+        attachment_name = 'non_outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self.__compute_entropy
+        fct_info_evol = self.__compute_entropy_evol
+
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_mm1s_food_direction_error_over_nb_new_non_outside_attachments'
+        info_result_name = 'information_mm1s_food_direction_error_over_nb_new_non_outside_attachments'
+
+        hists_label = 'Histograms of the food direction error over the number of non outside attachments'
+        explanation = " over the number of outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an non outside attachment influence, we count that an non outside attachment" \
+                      " is happening up to  8 seconds (or less if the attachment lasts less) after it occurs."
+        hists_description = "Histograms of the food direction error" + explanation
+
+        info_label = 'Information of the food over the number of non outside attachments'
+        info_description = "Information of the food (max entropy - entropy of the food direction error)" + explanation
+
+        hists_result_evol_name = hists_result_name + '_evol'
+        info_result_evol_name = info_result_name + '_evol'
+        hists_label_evol = hists_label + ' over time'
+        hists_description_evol = 'Time evolution of ' + hists_description
+        info_label_evol = info_label + ' over time'
+        info_description_evol = 'Time evolution of ' + info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx * 60 * 100 * 2
+
+        dpi = 1 / 12.
+
+        attach_intervals = range(20)
+
+        xlabel = 'Number of attachments'
+        self.__compute_information_over_nb_new_attachments(
+            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
+            hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_over_ratio_new_attachments(
+            self, redo=False, redo_info=False):
+
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_ratio_attachments
+        fct_info = self.__compute_entropy
+        fct_info_evol = self.__compute_entropy_evol
+
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_mm1s_food_direction_error_over_ratio_new_attachments'
+        info_result_name = 'information_mm1s_food_direction_error_over_ratio_new_attachments'
+
+        hists_label = 'Histograms of the food direction error over the number of non outside attachments'
+        explanation = " over the number of outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an non outside attachment influence, we count that an non outside attachment" \
+                      " is happening up to  8 seconds (or less if the attachment lasts less) after it occurs."
+        hists_description = "Histograms of the food direction error" + explanation
+
+        info_label = 'Information of the food over the number of non outside attachments'
+        info_description = "Information of the food (max entropy - entropy of the food direction error)" + explanation
+
+        hists_result_evol_name = hists_result_name + '_evol'
+        info_result_evol_name = info_result_name + '_evol'
+        hists_label_evol = hists_label + ' over time'
+        hists_description_evol = 'Time evolution of ' + hists_description
+        info_label_evol = info_label + ' over time'
+        info_description_evol = 'Time evolution of ' + info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx * 60 * 100 * 2
+
+        attach_intervals = np.around(np.arange(-0.2, 1.1, 0.2), 1)
+        print(attach_intervals)
+
+        dpi = 1 / 12.
+        xlabel = 'Ratio of attachments'
+        self.__compute_information_over_nb_new_attachments(
+            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
+            hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo, redo_info)
+
+    def __compute_information_over_nb_new_attachments(
+            self, variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
+            hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo, redo_info):
+
+        dtheta = np.pi * dpi
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+        hists_index_values = np.around((bins[1:] + bins[:-1]) / 2., 3)
+        column_names = [
+            str([start_frame_intervals[i] / 100., end_frame_intervals[i] / 100.])
+            for i in range(len(start_frame_intervals))]
+        if redo:
+            init_frame_name = 'first_attachment_time_of_outside_ant'
+            self.change_first_frame(variable_name, init_frame_name)
+
+            fct_get_attachment(attachment_name, variable_name, attach_intervals)
+
+            print('create res obj')
+            index_values = [(nb_attach, theta) for nb_attach in attach_intervals for theta in hists_index_values]
+            self.exp.add_new_empty_dataset(name=hists_result_evol_name,
+                                           index_names=['nb_attachments', 'food_direction_error'],
+                                           column_names=column_names, index_values=index_values,
+                                           category=self.category, label=hists_label_evol,
+                                           description=hists_description_evol)
+            print('create res obj')
+            self.exp.add_new_empty_dataset(
+                name=hists_result_name, index_names='nb_attachments', column_names=attach_intervals,
+                index_values=hists_index_values,
+                category=self.category, label=hists_label, description=hists_description)
+
+            print('create res obj')
+            nb_attach_list = set(self.exp.get_index(variable_name).get_level_values('nb_attachments'))
+            print(nb_attach_list)
+            for nb in nb_attach_list:
+                print(nb)
+                df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, :, nb], :]
+                hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
+                s = float(np.sum(hist))
+                hist = hist / s
+                self.exp.get_df(hists_result_name)[nb] = hist
+
+                for i in range(len(start_frame_intervals)):
+                    frame0 = start_frame_intervals[i]
+                    frame1 = end_frame_intervals[i]
+
+                    df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, frame0:frame1, nb], :]
+                    hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
+                    s = float(np.sum(hist))
+                    hist = hist / s
+
+                    self.exp.get_df(hists_result_evol_name).loc[pd.IndexSlice[nb, :], column_names[i]] = hist
+
+            self.exp.remove_object(variable_name)
+            self.exp.write(hists_result_name)
+
+        else:
+            self.exp.load(hists_result_name)
+        if redo or redo_info:
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
+                                           index_values=attach_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+            fct_info(attach_intervals, hists_result_name, info_result_name)
+            self.exp.write(info_result_name)
+
+            self.exp.add_new_empty_dataset(name=info_result_evol_name, index_names='nb_attach',
+                                           column_names=column_names, index_values=attach_intervals,
+                                           category=self.category,
+                                           label=info_label_evol, description=info_description_evol)
+
+            fct_info_evol(attach_intervals, hists_result_evol_name, info_result_evol_name)
+
+            self.exp.write(info_result_evol_name)
+
+        else:
+            self.exp.load(info_result_name)
+            self.exp.load(info_result_evol_name)
+        ylabel = 'Information (bit)'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
+
+    def _get_nb_attachments(self, attachment_name, variable_name, attach_intervals):
+        if attach_intervals:
+            pass
+
+        idx = self.exp.get_index(variable_name)
+        nb_attachment_name = 'nb_attachment'
+        self.exp.add_new_empty_dataset(
+            name=nb_attachment_name, index_names=[id_exp_name, id_frame_name], column_names=nb_attachment_name,
+            index_values=idx, fill_value=0, replace=True)
+
+        self.exp.load([attachment_name, 'fps'])
+        attachment_arr = self.exp.get_df(attachment_name).reset_index().values
+        for id_exp, id_ant, frame0, time in attachment_arr:
+            fps = self.exp.get_value('fps', id_exp)
+            dframe = time * fps
+            frame1 = int(frame0 + min(dframe, 8 * fps))
+            self.exp.get_df(nb_attachment_name).loc[pd.IndexSlice[int(id_exp), int(frame0):frame1], :] += 1
+
+        idx2 = list(zip(self.exp.get_index(nb_attachment_name).get_level_values(id_exp_name),
+                        self.exp.get_index(nb_attachment_name).get_level_values(id_frame_name),
+                        self.exp.get_df(nb_attachment_name).values.ravel()))
+        self.exp.get_df(variable_name).index = pd.MultiIndex.from_tuples(
+            idx2, names=[id_exp_name, id_frame_name, 'nb_attachments'])
+
+    def _get_ratio_attachments(self, attachment_name, variable_name, attach_intervals):
+
+        inside_attachment_name = 'non_'+attachment_name
+        self.exp.load([attachment_name, inside_attachment_name, 'fps'])
+        idx = self.exp.get_index(variable_name)
+
+        for i, (nb_attachment_name, attachment_name2) in enumerate(
+                [('nb_outside_attachment', attachment_name),
+                 ('nb_inside_attachment', inside_attachment_name)]):
+            print(nb_attachment_name)
+
+            self.exp.add_new_empty_dataset(
+                name=nb_attachment_name, index_names=[id_exp_name, id_frame_name],
+                column_names='nb', index_values=idx, fill_value=0, replace=True)
+
+            attachment_arr = self.exp.get_df(attachment_name2).reset_index().values
+            for id_exp, id_ant, frame0, time in attachment_arr:
+                fps = self.exp.get_value('fps', id_exp)
+                dframe = time * fps
+                frame1 = int(frame0 + min(dframe, 8 * fps))
+                self.exp.get_df(nb_attachment_name).loc[pd.IndexSlice[int(id_exp), int(frame0):frame1], :] += 1
+
+        nb_outside_attach_arr = self.exp.get_df('nb_outside_attachment').values.ravel()
+        nb_inside_attach_arr = self.exp.get_df('nb_inside_attachment').values.ravel()
+        idx_ratio = nb_outside_attach_arr/(nb_inside_attach_arr+nb_outside_attach_arr).astype(float)
+        idx_ratio[np.isnan(idx_ratio)] = -0.1
+        for i in range(len(idx_ratio)):
+            idx_ratio[i] = get_interval_containing(idx_ratio[i], attach_intervals)
+
+        print('idx2')
+        idx2 = list(zip(self.exp.get_index('nb_outside_attachment').get_level_values(id_exp_name),
+                        self.exp.get_index('nb_outside_attachment').get_level_values(id_frame_name),
+                        idx_ratio))
+        print('reindex')
+        self.exp.get_df(variable_name).index = pd.MultiIndex.from_tuples(
+            idx2, names=[id_exp_name, id_frame_name, 'nb_attachments'])
 
     def compute_fisher_information_mm1s_food_direction_error_around_first_outside_attachments(self, redo=False):
 

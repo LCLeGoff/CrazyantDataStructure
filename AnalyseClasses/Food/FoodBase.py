@@ -5,7 +5,7 @@ from matplotlib.path import Path
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools.Geometry import angle_df, angle, dot2d_df, distance_between_point_and_line_df, \
-    distance_df
+    distance_df, get_line_df, rotation
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -473,6 +473,81 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel='distance (mm)', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig)
+
+    def compute_food_border_distance(self, redo=False):
+        result_name = 'food_border_distance'
+        print(result_name)
+
+        if redo:
+            food_x_name = 'mm10_food_x'
+            food_y_name = 'mm10_food_y'
+            food_name = 'food_xy'
+            exit_name1 = 'exit1'
+            exit_name2 = 'exit2'
+
+            self.exp.load([food_x_name, food_y_name, exit_name1, exit_name2])
+
+            self.exp.add_2d_from_1ds(name1=food_x_name, name2=food_y_name, result_name=food_name, xname='x', yname='y',
+                                     replace=True)
+
+            self.exp.add_copy(old_name=food_x_name, new_name=result_name,
+                              category=self.category, label='Food border distance (mm)',
+                              description='Shortest distance between the food and the setup border (mm)')
+
+            length = 420
+            width = 297
+
+            def compute_angle4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp)
+
+                exit1 = self.exp.get_data_object('exit1').df.loc[id_exp, :]
+                exit2 = self.exp.get_data_object('exit2').df.loc[id_exp, :]
+
+                if exit1.y > exit2.y:
+                    exit_temp = exit1.copy()
+                    exit1 = exit2.copy()
+                    exit2 = exit_temp
+
+                a, b = get_line_df(exit1, exit2)
+                theta = np.arctan(a)
+
+                d = (width/2.-exit2.y)*np.sin(theta)
+                y1 = exit2.y+d
+                x1 = (y1-b)/a
+
+                d = (width/2.+exit1.y)*np.sin(theta)
+                y2 = exit1.y-d
+                x2 = (y2-b)/a
+
+                if a > 0:
+                    theta_rotation = -theta + np.pi / 2.
+                else:
+                    theta_rotation = theta - np.pi / 2.
+
+                x4, y4 = rotation(np.array([-length, 0]) + np.array([x1, y1]), theta_rotation, np.array([x1, y1]))
+                x3, y3 = rotation(np.array([-length, 0]) + np.array([x2, y2]), theta_rotation, np.array([x2, y2]))
+
+                line1 = [pd.Series({'x': x1, 'y': y1}), pd.Series({'x': x2, 'y': y2})]
+                line2 = [pd.Series({'x': x2, 'y': y2}), pd.Series({'x': x3, 'y': y3})]
+                line3 = [pd.Series({'x': x3, 'y': y3}), pd.Series({'x': x4, 'y': y4})]
+                line4 = [pd.Series({'x': x1, 'y': y1}), pd.Series({'x': x4, 'y': y4})]
+
+                food = self.exp.get_data_object(food_name).df.loc[pd.IndexSlice[id_exp, :], :]
+                df2 = pd.DataFrame(index=df.index)
+                df2['line1'] = distance_between_point_and_line_df(food, line1)
+                df2['line2'] = distance_between_point_and_line_df(food, line2)
+                df2['line3'] = distance_between_point_and_line_df(food, line3)
+                df2['line4'] = distance_between_point_and_line_df(food, line4)
+
+                df[:] = np.c_[df2.min(axis=1)]
+
+                return df.round(3)
+
+            df_res = self.exp.get_df(result_name).groupby(id_exp_name).apply(compute_angle4each_group)
+            self.exp.get_data_object(result_name).df = df_res
+
+            self.exp.write(result_name)
 
     def compute_food_r(self, redo=False):
         res_name = 'food_r'
