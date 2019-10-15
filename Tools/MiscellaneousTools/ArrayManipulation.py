@@ -54,14 +54,25 @@ def auto_corr(tab):
     return r / (variance * (np.arange(len(tab), 0, -1)))
 
 
-def get_entropy(tab):
+def get_entropy(tab, get_variance=False):
     tab2 = np.array(tab)
     mask = np.where(tab2 != 0)[0]
-    return -np.sum(tab2[mask]*np.log2(tab2[mask]))
+    tab2 = tab2[mask]
+
+    h = -np.sum(tab2 * np.log2(tab2))
+    if get_variance is True:
+        v = np.sum(tab2 * np.log2(tab2)**2)
+        n = len(tab2)
+        v = (v-h**2)/float(n)
+        return h, v
+    else:
+        return h
 
 
 def get_max_entropy(tab):
-    return -np.log2(1/float(len(tab)))
+    n = len(tab)
+    tab2 = np.ones(n)/float(n)
+    return get_entropy(tab2)
 
 
 def smooth(tab, window):

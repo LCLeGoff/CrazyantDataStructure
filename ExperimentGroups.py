@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 from cv2 import cv2
 
 from DataStructure.DataManager.DataFileManager import DataFileManager

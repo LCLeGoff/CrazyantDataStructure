@@ -412,12 +412,14 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         ax[1].set_ylim(ylim_zoom)
         plotter.save(fig)
 
-    def __plot_info_vs_nb_attach(self, info_result_name, xlabel, ylabel):
+    def __plot_info_vs_nb_attach(self, info_result_name, xlabel, ylabel, ylim=None):
 
         self.exp.remove_object(info_result_name)
         self.exp.load(info_result_name)
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
         fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='')
+        if ylim is not None:
+            ax.set_ylim(ylim)
         plotter.save(fig)
 
     def __compute_entropy(self, time_intervals, hists_result_name, info_result_name):
@@ -552,13 +554,15 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         ax[1].set_ylim(ylim_zoom)
         plotter.save(fig)
 
-    def __plot_info_evol_vs_nbr_attach(self, info_result_name, xlabel, ylabel):
+    def __plot_info_evol_vs_nbr_attach(self, info_result_name, xlabel, ylabel, ylim=None):
 
         self.exp.remove_object(info_result_name)
         self.exp.load(info_result_name)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
         fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='')
+        if ylim is not None:
+            ax.set_ylim(ylim)
         plotter.save(fig)
 
     def __compute_information_around_attachments_evol(
@@ -761,13 +765,17 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         attach_intervals = range(20)
 
-        xlabel = 'Number of attachments'
         self.__compute_information_over_nb_new_attachments(
-            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            variable_name, attach_intervals, dpi, start_frame_intervals, end_frame_intervals,
             fct_info, fct_info_evol, fct_get_attachment, attachment_name,
             hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
             hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
             info_result_name, info_result_evol_name, redo, redo_info)
+
+        xlabel = 'Ratio of attachments'
+        ylabel = 'Information (bit)'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel, ylim=(0, 3))
 
     def compute_information_mm1s_food_direction_error_over_nbr_new_outside_attachments(
             self, redo=False, redo_info=False):
@@ -807,13 +815,17 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         attach_intervals = range(20)
 
-        xlabel = 'Number of attachments'
         self.__compute_information_over_nb_new_attachments(
-            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            variable_name, attach_intervals, dpi, start_frame_intervals, end_frame_intervals,
             fct_info, fct_info_evol, fct_get_attachment, attachment_name,
             hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
             hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
             info_result_name, info_result_evol_name, redo, redo_info)
+
+        xlabel = 'Ratio of attachments'
+        ylabel = 'Information (bit)'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
 
     def compute_information_mm1s_food_direction_error_over_nbr_new_non_outside_attachments(
             self, redo=False, redo_info=False):
@@ -855,12 +867,27 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         attach_intervals = range(20)
 
         xlabel = 'Number of attachments'
+        ylabel = 'Information (bit)'
         self.__compute_information_over_nb_new_attachments(
             variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
             fct_info, fct_info_evol, fct_get_attachment, attachment_name,
             hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
             hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
             info_result_name, info_result_evol_name, redo, redo_info)
+
+        info_outside_name = 'information_mm1s_food_direction_error_over_nb_new_outside_attachments'
+        info_name = 'information_mm1s_food_direction_error_over_nb_new_attachments'
+        self.exp.load([info_outside_name, info_name])
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='', label='Inside attachments')
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_outside_name))
+        plotter.plot(preplot=(fig, ax), c='w', label='Outside attachments', title='', xlabel=xlabel)
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_name))
+        plotter.plot(preplot=(fig, ax), c='r', label='All attachments', title='', xlabel=xlabel)
+        ax.set_xlim((-0.5, 10))
+        ax.legend()
+        plotter.save(fig,
+                     name='information_mm1s_food_direction_error_over_nb_new_outside_and_inside_attachments')
 
     def compute_information_mm1s_food_direction_error_over_ratio_new_attachments(
             self, redo=False, redo_info=False):
@@ -877,13 +904,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         hists_result_name = 'histograms_mm1s_food_direction_error_over_ratio_new_attachments'
         info_result_name = 'information_mm1s_food_direction_error_over_ratio_new_attachments'
 
-        hists_label = 'Histograms of the food direction error over the number of non outside attachments'
-        explanation = " over the number of outside attachments occurred the last 8 seconds. More precisely," \
-                      " to report an non outside attachment influence, we count that an non outside attachment" \
+        hists_label = 'Histograms of the food direction error over the ratio of outside attachments'
+        explanation = " over the ratio of outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an attachment influence, we count that an attachment" \
                       " is happening up to  8 seconds (or less if the attachment lasts less) after it occurs."
         hists_description = "Histograms of the food direction error" + explanation
 
-        info_label = 'Information of the food over the number of non outside attachments'
+        info_label = 'Information of the food over the ratio of outside attachments'
         info_description = "Information of the food (max entropy - entropy of the food direction error)" + explanation
 
         hists_result_evol_name = hists_result_name + '_evol'
@@ -901,16 +928,20 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         print(attach_intervals)
 
         dpi = 1 / 12.
-        xlabel = 'Ratio of attachments'
         self.__compute_information_over_nb_new_attachments(
-            variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            variable_name, attach_intervals, dpi, start_frame_intervals, end_frame_intervals,
             fct_info, fct_info_evol, fct_get_attachment, attachment_name,
             hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
             hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
             info_result_name, info_result_evol_name, redo, redo_info)
 
+        xlabel = 'Ratio of attachments'
+        ylabel = 'Information (bit)'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
+
     def __compute_information_over_nb_new_attachments(
-            self, variable_name, attach_intervals, dpi, xlabel, start_frame_intervals, end_frame_intervals,
+            self, variable_name, attach_intervals, dpi, start_frame_intervals, end_frame_intervals,
             fct_info, fct_info_evol, fct_get_attachment, attachment_name,
             hists_description, hists_description_evol, hists_label, hists_label_evol, hists_result_name,
             hists_result_evol_name, info_description, info_description_evol, info_label, info_label_evol,
@@ -922,6 +953,37 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         column_names = [
             str([start_frame_intervals[i] / 100., end_frame_intervals[i] / 100.])
             for i in range(len(start_frame_intervals))]
+
+        self._get_hist_evol(variable_name, attachment_name, column_names, hists_result_name, hists_result_evol_name,
+                            attach_intervals, bins, start_frame_intervals, end_frame_intervals, fct_get_attachment,
+                            hists_label, hists_description, hists_label_evol, hists_description_evol,
+                            hists_index_values, redo)
+
+        if redo or redo_info:
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
+                                           index_values=attach_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+            fct_info(attach_intervals, hists_result_name, info_result_name)
+            self.exp.write(info_result_name)
+
+            self.exp.add_new_empty_dataset(name=info_result_evol_name, index_names='nb_attach',
+                                           column_names=column_names, index_values=attach_intervals,
+                                           category=self.category,
+                                           label=info_label_evol, description=info_description_evol)
+
+            fct_info_evol(attach_intervals, hists_result_evol_name, info_result_evol_name)
+
+            self.exp.write(info_result_evol_name)
+
+        else:
+            self.exp.load(info_result_name)
+            self.exp.load(info_result_evol_name)
+
+    def _get_hist_evol(self, variable_name, attachment_name, column_names, hists_result_name, hists_result_evol_name,
+                       attach_intervals, bins, start_frame_intervals, end_frame_intervals, fct_get_attachment,
+                       hists_label, hists_description, hists_label_evol, hists_description_evol, hists_index_values,
+                       redo):
         if redo:
             init_frame_name = 'first_attachment_time_of_outside_ant'
             self.change_first_frame(variable_name, init_frame_name)
@@ -946,51 +1008,31 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             print(nb_attach_list)
             for nb in nb_attach_list:
                 print(nb)
-                df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, :, nb], :]
-                hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
-                s = float(np.sum(hist))
-                hist = hist / s
-                self.exp.get_df(hists_result_name)[nb] = hist
+                df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, :, nb], :].dropna()
+                if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
+                    hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
+                    s = float(np.sum(hist))
+                    hist = hist / s
+
+                    self.exp.get_df(hists_result_name)[nb] = hist
 
                 for i in range(len(start_frame_intervals)):
                     frame0 = start_frame_intervals[i]
                     frame1 = end_frame_intervals[i]
 
-                    df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, frame0:frame1, nb], :]
-                    hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
-                    s = float(np.sum(hist))
-                    hist = hist / s
+                    df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, frame0:frame1, nb], :].dropna()
+                    if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
+                        hist = np.histogram(df.dropna(), bins=bins, normed=False)[0]
+                        s = float(np.sum(hist))
+                        hist = hist / s
 
-                    self.exp.get_df(hists_result_evol_name).loc[pd.IndexSlice[nb, :], column_names[i]] = hist
+                        self.exp.get_df(hists_result_evol_name).loc[pd.IndexSlice[nb, :], column_names[i]] = hist
 
             self.exp.remove_object(variable_name)
             self.exp.write(hists_result_name)
 
         else:
             self.exp.load(hists_result_name)
-        if redo or redo_info:
-
-            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
-                                           index_values=attach_intervals, category=self.category,
-                                           label=info_label, description=info_description)
-            fct_info(attach_intervals, hists_result_name, info_result_name)
-            self.exp.write(info_result_name)
-
-            self.exp.add_new_empty_dataset(name=info_result_evol_name, index_names='nb_attach',
-                                           column_names=column_names, index_values=attach_intervals,
-                                           category=self.category,
-                                           label=info_label_evol, description=info_description_evol)
-
-            fct_info_evol(attach_intervals, hists_result_evol_name, info_result_evol_name)
-
-            self.exp.write(info_result_evol_name)
-
-        else:
-            self.exp.load(info_result_name)
-            self.exp.load(info_result_evol_name)
-        ylabel = 'Information (bit)'
-        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
-        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
 
     def _get_nb_attachments(self, attachment_name, variable_name, attach_intervals):
         if attach_intervals:
@@ -1045,11 +1087,9 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         for i in range(len(idx_ratio)):
             idx_ratio[i] = get_interval_containing(idx_ratio[i], attach_intervals)
 
-        print('idx2')
         idx2 = list(zip(self.exp.get_index('nb_outside_attachment').get_level_values(id_exp_name),
                         self.exp.get_index('nb_outside_attachment').get_level_values(id_frame_name),
                         idx_ratio))
-        print('reindex')
         self.exp.get_df(variable_name).index = pd.MultiIndex.from_tuples(
             idx2, names=[id_exp_name, id_frame_name, 'nb_attachments'])
 
@@ -1087,7 +1127,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             for (th, t) in index_values:
                 values = self.exp.get_df(first_attach_name).loc[pd.IndexSlice[:, th], str(t)].dropna()
 
-                fisher_info = 1/(3*np.var(values))
+                fisher_info = 1/np.var(values)
 
                 self.exp.get_df(info_result_name).loc[t, th] = np.around(fisher_info, 5)
 
@@ -1262,7 +1302,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
             for t in time_intervals:
                 values = self.exp.get_df('temp').loc[t].dropna()
-                fisher_info = 1/(3*np.var(values))
+                fisher_info = 1/np.var(values)
 
                 self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
 
@@ -1297,7 +1337,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around ant attachments'
 
-        ylim_zoom = (0.13, 0.15)
+        ylim_zoom = (0.35, 0.45)
         self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
                                                              info_label, info_description, ylim_zoom, redo)
 
@@ -1312,7 +1352,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around outside ant attachments'
 
-        ylim_zoom = (0.17, 0.22)
+        ylim_zoom = (0.4, 0.6)
         self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
                                                              info_label, info_description, ylim_zoom, redo)
 
@@ -1326,11 +1366,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                                            index_values=time_intervals, category=self.category,
                                            label=info_label, description=info_description)
 
-            for t in time_intervals:
-                values = self.exp.get_df(variable_name)[str(t)].dropna()
-                fisher_info = 1/(3*np.var(values))
-
-                self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
+            self._compute_fisher_info(variable_name, info_result_name, time_intervals)
 
             self.exp.write(info_result_name)
 
@@ -1341,6 +1377,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         self.__plot_info('', info_result_name, time_intervals, ylabel, ylim=None, ylim_zoom=ylim_zoom,
                          redo=False, redo_plot_hist=False)
+
+    def _compute_fisher_info(self, variable_name, info_result_name, time_intervals):
+        for t in time_intervals:
+            values = self.exp.get_df(variable_name)[str(t)].dropna()
+            fisher_info = 1 / np.var(values)
+
+            self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
 
     def compute_fisher_information_mm1s_food_direction_error_around_isolated_outside_attachments(self, redo=False):
 
@@ -1353,7 +1396,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around isolated outside ant attachments'
 
-        ylim_zoom = (0.12, 0.15)
+        ylim_zoom = (0.35, 0.50)
         self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
                                                              info_label, info_description, ylim_zoom, redo)
 
@@ -1369,7 +1412,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals,' \
                            ' which are times around isolated non outside ant attachments'
 
-        ylim_zoom = (0.17, 0.22)
+        ylim_zoom = (0.35, 0.6)
         self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
                                                              info_label, info_description, ylim_zoom, redo)
 
@@ -1384,6 +1427,246 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         info_description = 'Fisher information of the food (1/(3variance))' \
                            ' for each time t in time_intervals, which are times around non outside ant attachments'
 
-        ylim_zoom = (0.11, 0.13)
+        ylim_zoom = (0.3, 0.4)
         self.__compute_fisher_information_around_attachments(variable_name, info_result_name,
                                                              info_label, info_description, ylim_zoom, redo)
+
+    def compute_fisher_information_mm1s_food_direction_error_over_nbr_new_attachments(
+            self, redo=False):
+
+        attachment_name = 'carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self._compute_fisher_info_nb_attach
+        fct_info_evol = self.__compute_fisher_info_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        info_result_name = 'fisher_information_mm1s_food_direction_error_over_nb_new_attachments'
+
+        explanation = " over the number of attachments occurred the last 8 seconds. More precisely, to report an "\
+                      " attachment influence, we count that an attachment is happening up to 8 seconds" \
+                      " (or less if the attachment lasts less) after it occurs."
+
+        info_label = 'Fisher information of the food over the number of attachments'
+        info_description = "Fisher information of the food (1/variance of the food direction error)"+explanation
+
+        info_result_evol_name = info_result_name+'_evol'
+        info_label_evol = info_label+' over time'
+        info_description_evol = 'Time evolution of '+info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        attach_intervals = range(20)
+
+        self.__compute_fisher_information_over_nb_new_attachments(
+            variable_name, attach_intervals, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo)
+
+        xlabel = 'Number of attachments'
+        ylabel = 'Fisher information'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel, ylim=(0, 3))
+
+    def compute_fisher_information_mm1s_food_direction_error_over_nbr_new_outside_attachments(
+            self, redo=False):
+
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self._compute_fisher_info_nb_attach
+        fct_info_evol = self.__compute_fisher_info_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        info_result_name = 'fisher_information_mm1s_food_direction_error_over_nb_new_outside_attachments'
+
+        explanation = " over the number of outside attachments occurred the last 8 seconds. More precisely, to report" \
+                      " an  outside attachment influence, we count that an attachment is happening up to 8 seconds" \
+                      " (or less if the outside attachment lasts less) after it occurs."
+
+        info_label = 'Fisher information of the food over the number of outside attachments'
+        info_description = "Fisher information of the food (1/variance of the food direction error)"+explanation
+
+        info_result_evol_name = info_result_name+'_evol'
+        info_label_evol = info_label+' over time'
+        info_description_evol = 'Time evolution of '+info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        attach_intervals = range(20)
+
+        self.__compute_fisher_information_over_nb_new_attachments(
+            variable_name, attach_intervals, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo)
+
+        xlabel = 'Number of attachments'
+        ylabel = 'Fisher information'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel, ylim=(0, 2))
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel, ylim=(0, 2))
+
+    def compute_fisher_information_mm1s_food_direction_error_over_nbr_new_non_outside_attachments(
+            self, redo=False):
+
+        attachment_name = 'non_outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_nb_attachments
+        fct_info = self._compute_fisher_info_nb_attach
+        fct_info_evol = self.__compute_fisher_info_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        info_result_name = 'fisher_information_mm1s_food_direction_error_over_nb_new_non_outside_attachments'
+
+        explanation = " over the number of non outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an  outside non attachment influence, we count that an attachment is happening up" \
+                      " to 8 seconds (or less if the outside attachment lasts less) after it occurs."
+
+        info_label = 'Fisher information of the food over the number of non outside attachments'
+        info_description = "Fisher information of the food (1/variance of the food direction error)"+explanation
+
+        info_result_evol_name = info_result_name+'_evol'
+        info_label_evol = info_label+' over time'
+        info_description_evol = 'Time evolution of '+info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        attach_intervals = range(20)
+
+        self.__compute_fisher_information_over_nb_new_attachments(
+            variable_name, attach_intervals, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo)
+
+        xlabel = 'Number of attachments'
+        ylabel = 'Fisher information'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel, ylim=(0, 2))
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
+
+        info_outside_name = 'fisher_information_mm1s_food_direction_error_over_nb_new_outside_attachments'
+        info_name = 'fisher_information_mm1s_food_direction_error_over_nb_new_attachments'
+        self.exp.load([info_outside_name, info_name])
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
+        fig, ax = plotter.plot(xlabel=xlabel, ylabel=ylabel, title='', label='Inside attachments')
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_outside_name))
+        plotter.plot(preplot=(fig, ax), c='w', label='Outside attachments', title='', xlabel=xlabel)
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_name))
+        plotter.plot(preplot=(fig, ax), c='r', label='All attachments', title='', xlabel=xlabel)
+        ax.set_xlim((-0.5, 10))
+        ax.legend()
+        plotter.save(fig,
+                     name='fisher_information_mm1s_food_direction_error_over_nb_new_outside_and_inside_attachments')
+
+    def compute_fisher_information_mm1s_food_direction_error_over_ratio_new_attachments(
+            self, redo=False):
+
+        attachment_name = 'outside_ant_carrying_intervals'
+
+        fct_get_attachment = self._get_ratio_attachments
+        fct_info = self._compute_fisher_info_nb_attach
+        fct_info_evol = self.__compute_fisher_info_evol
+        variable_name = 'mm1s_food_direction_error'
+        self.exp.load(variable_name)
+
+        info_result_name = 'fisher_information_mm1s_food_direction_error_over_ratio_new_attachments'
+
+        explanation = " over the ratio of outside attachments occurred the last 8 seconds. More precisely," \
+                      " to report an attachment influence, we count that an attachment is happening up" \
+                      " to 8 seconds (or less if the outside attachment lasts less) after it occurs."
+
+        info_label = 'Fisher information of the food over the ratio of attachments'
+        info_description = "Fisher information of the food (1/variance of the food direction error)"+explanation
+
+        info_result_evol_name = info_result_name+'_evol'
+        info_label_evol = info_label+' over time'
+        info_description_evol = 'Time evolution of '+info_description
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        attach_intervals = np.around(np.arange(-0.2, 1.1, 0.2), 1)
+
+        self.__compute_fisher_information_over_nb_new_attachments(
+            variable_name, attach_intervals, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo)
+
+        xlabel = 'Number of attachments'
+        ylabel = 'Fisher information'
+        self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
+        self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel, ylim=(0, 3))
+
+    def __compute_fisher_information_over_nb_new_attachments(
+            self, variable_name, attach_intervals, start_frame_intervals, end_frame_intervals,
+            fct_info, fct_info_evol, fct_get_attachment, attachment_name,
+            info_description, info_description_evol, info_label, info_label_evol,
+            info_result_name, info_result_evol_name, redo):
+
+        column_names = [
+            str([start_frame_intervals[i] / 100., end_frame_intervals[i] / 100.])
+            for i in range(len(start_frame_intervals))]
+
+        if redo:
+            init_frame_name = 'first_attachment_time_of_outside_ant'
+            self.change_first_frame(variable_name, init_frame_name)
+
+            fct_get_attachment(attachment_name, variable_name, attach_intervals)
+
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
+                                           index_values=attach_intervals, category=self.category,
+                                           label=info_label, description=info_description)
+            fct_info(variable_name, info_result_name)
+            self.exp.write(info_result_name)
+
+            self.exp.add_new_empty_dataset(name=info_result_evol_name, index_names='nb_attach',
+                                           column_names=column_names, index_values=attach_intervals,
+                                           category=self.category,
+                                           label=info_label_evol, description=info_description_evol)
+
+            fct_info_evol(start_frame_intervals, end_frame_intervals, variable_name, info_result_evol_name)
+
+            self.exp.write(info_result_evol_name)
+
+        else:
+            self.exp.load(info_result_name)
+            self.exp.load(info_result_evol_name)
+
+    def _compute_fisher_info_nb_attach(self, variable_name, info_result_name):
+        nb_intervals = set(self.exp.get_index(variable_name).get_level_values('nb_attachments'))
+        for nb in nb_intervals:
+            df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, :, nb], :].dropna()
+            values = df.values
+
+            if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
+                fisher_info = 1 / np.var(values)
+
+                self.exp.get_df(info_result_name).loc[nb, :] = np.around(fisher_info, 5)
+
+    def __compute_fisher_info_evol(self, start_time_intervals, end_time_intervals,
+                                   variable_name, info_result_name):
+        nb_intervals = set(self.exp.get_index(variable_name).get_level_values('nb_attachments'))
+        for nb in nb_intervals:
+            for i in range(len(start_time_intervals)):
+                frame0 = start_time_intervals[i]
+                frame1 = end_time_intervals[i]
+                column_name = str([frame0 / 100., frame1 / 100.])
+
+                df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, frame0:frame1, nb], :].dropna()
+                if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
+                    values = df.values
+                    fisher_info = 1 / np.var(values)
+
+                    self.exp.get_df(info_result_name).loc[nb, column_name] = np.around(fisher_info, 5)

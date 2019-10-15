@@ -926,7 +926,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         bins = np.arange(0, np.pi + dtheta, dtheta)
 
         if redo:
-            df_dist = self.get_times_for_ant_density(
+            df_dist = self._get_times_for_ant_density(
                 init_frame_name=init_frame_name, dist=dist, speed_min=speed_min, outside=outside, speed=speed)
 
             ant_food_phi_name = 'ant_food_phi'
@@ -955,7 +955,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
 
-    def get_times_for_ant_density(self, init_frame_name, dist, speed_min=None, outside=None, speed=None):
+    def _get_times_for_ant_density(self, init_frame_name, dist, speed_min=None, outside=None, speed=None):
 
         exit_angle_name = 'food_exit_angle'
         ant_food_phi_name = 'ant_food_phi'
@@ -1045,7 +1045,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         dtheta = np.pi / 25.
         bins = np.arange(0, np.pi + dtheta, dtheta)
         if redo:
-            df_dist = self.get_times_for_ant_density(
+            df_dist = self._get_times_for_ant_density(
                 init_frame_name=init_frame_name, dist=dist, speed_min=speed_min, outside=outside, speed=speed)
 
             ant_food_phi_name = 'ant_food_phi'

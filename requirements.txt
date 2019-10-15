@@ -6,3 +6,4 @@ scikit-learn
 opencv-python
 jupyter
 PyQt5
+# install python3-tk using sudo apt-get install python3-tk
