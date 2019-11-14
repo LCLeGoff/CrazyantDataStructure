@@ -350,6 +350,21 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
         self.exp.write('mm1s_' + name)
 
+    def compute_mm10_food_velocity_vector(self):
+        name = 'food_velocity'
+        name_x = name+'_x'
+        name_y = name+'_y'
+        time_window = 10
+
+        self.exp.load([name_x, name_y])
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
+                                                  result_name='mm10_' + name_x, category=self.category)
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
+                                                  result_name='mm10_' + name_y, category=self.category)
+
+        self.exp.write('mm10_' + name_x)
+        self.exp.write('mm10_' + name_y)
+
     def compute_mm1s_food_velocity_vector(self):
         name = 'food_velocity'
         name_x = name+'_x'

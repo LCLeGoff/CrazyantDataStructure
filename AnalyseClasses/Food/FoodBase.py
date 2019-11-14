@@ -256,6 +256,20 @@ class AnalyseFoodBase(AnalyseClassDecorator):
                                                                     category=self.category)
             self.exp.write(result_name)
 
+    def compute_mm1s_food_speed(self):
+        name = 'food_speed'
+        name_x = 'food_speed_x'
+        name_y = 'food_speed_y'
+        names = [name, name_x, name_y]
+
+        self.exp.load(names)
+        time_window = 100
+
+        for n in names:
+            result_name = self.exp.moving_mean4exp_frame_indexed_1d(
+                name_to_average=n, time_window=time_window, result_name='mm1s_'+n, category=self.category)
+            self.exp.write(result_name)
+
     def compute_food_speed_evol(self, redo=False):
         name = 'food_speed'
         result_name = name + '_hist_evol'
@@ -357,6 +371,16 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
         self.exp.write(result_name)
         self.exp.remove_object(result_name)
+
+    def compute_mm10_food_exit_angle(self):
+        name = 'food_exit_angle'
+        time_window = 10
+
+        self.exp.load(name)
+        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
+                                                  result_name='mm10_' + name, category=self.category)
+
+        self.exp.write('mm10_' + name)
 
     def compute_mm1s_food_exit_angle(self):
         name = 'food_exit_angle'

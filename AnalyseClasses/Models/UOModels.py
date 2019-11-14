@@ -55,7 +55,8 @@ class UOSimpleModel(BaseModels):
     def __init__(self, root, group, duration=300, n_replica=500, new=False):
 
         self.exp = ExperimentGroups(root, group)
-        self.name = 'UOSimpleModel'
+        self.name_orient = 'UOSimpleModel'
+        self.name_attachments = 'UOSimpleModelAttachments'
         parameter_names = ['c', 'p_attachment', 'var_orientation', 'var_information']
 
         BaseModels.__init__(self, parameter_names)
@@ -63,50 +64,59 @@ class UOSimpleModel(BaseModels):
         self.duration = duration
         self.n_replica = n_replica
 
-        self.res = None
+        self.res_orient = None
+        self.res_attachments = None
 
         self.init(new)
 
     def init(self, new):
-        if new is True or not self.exp.is_name_existing(self.name):
+        if new is True or not self.exp.is_name_existing(self.name_orient):
             index = [(id_exp, t*100) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
 
-            self.exp.add_new_empty_dataset(name=self.name, index_names=[id_exp_name, self.time_name],
+            self.exp.add_new_empty_dataset(name=self.name_orient, index_names=[id_exp_name, self.time_name],
                                            column_names=[], index_values=index, category='Models',
                                            label='UO simple model',
                                            description='UO simple model with parameter c, '
                                                        'attachment probability = p_attachment,'
                                                        'orientation variance = var_orientation, '
                                                        'orientation information = var_information')
+
+            self.exp.add_new_empty_dataset(name=self.name_attachments, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='UO simple model',
+                                           description='Attachment instants of UO simple model with parameter c, '
+                                                       'attachment probability = p_attachment,'
+                                                       'orientation variance = var_orientation, '
+                                                       'orientation information = var_information')
         else:
 
-            self.exp.load(self.name)
-            self.n_replica = max(self.exp.get_index(self.name).get_level_values(id_exp_name))
-            self.duration = max(self.exp.get_index(self.name).get_level_values(self.time_name))
+            self.exp.load(self.name_orient)
+            self.exp.load(self.name_attachments)
+            self.n_replica = max(self.exp.get_index(self.name_orient).get_level_values(id_exp_name))
+            self.duration = max(self.exp.get_index(self.name_orient).get_level_values(self.time_name))
 
     def run(self, para_value):
 
         self.para.change_parameter_values(para_value)
         self.name_column = str(self.para.get_parameter_tuple())
 
-        self.res = []
-        # a = self.para.var_orientation + self.para.p_attachment * self.para.c ** 2 * self.para.var_information
-        # b = self.para.p_attachment*self.para.c*(2-self.para.c)
+        self.res_orient = []
+        self.res_attachments = []
         print(self.name_column)
 
         for id_exp in range(1, self.n_replica + 1):
             self.id_exp = id_exp
             self.orientation = np.around(rd.uniform(-np.pi, np.pi), 3)
-            # self.orientation = np.around(rd.normalvariate(0, np.sqrt(self.para.var_orientation)), 3)
-            # self.orientation = 0
-            self.res.append(self.orientation)
+            self.res_orient.append(self.orientation)
+            self.res_attachments.append(0)
             self.t = 0
             self.last_attachment_time = 0
 
             for t in range(1, self.duration + 1):
                 self.step()
 
-        self.exp.get_df(self.name)[self.name_column] = self.res
+        self.exp.get_df(self.name_orient)[self.name_column] = self.res_orient
+        self.exp.get_df(self.name_attachments)[self.name_column] = self.res_attachments
 
     def step(self):
         self.t += 1
@@ -122,13 +132,18 @@ class UOSimpleModel(BaseModels):
 
             self.last_attachment_time = self.t
 
+            self.res_attachments.append(1)
+        else:
+            self.res_attachments.append(0)
+
         rho = rd.normalvariate(0, np.sqrt(self.para.var_orientation))
         self.orientation += rho
 
-        self.res.append(np.around(self.orientation, 3))
+        self.res_orient.append(np.around(self.orientation, 3))
 
     def write(self):
-        self.exp.write(self.name)
+        self.exp.write(self.name_orient)
+        self.exp.write(self.name_attachments)
 
 
 class UOOutsideModel(BaseModels):
@@ -533,7 +548,7 @@ class PersistenceModel(BaseModels):
         self.exp.write(self.name)
 
 
-class AnalyseUOModel(AnalyseClassDecorator):
+class PlotUOModel(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'Models'

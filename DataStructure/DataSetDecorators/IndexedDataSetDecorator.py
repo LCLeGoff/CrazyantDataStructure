@@ -124,7 +124,7 @@ class IndexedDataSetDecorator:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
 
         y, x = np.histogram(self.df[column_name].dropna(), bins)
-        x = (x[1:] + x[:-1]) / 2., 2
+        x = (x[1:] + x[:-1]) / 2.
         h = np.array(list(zip(x, y)))
 
         df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
@@ -134,7 +134,11 @@ class IndexedDataSetDecorator:
         column_name = self.get_column_name(column_name, self.df)
         column_name2 = self.get_column_name(column_name2, df2)
 
-        h, x, y = np.histogram2d(self.df[column_name].dropna(), df2[column_name2].dropna(), bins)
+        df_nonan = self.df[column_name].dropna()
+        df2_nonan = df2[column_name2].dropna()
+        idx = df_nonan.index.intersection(df2_nonan.index)
+
+        h, x, y = np.histogram2d(df2_nonan.reindex(idx), df_nonan.reindex(idx), bins)
 
         df = pd.DataFrame(h, index=y, columns=x)
         return df.astype(int)

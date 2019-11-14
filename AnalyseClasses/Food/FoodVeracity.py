@@ -3,7 +3,6 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_entropy
 from Tools.MiscellaneousTools.Geometry import angle_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
@@ -237,7 +236,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(
-            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
         plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-0.01, .1, .1))
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
@@ -259,9 +259,19 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Fisher information',
                                label_suffix='s', label='Fisher information', marker='', title='')
-        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=True)
+        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-1, 1, 1))
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
+
+    def compute_mm10_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
+
+        name = 'food_direction_error'
+        result_name = 'mm10_' + name
+        food_exit_angle_name = 'mm10_food_exit_angle'
+        vel_name = 'mm10_food_velocity'
+        time_window = 10
+        self.__compute_food_direction_error(result_name, self.category, food_exit_angle_name, vel_name,
+                                            time_window, redo, redo_hist, redo_plot_indiv)
 
     def compute_mm1s_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
 
@@ -359,3 +369,55 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                 plotter.save(fig, name=id_exp, sub_folder=result_name)
 
             self.exp.groupby(result_name, id_exp_name, plot4each_group)
+
+    def veracity_over_derivative(self):
+        name = 'mm10_food_direction_error'
+        res_name = 'food_direction_error_over_difference'
+        self.exp.load([name, 'fps'])
+        label = 'Food direction error difference as a function of food direction error'
+
+        dt = 0.1
+
+        def get_diff4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            fps = self.exp.get_value('fps', id_exp)
+
+            dframe = int(dt*fps/2)
+
+            df2 = df.loc[id_exp, :].copy()
+            df3 = df.loc[id_exp, :].copy()
+
+            df2.index += dframe
+            df3.index -= dframe
+
+            df2 = df2.reindex(df.index.get_level_values(id_frame_name))
+            df3 = df3.reindex(df.index.get_level_values(id_frame_name))
+
+            df.loc[id_exp, :] = angle_distance(df3, df2).ravel()
+
+            return df
+
+        df_diff = self.exp.groupby(name, id_exp_name, get_diff4each_group)
+        self.exp.add_new1d_from_df(df=np.abs(df_diff), name=name+'_diff', object_type='CharacteristicTimeSeries1d')
+        # idx = pd.Index(self.exp.get_df(name).values.ravel(), name='food_direction_error')
+        # df_res = pd.DataFrame(df_diff.values, index=idx, columns=['difference'])
+        #
+        # self.exp.add_new_dataset_from_df(df=df_res, name=res_name, category=self.category,
+        #                                  label=label, description=label)
+
+        self.exp.operation(name, np.abs)
+
+        self.exp.hist2d(xname_to_hist=name, yname_to_hist=name+'_diff', result_name=res_name,
+                        category=self.category, bins=np.arange(0, np.pi, np.pi/50.),
+                        label=label, description=label)
+
+        # self.exp.vs(xname=name, yname=name+'_diff', result_name=res_name,
+        #             category=self.category, n_bins=50,
+        #             label=label, description=label)
+        self.exp.write(res_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(res_name))
+        fig, ax = plotter.create_plot(figsize=(10, 8))
+        plotter.plot_heatmap(preplot=(fig, ax), cmap_scale_log=True)
+        # fig, ax = plotter.plot_with_error()
+        plotter.save(fig)

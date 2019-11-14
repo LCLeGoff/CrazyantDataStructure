@@ -160,8 +160,14 @@ class BuilderDataObject:
         column_name = self.get_column_name(column_name, self.df)
         column_name2 = self.get_column_name(column_name2, df2)
 
-        h, x, y = np.histogram2d(self.df[column_name].dropna(), df2[column_name2].dropna(), bins)
-        
+        df_nonan = self.df[column_name].dropna()
+        df2_nonan = df2[column_name2].dropna()
+        idx = df_nonan.index.intersection(df2_nonan.index)
+
+        h, x, y = np.histogram2d(df2_nonan.reindex(idx), df_nonan.reindex(idx), bins)
+
+        x = (x[1:]+x[:-1])/2.
+        y = (y[1:]+y[:-1])/2.
         df = pd.DataFrame(h, index=y, columns=x)
         return df.astype(int)
 

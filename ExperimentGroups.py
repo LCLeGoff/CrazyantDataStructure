@@ -944,10 +944,12 @@ class ExperimentGroups:
             category = self.get_category(yname_to_hist)
 
         if label is None:
-            label = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
+            if self.get_label(xname_to_hist) is not None and self.get_label(yname_to_hist) is not None:
+                label = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
 
         if description is None:
-            description = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
+            if self.get_label(xname_to_hist) is not None and self.get_label(yname_to_hist) is not None:
+                description = '2d histogram of '+self.get_label(xname_to_hist)+' and '+self.get_label(yname_to_hist)
 
         df = self.get_data_object(yname_to_hist).hist2d(self.get_df(xname_to_hist), bins=bins,
                                                         column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
@@ -967,10 +969,12 @@ class ExperimentGroups:
             category = self.get_category(yname)
 
         if label is None:
-            label = self.get_label(xname)+' vs '+self.get_label(yname)
+            if self.get_label(xname) is not None and self.get_label(yname) is not None:
+                label = self.get_label(xname)+' vs '+self.get_label(yname)
 
         if description is None:
-            description = self.get_label(xname)+' vs '+self.get_label(yname)
+            if self.get_label(xname) is not None and self.get_label(yname) is not None:
+                description = self.get_label(xname)+' vs '+self.get_label(yname)
 
         df = self.get_data_object(yname).vs(self.get_df(xname), n_bins=n_bins, x_are_integers=x_are_integers,
                                             column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
@@ -1152,6 +1156,8 @@ class ExperimentGroups:
             object_type = 'Events1d'
 
             def interval4each_group(df: pd.DataFrame):
+                if df.index.get_level_values(id_exp_name)[0] == 3:
+                    print('1')
                 df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
                 df.iloc[-1, -1] = 0
                 frame0 = df.index.get_level_values(id_frame_name)[0]

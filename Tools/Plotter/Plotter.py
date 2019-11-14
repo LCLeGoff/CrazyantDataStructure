@@ -169,12 +169,12 @@ class Plotter(BasePlotters):
                     self.line['c'] = cols[str(column_name)]
                     self.line['markeredgecolor'] = cols[str(column_name)]
                     ax.plot(x, y[i], label=label[i], **self.line)
-                if display_legend:
-                    self.draw_legend(ax)
             else:
                 if self.column_name not in self.obj.get_column_names():
                     self.column_name = str(self.column_name)
                 ax.plot(x, y, label=label, **self.line)
+        if display_legend:
+            self.draw_legend(ax)
 
     @staticmethod
     def draw_legend(ax, loc=0, framealpha=0.2, ncol=1):

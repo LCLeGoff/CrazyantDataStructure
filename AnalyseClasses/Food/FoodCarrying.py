@@ -6,8 +6,8 @@ from sklearn import svm
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing, get_index_interval_containing
-from Tools.MiscellaneousTools.Geometry import angle_df, rotation_df
+from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing, get_index_interval_containing, log_range
+from Tools.MiscellaneousTools.Geometry import angle_df
 from Tools.Plotter.Plotter import Plotter
 from Tools.Plotter.ColorObject import ColorObject
 
@@ -120,7 +120,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         outside_ant_name = 'from_outside'
         result_name = 'outside_ant_carrying_intervals'
 
-        bins = np.arange(0.01, 1e2, 0.5)
+        bins = np.arange(2, 1e2, 0.5)
         hist_label = 'Histogram of carrying time intervals of outside ants'
         hist_description = 'Histogram of the time intervals, while an ant from outside is carrying the food'
 
@@ -156,7 +156,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         outside_ant_name = 'from_outside'
         result_name = 'non_outside_ant_carrying_intervals'
 
-        bins = np.arange(0.01, 1e2, 0.5)
+        bins = np.arange(2, 1e2, 0.5)
         hist_label = 'Histogram of carrying time intervals of non outside ants'
         hist_description = 'Histogram of the time intervals, while an ant not from outside is carrying the food'
 
@@ -329,6 +329,16 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         label = 'Between outside attachment intervals'
         description = 'Time intervals between outside attachment intervals (s)'
+
+        self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
+
+    def compute_non_outside_attachment_intervals(self, redo=False, redo_hist=False):
+
+        result_name = 'non_outside_ant_attachment_intervals'
+        name = 'non_outside_ant_attachments'
+
+        label = 'Between non outside attachment intervals'
+        description = 'Time non intervals between outside attachment intervals (s)'
 
         self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
 
@@ -807,14 +817,16 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = 'carrying'
 
         self.exp.load(name)
-        dt = 51
+        dt = 11
+        dt2 = 201
 
         def close_and_open4each_group(df):
             df_img = np.array(df, dtype=np.uint8)
             df_img = cv2.dilate(df_img, kernel=np.ones(dt, np.uint8))
             df_img = cv2.erode(df_img, kernel=np.ones(dt, np.uint8))
-            df_img = cv2.erode(df_img, kernel=np.ones(dt, np.uint8))
-            df_img = cv2.dilate(df_img, kernel=np.ones(dt, np.uint8))
+
+            df_img = cv2.erode(df_img, kernel=np.ones(dt2, np.uint8))
+            df_img = cv2.dilate(df_img, kernel=np.ones(dt2, np.uint8))
 
             df[:] = df_img
             return df
@@ -985,7 +997,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = 'carrying_intervals'
         hist_name = result_name+'_hist'
 
-        bins = np.arange(0.01, 1e2, 0.5)
+        bins = np.arange(2, 1e2, 0.5)
         hist_label = 'Histogram of carrying time intervals'
         hist_description = 'Histogram of the time interval, while an ant is carrying the food'
         if redo is True:
@@ -1018,7 +1030,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         result_name = 'not_carrying_intervals'
 
-        bins = np.arange(0.01, 1e2, 0.5)
+        bins = np.arange(2, 1e2, 0.5)
         hist_label = 'Histogram of not carrying time intervals'
         hist_description = 'Histogram of the time intervals, while an ant is not carrying the food'
         if redo is True:
@@ -1039,6 +1051,43 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel='Not carrying intervals', ylabel='PDF',
                                xscale='log', yscale='log', ls='', normed=True)
+        plotter.save(fig)
+
+    def compute_aviram_carrying_intervals(self, redo=False):
+
+        result_name = 'aviram_carrying_intervals'
+        hist_name = result_name+'_hist'
+
+        bins = log_range(2, 300, 20)
+        label = 'Carrying time intervals'
+        description = 'Time intervals during which ants are carrying (s) of the nature communication paper published' \
+                      ' by Aviram Gelblum et al., 2015'
+        hist_label = 'Histogram of '+label.lower()
+        hist_description = 'Histogram of '+description
+        if redo is True:
+            df = pd.read_csv(self.exp.root+'Carrying_Durations_Aviram.csv')
+            df.index.name = 'id'
+            self.exp.add_new_dataset_from_df(df=df, name=result_name, category=self.category,
+                                             label=label, description=description)
+            self.exp.write(result_name)
+
+            self.exp.hist1d(name_to_hist=result_name, bins=bins, label=hist_label, description=hist_description)
+            self.exp.write(hist_name)
+
+        else:
+            self.exp.load(hist_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.create_plot()
+
+        carrying_name = 'carrying_intervals_hist'
+        self.exp.load(carrying_name)
+        plotter2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object(carrying_name))
+        plotter2.plot(preplot=(fig, ax), xlabel='Carrying intervals',
+                      ylabel='PDF', xscale='log', yscale='log', ls='', normed=True)
+
+        plotter.plot(preplot=(fig, ax), c='w',
+                     xlabel='Carrying intervals', ylabel='PDF', xscale='log', yscale='log', normed=True)
         plotter.save(fig)
 
     def compute_mean_food_direction_error_around_outside_ant_attachments(self, redo=False):
@@ -1565,7 +1614,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         # plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
         plotter.plot_fit(preplot=(fig, ax), typ='log', window=[0, 550], label='log fit')
         plotter.draw_legend(ax)
-        ax.set_ylim((0, 7))
+        ax.set_ylim((0, 6))
         plotter.save(fig)
 
     def compute_nb_non_outside_attachments_evol_around_first_attachment(self, redo=False):
@@ -1618,7 +1667,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                label_suffix='s', marker='')
         plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
         plotter.draw_vertical_line(ax, label='first outside attachment')
-        plotter.plot_fit(preplot=(fig, ax), typ='log', window=[220, 550], label='log fit')
+        # plotter.plot_fit(preplot=(fig, ax), typ='log', window=[220, 550], label='log fit')
         ax.legend()
         plotter.save(fig)
 
@@ -1646,5 +1695,5 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
                                label_suffix='s', marker='', title='')
         plotter.draw_vertical_line(ax, label='First outside ant attachment')
-        ax.set_ylim((0, 10))
+        ax.set_ylim((0, 7))
         plotter.save(fig)

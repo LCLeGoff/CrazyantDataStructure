@@ -14,7 +14,7 @@ from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from DataStructure.VariableNames import id_frame_name, id_ant_name
+from DataStructure.VariableNames import id_frame_name, id_ant_name, id_exp_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 
@@ -29,7 +29,7 @@ class MovieCanvas(FigureCanvas):
         self.frame_height = height/200.
         self.play = 0
         self.batch_length1 = 2
-        self.batch_length2 = 20
+        self.batch_length2 = 2
         self.outside = outside
 
         self.exp.load(['food_radius', 'mm2px', 'fps'], reload=False)
@@ -45,7 +45,7 @@ class MovieCanvas(FigureCanvas):
 
         self.list_frame_batch = self.get_frame_batches()
 
-        self.iter_frame_batch = 0
+        self.iter_frame_batch = -1
         self.iter_frame = 0
         self.frame_graph = None
         self.xy_graph = None
@@ -63,12 +63,13 @@ class MovieCanvas(FigureCanvas):
         self.time_loop()
 
     def get_traj_and_movie(self):
-        name_outside_carrying_intervals = 'outside_ant_carrying_intervals'
-        name_non_outside_carrying = 'non_outside_ant_carrying_intervals'
+        name_outside_carrying_intervals = 'outside_ant_attachment_intervals'
+        name_non_outside_carrying = 'non_outside_ant_attachment_intervals'
         name_xy = 'xy_next2food'
         self.exp.load([name_outside_carrying_intervals, name_non_outside_carrying, name_xy, 'carrying'], reload=False)
 
-        self.exp.load_as_2d('attachment_x', 'attachment_y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
+        # self.exp.load_as_2d('attachment_x', 'attachment_y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
+        self.exp.load_as_2d('x', 'y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
         attachment_xy = self.exp.get_df('attachment_xy').loc[self.id_exp, :, :]
         carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
         idx = carrying_df[carrying_df == 1].dropna().index
@@ -78,8 +79,8 @@ class MovieCanvas(FigureCanvas):
         xy_df.loc[idx] = attachment_xy.loc[idx]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
 
-        outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[self.id_exp, :, :]
-        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[self.id_exp, :, :]
+        outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[self.id_exp, :]
+        non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[self.id_exp, :]
 
         # outside_carrying_df = outside_carrying_df[outside_carrying_df > 1].dropna()
         # non_outside_carrying_df = non_outside_carrying_df[non_outside_carrying_df > 1].dropna()
@@ -100,15 +101,24 @@ class MovieCanvas(FigureCanvas):
 
     def get_frame_batches(self):
 
+        # self.exp.load('fps', reload=False)
+        # fps = self.exp.get_value('fps', self.id_exp)
+        # frames = self.focused_carrying_df.index.get_level_values(id_frame_name)
+        # list_batch_frames = []
+        # lg1 = int((self.batch_length1*fps) / 2)
+        # lg2 = int((self.batch_length2*fps) / 2)
+        # for frame in frames:
+        #     list_batch_frames.append([frame - lg1, frame + lg2])
+        # # list_batch_frames = [[2700, 2900]]
+
         self.exp.load('fps', reload=False)
         fps = self.exp.get_value('fps', self.id_exp)
-        frames = self.focused_carrying_df.index.get_level_values(id_frame_name)
-        list_batch_frames = []
-        lg1 = int((self.batch_length1*fps) / 2)
-        lg2 = int((self.batch_length2*fps) / 2)
-        for frame in frames:
-            list_batch_frames.append([frame - lg1, frame + lg2])
-        # list_batch_frames = [[2700, 2900]]
+        lg1 = self.batch_length1*fps
+        lg2 = self.batch_length2*fps
+        frame0 = self.exp.get_index('xy_next2food').get_level_values(id_frame_name)[0]
+        frame1 = self.exp.get_index('xy_next2food').get_level_values(id_frame_name)[-1]
+        frames = range(frame0+lg1, frame1-lg2, lg1)
+        list_batch_frames = [[frame-lg1, frame+lg2] for frame in frames]
 
         return list_batch_frames
 
@@ -178,7 +188,6 @@ class MovieCanvas(FigureCanvas):
         carrying_non_outside_color = 4*int(1-self.outside) + int(self.outside)
         carrying_outside_color = 4*int(self.outside) + int(1-self.outside)
 
-        attachment_non_focused_color = 5*int(1-self.outside) + 2*int(self.outside)
         attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
 
         self.exp.load(['carrying', 'from_outside'], reload=False)
@@ -202,15 +211,15 @@ class MovieCanvas(FigureCanvas):
         attachment_size_df = attachment_size_df.reindex(xy_df.index)
         attachment_df = attachment_df.reindex(xy_df.index)
 
-        focused_attachments = self.focused_carrying_df.loc[pd_slice, :]
-        for id_exp, id_ant, frame, lg in np.array(focused_attachments.reset_index()):
-            attachment_df.loc[id_exp, id_ant, frame] = attachment_focused_color
-            attachment_size_df.loc[id_exp, id_ant, frame] = 50
+        attachment_df2 = attachment_df.copy()
+        attachment_df2.reset_index(inplace=True)
+        attachment_df2[id_frame_name] -= 1
+        attachment_df2.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+        attachment_df2 -= attachment_df
+        attachment_df2 = attachment_df2.reindex(attachment_df.index)
 
-        non_focused_attachments = np.array(self.not_focused_carrying_df.loc[pd_slice, :].reset_index())
-        for id_exp, id_ant, frame, lg in non_focused_attachments:
-            attachment_df.loc[id_exp, id_ant, frame] = attachment_non_focused_color
-            attachment_size_df.loc[id_exp, id_ant, frame] = 50
+        attachment_df[attachment_df2 == 1] = attachment_focused_color
+        attachment_size_df[attachment_df2 == 1] = 50
 
         x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
         print(x0, y0)
@@ -243,7 +252,8 @@ class MovieCanvas(FigureCanvas):
         attach = np.array(self.attachment_df).ravel()
         marker_size = np.array(self.attachment_size_df).ravel()
 
-        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach, s=marker_size, cmap='jet', norm=colors.Normalize(0, 5))
+        self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach[:len(xy.x)], s=marker_size[:len(xy.x)], cmap='jet',
+                                        norm=colors.Normalize(0, 5))
         self.food_spine, = self.ax.plot([food_xy.x, food_xy.x+self.radius], [food_xy.y, food_xy.y], c='r')
 
         self.batch_text = self.ax.text(
@@ -307,6 +317,7 @@ class MovieCanvas(FigureCanvas):
 
                 self.draw()
         elif self.play == -1:
+            self.reset_play()
             self.clock_text.set_text('stop')
             self.clock_text.set_color('red')
             self.play = 0
@@ -399,6 +410,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=6, outside=True)
+aw = ApplicationWindow(group0, id_exp=20, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

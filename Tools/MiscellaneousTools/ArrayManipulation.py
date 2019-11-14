@@ -85,3 +85,8 @@ def smooth(tab, window):
         nbr[i] = len(tab[i0:i1])
 
     return tab2/nbr
+
+
+def log_range(x_min, x_max, nbr):
+    return list(
+        np.logspace(np.log(x_min) / np.log(10), np.log(x_max) / np.log(10), nbr, endpoint=True))
