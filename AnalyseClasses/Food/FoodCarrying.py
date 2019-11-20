@@ -605,8 +605,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         return df_features, df_labels
 
-    def compute_food_angular_speed(self, redo=False, redo_hist=False):
-        result_name = 'food_angular_speed'
+    def compute_food_rotation(self, redo=False, redo_hist=False):
+        result_name = 'food_rotation'
         temp_name = 'temp'
 
         bins = np.arange(0, 3, 0.1)
@@ -675,8 +675,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.groupby(name_xy, [id_exp_name, id_ant_name], get_speed4each_group)
 
             self.exp.mean_over_exp_and_frames(name_to_average=temp_name, result_name=result_name,
-                                              category=self.category, label='Food angular speed',
-                                              description='Angular speed of the food (rad/s)', replace=True)
+                                              category=self.category, label='Food rotation',
+                                              description='Rotation of the food (rad/s)', replace=True)
             self.exp.change_df(result_name, np.around(self.exp.get_df(result_name), 6))
 
             self.exp.write(result_name)
@@ -684,11 +684,11 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel='Angular speed (rad/s)', ylabel='PDF', ls='', normed=True)
+        fig, ax = plotter.plot(xlabel='Rotation (rad/s)', ylabel='PDF', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_mm10_food_angular_speed(self):
-        name = 'food_angular_speed'
+    def compute_mm10_food_rotation(self):
+        name = 'food_rotation'
         time_window = 10
 
         self.exp.load(name)
@@ -702,8 +702,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         result_name = 'ant_angular_speed'
         print(result_name)
 
-        food_angular_speed_name = 'mm10_food_angular_speed'
-        self.exp.load([food_angular_speed_name, 'fps'])
+        food_rotation_name = 'mm10_food_rotation'
+        self.exp.load([food_rotation_name, 'fps'])
 
         food_name_x = 'mm10_food_x'
         food_name_y = 'mm10_food_y'
@@ -763,14 +763,14 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         print(result_name)
 
         ant_angular_speed_name = 'ant_angular_speed'
-        food_angular_speed_name = 'food_angular_speed'
-        self.exp.load([ant_angular_speed_name, food_angular_speed_name, 'fps'])
+        food_rotation_speed = 'food_rotation'
+        self.exp.load([ant_angular_speed_name, food_rotation_speed, 'fps'])
 
-        df_food = self.__reindexing(food_angular_speed_name, ant_angular_speed_name, column_names=['temp'])
+        df_food = self.__reindexing(food_rotation_speed, ant_angular_speed_name, column_names=['temp'])
 
         self.exp.add_copy(ant_angular_speed_name, result_name, category=self.category,
-                          label='Ant minus food angular speed',
-                          description='Difference between the ant angular speed and the food angular speed')
+                          label='Ant angular speed minus food rotation',
+                          description='Difference between the ant angular speed and the food rotation')
         self.exp.get_data_object(result_name).df[result_name] -= df_food['temp']
 
         self.exp.write(result_name)
@@ -878,8 +878,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
-    def compute_food_angular_speed_evol(self, redo=False):
-        name = 'food_angular_speed'
+    def compute_food_rotation_evol(self, redo=False):
+        name = 'food_rotation'
         result_name = name + '_hist_evol'
         init_frame_name = 'food_first_frame'
 
@@ -895,9 +895,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
-                                      label='Food angular speed distribution over time (rad)',
-                                      description='Histogram of the instantaneous angular speed of the food trajectory'
-                                                  ' over time (rad)')
+                                      label='Food rotation distribution over time (rad)',
+                                      description='Histogram of the instantaneous rotation of the foodover time ' \
+                                                  ' (rad)')
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
@@ -906,8 +906,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                normed=True, label_suffix='s')
         plotter.save(fig)
 
-    def compute_food_angular_speed_evol_around_first_outside_attachment(self, redo=False):
-        name = 'food_angular_speed'
+    def compute_food_rotation_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_rotation'
         result_name = name + '_hist_evol_around_first_outside_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
@@ -923,8 +923,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
-                                      label='Food angular speed distribution over time (rad)',
-                                      description='Histogram of the instantaneous angular speed of the food trajectory'
+                                      label='Food rotation distribution over time (rad)',
+                                      description='Histogram of the instantaneous rotation of the food '
                                                   ' over time (rad)')
             self.exp.write(result_name)
         else:
@@ -934,8 +934,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                normed=True, label_suffix='s')
         plotter.save(fig)
 
-    def compute_food_angular_speed_variance_evol(self, redo=False):
-        name = 'food_angular_speed'
+    def compute_food_rotation_variance_evol(self, redo=False):
+        name = 'food_rotation'
         result_name = name + '_var_evol'
         init_frame_name = 'food_first_frame'
 
@@ -944,8 +944,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         start_frame_intervals = np.arange(0, 3.5, dx2)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
-        label = 'Variance of the food angular speed distribution over time'
-        description = 'Variance of the food angular speed distribution over time'
+        label = 'Variance of the food rotation distribution over time'
+        description = 'Variance of the food rotation distribution over time'
 
         if redo:
             self.exp.load(name)
@@ -969,8 +969,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.plot_fit(typ='exp', preplot=(fig, ax), cst=[-.1, 0.05, 0.02], window=[50, 1000])
         plotter.save(fig)
 
-    def compute_food_angular_speed_variance_evol_around_first_outside_attachment(self, redo=False):
-        name = 'food_angular_speed'
+    def compute_food_rotation_variance_evol_around_first_outside_attachment(self, redo=False):
+        name = 'food_rotation'
         result_name = name + '_var_evol_around_first_outside_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
@@ -979,8 +979,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         start_frame_intervals = np.arange(-1, 3.5, dx2)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
-        label = 'Variance of the food angular speed distribution over time'
-        description = 'Variance of the food angular speed distribution over time'
+        label = 'Variance of the food rotation distribution over time'
+        description = 'Variance of the food rotation distribution over time'
 
         if redo:
             self.exp.load(name)
@@ -1430,10 +1430,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='Number of outside carriers', ylabel='PDF', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_food_angular_speed_vs_nb_carriers(self, redo=False):
+    def compute_food_rotation_vs_nb_carriers(self, redo=False):
 
         xname = 'nb_carriers'
-        yname = 'food_angular_speed'
+        yname = 'food_rotation'
         result_name = yname+'_vs_'+xname
         if redo:
             self.exp.load([xname, yname])

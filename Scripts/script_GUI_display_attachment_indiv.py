@@ -91,8 +91,8 @@ class MovieCanvas(FigureCanvas):
         food_xy_df = self.exp.food_xy.df.loc[self.id_exp, :]
         food_xy_df.x, food_xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, food_xy_df.x, food_xy_df.y)
 
-        self.exp.load('food_angular_speed', reload=False)
-        food_angle_speed_df = self.exp.food_angular_speed.df.loc[self.id_exp, :]
+        self.exp.load('food_rotation', reload=False)
+        food_angle_speed_df = self.exp.food_rotation.df.loc[self.id_exp, :]
 
         if self.outside:
             return xy_df, food_xy_df, food_angle_speed_df, outside_carrying_df, non_outside_carrying_df, movie

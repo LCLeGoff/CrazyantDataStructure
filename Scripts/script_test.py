@@ -10,22 +10,23 @@ group = 'UO'
 
 Exps = ExperimentGroupBuilder(root).build(group)
 name_food_speed = 'mm1s_food_speed'
-name_food_angular_speed = 'food_angular_speed'
+name_food_rotation = 'food_rotation'
 name_attachment = 'ant_attachment_intervals'
-Exps.load([name_food_speed, name_food_angular_speed, name_attachment])
+name_outside_attachment = 'outside_ant_attachment_intervals'
+Exps.load([name_food_speed, name_food_rotation, name_attachment, name_outside_attachment])
 
 df_speed = Exps.get_df(name_food_speed).loc[3, :]
-df_angular_speed = Exps.get_df(name_food_angular_speed).loc[3, :]
-df_angular_speed = df_angular_speed.reindex(df_speed.index)
+df_food_rotation = Exps.get_df(name_food_rotation).loc[id_ant, :]
+df_food_rotation = df_food_rotation.reindex(df_speed.index)
 
 df_speed_diff = df_speed.copy()
 df_speed_diff.index -= 1
 df_speed_diff -= df_speed
 df_speed_diff = df_speed_diff.reindex(df_speed.index)
-df_angular_speed_diff = df_angular_speed.copy()
-df_angular_speed_diff.index -= 1
-df_angular_speed_diff -= df_angular_speed
-df_angular_speed_diff = df_angular_speed_diff.reindex(df_angular_speed.index)
+df_rotation_diff = df_food_rotation.copy()
+df_rotation_diff.index -= 1
+df_rotation_diff -= df_food_rotation
+df_rotation_diff = df_rotation_diff.reindex(df_food_rotation.index)
 
 attachment_frames = Exps.get_df(name_attachment).loc[3, :].index.get_level_values(id_frame_name)
 attachment_frames = np.sort(np.array(list(set(attachment_frames))))
