@@ -1156,8 +1156,6 @@ class ExperimentGroups:
             object_type = 'Events1d'
 
             def interval4each_group(df: pd.DataFrame):
-                if df.index.get_level_values(id_exp_name)[0] == 3:
-                    print('1')
                 df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
                 df.iloc[-1, -1] = 0
                 frame0 = df.index.get_level_values(id_frame_name)[0]
@@ -1174,6 +1172,9 @@ class ExperimentGroups:
 
                     inters = arr[arr[:, -1] == -1, 0]
                     frame_list = frame_list[arr[:, -1] == -1]-inters
+
+                    frame_list = frame_list[1:]
+                    inters = inters[1:]
 
                     df.loc[pd.IndexSlice[:, :, list(frame_list.astype(int))], :] = inters
 
@@ -1197,6 +1198,9 @@ class ExperimentGroups:
 
                     inters = arr[arr[:, -1] == -1, 0]
                     frame_list = frame_list[arr[:, -1] == -1]-inters
+
+                    frame_list = frame_list[1:]
+                    inters = inters[1:]
 
                     df.loc[pd.IndexSlice[:, list(frame_list.astype(int))], :] = inters
 
