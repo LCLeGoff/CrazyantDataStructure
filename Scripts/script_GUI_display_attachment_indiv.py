@@ -14,7 +14,7 @@ from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from DataStructure.VariableNames import id_frame_name, id_ant_name, id_exp_name
+from DataStructure.VariableNames import id_frame_name, id_ant_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 
@@ -115,8 +115,8 @@ class MovieCanvas(FigureCanvas):
         fps = self.exp.get_value('fps', self.id_exp)
         lg1 = self.batch_length1*fps
         lg2 = self.batch_length2*fps
-        frame0 = self.exp.get_index('xy_next2food').get_level_values(id_frame_name)[0]
-        frame1 = self.exp.get_index('xy_next2food').get_level_values(id_frame_name)[-1]
+        frame0 = self.exp.get_df('xy_next2food').loc[self.id_exp, :, :].index.get_level_values(id_frame_name)[0]
+        frame1 = self.exp.get_df('xy_next2food').loc[self.id_exp, :, :].index.get_level_values(id_frame_name)[-1]
         frames = range(frame0+lg1, frame1-lg2, lg1)
         list_batch_frames = [[frame-lg1, frame+lg2] for frame in frames]
 
@@ -190,7 +190,7 @@ class MovieCanvas(FigureCanvas):
 
         attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
 
-        self.exp.load(['carrying', 'from_outside'], reload=False)
+        self.exp.load(['carrying', 'ant_attachment_intervals', 'from_outside'], reload=False)
         carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
 
         from_outside_df = carrying_df.copy()
@@ -208,21 +208,17 @@ class MovieCanvas(FigureCanvas):
         attachment_df[(carrying_df == 1)*(from_outside_df == 0)] = carrying_non_outside_color
         attachment_df[(carrying_df == 1)*(from_outside_df == 1)] = carrying_outside_color
 
+        idx = self.exp.get_df('ant_attachment_intervals').loc[self.id_exp, :, :].index
+        attachment_df.loc[idx] = attachment_focused_color
+        attachment_size_df.loc[idx] = 50
+
         attachment_size_df = attachment_size_df.reindex(xy_df.index)
         attachment_df = attachment_df.reindex(xy_df.index)
 
-        attachment_df2 = attachment_df.copy()
-        attachment_df2.reset_index(inplace=True)
-        attachment_df2[id_frame_name] -= 1
-        attachment_df2.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
-        attachment_df2 -= attachment_df
-        attachment_df2 = attachment_df2.reindex(attachment_df.index)
-
-        attachment_df[attachment_df2 == 1] = attachment_focused_color
-        attachment_size_df[attachment_df2 == 1] = 50
-
-        x0, y0 = int(np.mean(xy_df.x)), int(np.mean(xy_df.y))
-        print(x0, y0)
+        if len(xy_df) > 0:
+            x0, y0 = int(np.nanmean(xy_df.x)), int(np.nanmean(xy_df.y))
+        else:
+            x0, y0 = 0, 0
         xy_df.x -= x0
         xy_df.y -= y0
         food_xy_df.x -= x0

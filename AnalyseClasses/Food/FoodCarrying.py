@@ -197,32 +197,53 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         food_name = 'food_x'
         self.exp.load([food_name, carrying_name])
-        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
-                            label=label, description=description)
-        self.exp.get_df(result_name)[:] = 0
+        df_res = self.exp.get_df(food_name).copy().astype(int)
+        df_res.columns = [result_name]
+        df_res[:] = 0
+        df_res[id_ant_name] = -1
 
-        def diff4each_group(df: pd.DataFrame):
-            df.iloc[:-1, :] = np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :])
-            df.iloc[-1, -1] = 0
-            return df
+        df_carr = self.exp.get_df(carrying_name).copy()
+        df_carr.reset_index(inplace=True)
+        df_carr[id_frame_name] += 1
+        df_carr.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
 
-        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+        df_carr = df_carr.reindex(self.exp.get_index(carrying_name))
+        self.exp.get_data_object(carrying_name).df -= df_carr
+        self.exp.get_data_object(carrying_name).df = self.exp.get_data_object(carrying_name).df.mask(df_carr.isna(), 0)
 
         def interval4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
-            df2 = df.copy()
+            frames = set(df_res.loc[id_exp, :].index.get_level_values(id_frame_name))
+            print(id_exp)
+            df2 = df.loc[id_exp, :].copy()
             df2 = df2.mask(df2[carrying_name] < 0, 0)
-            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+            df2 = df2.sum(level=id_frame_name)
 
-            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+            list_frames1 = set(df2[df2 == 1].dropna().index) & frames
+            list_frames2 = set(df2[df2 == 2].dropna().index) & frames
 
-            df2 = df2.loc[id_exp, :]
-            df2 = df2.reindex(food_frames, fill_value=0)
-            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            df3 = df.loc[id_exp, :, :][df.loc[id_exp, :, :] == 1].dropna()
+            df3.reset_index(inplace=True)
+            df3.drop(columns='carrying', inplace=True)
+            df3.set_index(id_frame_name, inplace=True)
+
+            for frame in list_frames1:
+                id_ant = int(df3.loc[frame])
+                df_res.loc[id_exp, frame] = [1, id_ant]
+
+            for frame in list_frames2:
+                id_ants = list(df3.loc[frame, id_ant_name])
+                df_res.loc[id_exp, frame] = [1, id_ants[0]]
+                df_res.loc[id_exp, frame+2] = [1, id_ants[1]]
+
             return df
 
         self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
-        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
+
+        df_res.reset_index(inplace=True)
+        df_res.set_index([id_exp_name, id_frame_name, id_ant_name], inplace=True)
+        self.exp.add_new_dataset_from_df(df_res, name=result_name, category=self.category,
+                                         label=label, description=description)
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
@@ -346,10 +367,28 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         bins = np.arange(0, 20, 0.5)
         if redo is True:
             self.exp.load(name)
-            self.exp.get_data_object(name).df = 1 - self.exp.get_df(name)
+            df = 1-self.exp.get_df(name)
+            df.index = df.index.droplevel('id_ant')
+            self.exp.add_new1d_from_df(df, 'temp', 'CharacteristicTimeSeries1d', replace=True)
 
-            self.exp.compute_time_intervals(name_to_intervals=name, category=self.category,
-                                            result_name=result_name, label=label, description=description)
+            temp_name = self.exp.compute_time_intervals(name_to_intervals='temp')
+
+            df_attach = self.exp.get_df(name).copy()
+            df_attach.loc[:, :, -1] = np.nan
+            df_attach.dropna(inplace=True)
+            df_attach.reset_index(inplace=True)
+            df_attach.set_index([id_exp_name, id_frame_name], inplace=True)
+            df_attach.drop(columns=name, inplace=True)
+            df_attach = df_attach.reindex(self.exp.get_index(temp_name))
+
+            df_res = self.exp.get_df(temp_name).copy()
+            df_res[id_ant_name] = df_attach[id_ant_name]
+            df_res.reset_index(inplace=True)
+            df_res.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+            df_res.sort_index(inplace=True)
+
+            self.exp.add_new1d_from_df(df=df_res, name=result_name, object_type='Events1d', category=self.category,
+                                       label=label, description=description)
 
             self.exp.write(result_name)
             self.exp.remove_object(name)
