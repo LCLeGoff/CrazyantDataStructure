@@ -8,6 +8,7 @@ from AnalyseClasses.Food.FoodConfidence import AnalyseFoodConfidence
 from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
 from AnalyseClasses.Food.FoodInformation import AnalyseFoodInformation
 from AnalyseClasses.Food.FoodVeracity import AnalyseFoodVeracity
+from AnalyseClasses.Food.LeaderFollower import AnalyseLeaderFollower
 from AnalyseClasses.Food.SVMFeatures import AnalyseSVMFeatures
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
@@ -315,3 +316,9 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_probability_matrix(False)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_probability_matrix(False)
+
+LeaderFollower = AnalyseLeaderFollower(group)
+# LeaderFollower.get_manual_leader_follower()
+# LeaderFollower.print_manual_leader_stats()
+LeaderFollower.prepare_food_speed_features()
+LeaderFollower.test()
