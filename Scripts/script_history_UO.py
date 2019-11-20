@@ -150,7 +150,7 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_isolated_ant_carrying_intervals()
 # Carrying.compute_isolated_outside_ant_carrying_intervals()
 # Carrying.compute_isolated_non_outside_ant_carrying_intervals()
-#
+
 # Carrying.compute_nbr_attachment_per_exp()
 # Carrying.compute_first_attachment_time_of_outside_ant()
 # Carrying.compute_food_traj_length_around_first_attachment()
@@ -218,12 +218,15 @@ AntFood = AnalyseAntFoodRelation(group)
 # AntFood.compute_foodVelocity_foodAntVector_angle_around_outside_attachments(True)
 
 FoodConfidence = AnalyseFoodConfidence(group)
+# FoodConfidence.compute_w2s_food_crossed_distance(True)
 # FoodConfidence.compute_w10s_food_crossed_distance(True)
 # FoodConfidence.compute_w30s_food_crossed_distance(True)
 #
+# FoodConfidence.compute_w2s_food_total_crossed_distance(True)
 # FoodConfidence.compute_w10s_food_total_crossed_distance(True)
 # FoodConfidence.compute_w30s_food_total_crossed_distance(True)
 #
+# FoodConfidence.compute_w2s_food_path_efficiency(True)
 # FoodConfidence.compute_w10s_food_path_efficiency(True)
 # FoodConfidence.compute_w30s_food_path_efficiency(True)
 
@@ -263,10 +266,10 @@ FoodInfo = AnalyseFoodInformation(group)
 # FoodInfo.\
 #     compute_information_mm1s_food_direction_error_around_non_outside_attachments_after_first_outside_attachment(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_attachments(True)
-#
+
 # FoodInfo.compute_information_mm1s_food_direction_error_around_first_outside_attachments(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_the_first_outside_attachment(True)
-# #
+
 # FoodInfo.compute_information_mm1s_food_direction_error_around_outside_attachments_evol(True)
 # FoodInfo.compute_information_mm1s_food_direction_error_around_non_outside_attachments_evol(True)
 # FoodInfo.\

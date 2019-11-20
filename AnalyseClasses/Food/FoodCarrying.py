@@ -1005,6 +1005,57 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
 
+    def compute_food_rotation_acceleration(self, redo=False, redo_hist=False):
+        result_name = 'food_rotation_acceleration'
+        print(result_name)
+
+        hist_name = result_name + '_hist'
+        bins = np.arange(0, 200, 0.25)
+        label = 'Food rotation acceleration (mm/s^2)'
+        description = 'Instantaneous acceleration of the food rotation (mm/s^2)'
+
+        hist_label = 'Distribution of the '+label
+        hist_description = 'Distribution of the '+description
+
+        if redo:
+            name = 'mm10_food_rotation'
+            self.exp.load([name, 'fps'])
+
+            self.exp.add_copy1d(
+                name_to_copy=name, copy_name=result_name, category=self.category, label=label, description=description)
+
+            def get_speed4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+
+                dx = np.array(df)
+                dx1 = dx[1, :].copy()
+                dx2 = dx[-2, :].copy()
+                dx[1:-1, :] = (dx[2:, :] - dx[:-2, :]) / 2.
+                dx[0, :] = dx1 - dx[0, :]
+                dx[-1, :] = dx[-1, :] - dx2
+
+                dt = np.array(df.index.get_level_values(id_frame_name), dtype=float)
+                dt.sort()
+                dt[1:-1] = dt[2:] - dt[:-2]
+                dt[0] = 1
+                dt[-1] = 1
+                dx[dt > 2] = np.nan
+
+                fps = self.exp.get_value('fps', id_exp)
+                self.exp.get_df(result_name).loc[id_exp, :] = np.around(dx*fps, 6)
+
+            self.exp.groupby(name, id_exp_name, get_speed4each_group)
+            self.exp.write(result_name)
+
+        self.compute_hist(name=result_name, bins=bins, hist_name=hist_name, hist_label=hist_label,
+                          hist_description=hist_description, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$dv/dt$ (mm/s^2)', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        # ax.set_xlim((0, 20))
+        plotter.save(fig)
+
     def compute_carried_food(self):
         result_name = 'carried_food'
         name = 'carrying'

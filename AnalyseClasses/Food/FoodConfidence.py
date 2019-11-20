@@ -12,6 +12,10 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         AnalyseClassDecorator.__init__(self, group, exp)
         self.category = 'FoodConfidence'
 
+    def compute_w2s_food_crossed_distance(self, redo=False, redo_hist=False, redo_plot_indiv=False):
+        w = 2
+        self.__compute_crossed_distance(w, redo, redo_plot_indiv, redo_hist)
+
     def compute_w10s_food_crossed_distance(self, redo=False, redo_hist=False, redo_plot_indiv=False):
         w = 10
         self.__compute_crossed_distance(w, redo, redo_plot_indiv, redo_hist)
@@ -93,6 +97,10 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot()
         plotter.save(fig)
+
+    def compute_w2s_food_total_crossed_distance(self, redo=False, redo_hist=False, redo_plot_indiv=False):
+        w = 2
+        self.__compute_total_crossed_distance(w, redo, redo_plot_indiv, redo_hist)
 
     def compute_w10s_food_total_crossed_distance(self, redo=False, redo_hist=False, redo_plot_indiv=False):
         w = 10
@@ -190,6 +198,10 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
                 plotter2.save(fig2, name=id_exp, sub_folder=result_name)
 
             self.exp.groupby(result_name, id_exp_name, plot_indiv)
+
+    def compute_w2s_food_path_efficiency(self, redo=False, redo_hist=False, redo_plot_indiv=False):
+        w = 2
+        self.__compute_path_efficiency(w, redo, redo_plot_indiv, redo_hist)
 
     def compute_w10s_food_path_efficiency(self, redo=False, redo_hist=False, redo_plot_indiv=False):
         w = 10
