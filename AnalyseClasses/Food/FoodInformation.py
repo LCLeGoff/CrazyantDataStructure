@@ -114,6 +114,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_mm1s_food_direction_error_around_outside_attachments(self):
         mm = 1
         attachment_name = 'outside_ant_carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_outside_attachments'
@@ -122,12 +123,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
                              ' before and after an ant coming from outside ant attached to the food'
 
-        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
-                                                  result_description)
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
 
     def compute_mm1s_food_direction_error_around_non_outside_attachments(self):
         mm = 1
         attachment_name = 'non_outside_ant_carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_non_outside_attachments'
@@ -136,12 +138,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
                              ' before and after an ant coming from non outside ant attached to the food'
 
-        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
-                                                  result_description)
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
 
     def compute_mm1s_food_direction_error_around_non_outside_attachments_after_first_outside_attachment(self):
         mm = 1
         attachment_name = 'non_outside_ant_carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_non_outside_attachments_after_first_outside_attachment'
@@ -156,6 +159,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_mm1s_food_direction_error_around_attachments_after_first_outside_attachment(self):
         mm = 1
         attachment_name = 'carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_attachments_after_first_outside_attachment'
@@ -170,6 +174,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_mm1s_food_direction_error_around_isolated_outside_attachments(self):
         mm = 1
         attachment_name = 'isolated_outside_ant_carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_isolated_outside_attachments'
@@ -179,12 +184,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                              ' before and after an ant coming from outside ant attached to the food,' \
                              'moreover no outside ant attachments occurs during this period of time'
 
-        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
-                                                  result_description)
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
 
     def compute_mm1s_food_direction_error_around_isolated_non_outside_attachments(self):
         mm = 1
         attachment_name = 'isolated_non_outside_ant_carrying_intervals'
+        self.exp.load(attachment_name)
         variable_name = 'mm' + str(mm) + 's_food_direction_error'
 
         result_name = variable_name + '_around_isolated_non_outside_attachments'
@@ -194,25 +200,25 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                              ' before and after an ant coming from non outside ant attached to the food,' \
                              'moreover no outside ant attachments occurs during this period of time'
 
-        self.__gather_variable_around_attachments(variable_name, attachment_name, result_name, result_label,
-                                                  result_description)
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
 
-    def __gather_variable_around_attachments(self, variable_name, attachment_name, result_name, result_label,
-                                             result_description):
+    def __gather_exp_frame_indexed_around_attachments(self, variable_name, attachment_name, result_name, result_label,
+                                                      result_description):
 
         last_frame_name = 'food_exit_frames'
-        self.exp.load([attachment_name, variable_name, last_frame_name, 'fps'])
+        self.exp.load([variable_name, last_frame_name, 'fps'])
 
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
 
-        index_names = self.exp.get_df(attachment_name).reset_index()
-        index_names = index_names.set_index([id_exp_name, id_frame_name])
-        index_names = index_names.sort_index()
-        index_names = index_names.index
+        index_values = self.exp.get_df(attachment_name).reset_index()
+        index_values = index_values.set_index([id_exp_name, id_frame_name])
+        index_values = index_values.sort_index()
+        index_values = index_values.index
         self.exp.add_new_empty_dataset(name=result_name, index_names=[id_exp_name, id_frame_name],
                                        column_names=np.array(time_intervals, dtype=str),
-                                       index_values=index_names,
+                                       index_values=index_values,
                                        category=self.category, label=result_label, description=result_description)
 
         def get_variable4each_group(df: pd.DataFrame):
@@ -221,7 +227,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             last_frame = self.exp.get_value(last_frame_name, id_exp)
 
             if id_exp in self.exp.get_index(attachment_name).get_level_values(id_exp_name):
-                attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :]
+                attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :, :]
                 attachment_frames = list(set(attachment_frames.index.get_level_values(id_frame_name)))
                 attachment_frames.sort()
 
@@ -242,6 +248,90 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
         self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
         self.exp.write(result_name)
+
+    def compute_mm1s_food_direction_error_around_outside_manual_leader_attachments(self):
+        mm = 1
+        attachment_name = 'outside_manual_leading_attachments'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_outside_manual_leading_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 1].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Food direction error around manual leading outside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_mm1s_food_direction_error_around_inside_manual_leader_attachments(self):
+        mm = 1
+        attachment_name = 'inside_manual_leading_attachments'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_inside_manual_leading_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 1].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Food direction error around manual leading inside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from inside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_mm1s_food_direction_error_around_outside_manual_follower_attachments(self):
+        mm = 1
+        attachment_name = 'outside_manual_leading_attachments'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_outside_manual_following_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 0].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Food direction error around manual following outside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has following'
+
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_mm1s_food_direction_error_around_inside_manual_follower_attachments(self):
+        mm = 1
+        attachment_name = 'inside_manual_leading_attachments'
+        variable_name = 'mm' + str(mm) + 's_food_direction_error'
+
+        result_name = variable_name + '_around_inside_manual_following_attachments'
+        self.exp.load(attachment_name)
+
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 0].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Food direction error around manual following inside attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window ' + str(mm) + ' s for times' \
+                             ' before and after an ant coming from inside ant attached to the food,' \
+                             ' the attachments have been manually identified has following'
+
+        self.__gather_exp_frame_indexed_around_attachments(variable_name, attachment_name, result_name, result_label,
+                                                           result_description)
+        self.exp.remove_object(attachment_name)
 
     def __gather_variable_around_attachments_after_first_outside_attachment(
             self, variable_name, attachment_name, result_name, result_label, result_description):
@@ -480,6 +570,110 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around ant attachments'
 
         ylim_zoom = (0.15, 0.3)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_outside_manual_leading_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_manual_leading_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.2, 1.2)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_inside_manual_leading_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_inside_manual_leading_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual inside leading attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around inside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around inside leading attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around inside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.2, 0.8)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_outside_manual_following_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_manual_following_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual following outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has following'
+
+        info_label = 'Information of the food around outside following attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has following'
+
+        ylim_zoom = (0.2, 0.8)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_information_mm1s_food_direction_error_around_inside_manual_following_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'mm1s_food_direction_error_around_inside_manual_following_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual following inside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around inside ant attachments,' \
+                            ' the attachments have been manually identified has following'
+
+        info_label = 'Information of the food around inside following attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around inside ant attachments,' \
+                           ' the attachments have been manually identified has following'
+
+        ylim_zoom = (0.1, 0.3)
         dpi = 1/12.
         self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
                                                       info_result_name, hists_label, hists_description,
@@ -1116,6 +1310,130 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         ylabel = 'Information (bit)'
         self.__plot_info_vs_nb_attach(info_result_name, xlabel, ylabel)
         self.__plot_info_evol_vs_nbr_attach(info_result_evol_name, xlabel, ylabel)
+
+    def compute_information_mm1s_food_direction_error_around_outside_manual_leading_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_manual_leading_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments'
+
+        dx = 0.75
+        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.4, 3.)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_around_inside_manual_leading_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_inside_manual_leading_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around inside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments'
+
+        info_label = 'Information of the food around inside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments'
+
+        dx = 0.75
+        start_frame_intervals = np.arange(-2, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.4, 3.)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_around_outside_manual_following_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_outside_manual_following_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments'
+
+        dx = 0.75
+        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0.4, 3.)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def compute_information_mm1s_food_direction_error_around_inside_manual_following_attachments_evol(
+            self, redo=False, redo_info=False):
+
+        variable_name = 'mm1s_food_direction_error_around_inside_manual_following_attachments'
+        self.exp.load(variable_name)
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        hists_result_name = 'histograms_' + variable_name+'_evol'
+        info_result_name = 'information_' + variable_name+'_evol'
+
+        hists_label = 'Histograms of the food direction error around outside attachments over time'
+        hists_description = 'Time evolution of the histograms of the food direction error' \
+                            ' for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments'
+
+        info_label = 'Information of the food around outside attachments over time'
+        info_description = 'Time evolution of the information of the food' \
+                           ' (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments'
+
+        dx = 0.75
+        start_frame_intervals = np.arange(-2, 2.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100*2
+
+        ylim_zoom = (0., 2.)
+        dpi = 1/12.
+        self.__compute_information_around_attachments_evol(
+            self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
+            variable_name, hists_result_name, info_result_name, init_frame_name,
+            hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
 
     def __compute_information_over_nb_new_attachments(
             self, variable_name, attach_intervals, dpi, start_frame_intervals, end_frame_intervals,
@@ -1847,3 +2165,234 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                     fisher_info = 1 / np.var(values)
 
                     self.exp.get_df(info_result_name).loc[nb, column_name] = np.around(fisher_info, 5)
+
+    def compute_foodvelocity_foodantvector_angle_around_outside_manual_leader_attachments(self):
+        attachment_name = 'outside_manual_leading_attachments'
+        variable_name = 'foodVelocity_foodAntVector_angle'
+
+        result_name = variable_name + '_around_outside_manual_leading_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 1].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Angle between food velocity and food-ant vector' \
+                       ' around manual leading outside attachments'
+        result_description = 'Angle between food velocity and food-ant vector for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_ant_frame_indexed_around_attachments(
+            variable_name, attachment_name, result_name, result_label, result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_information_foodvelocity_foodantvector_angle_around_outside_manual_leading_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'foodVelocity_foodAntVector_angle_around_outside_manual_leading_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.2, 2)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_foodvelocity_foodantvector_angle_around_inside_manual_leader_attachments(self):
+        attachment_name = 'inside_manual_leading_attachments'
+        variable_name = 'foodVelocity_foodAntVector_angle'
+
+        result_name = variable_name + '_around_inside_manual_leading_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 1].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Angle between food velocity and food-ant vector' \
+                       ' around manual leading outside attachments'
+        result_description = 'Angle between food velocity and food-ant vector for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_ant_frame_indexed_around_attachments(
+            variable_name, attachment_name, result_name, result_label, result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_information_foodvelocity_foodantvector_angle_around_inside_manual_leading_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'foodVelocity_foodAntVector_angle_around_inside_manual_leading_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.2, 1)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_foodvelocity_foodantvector_angle_around_outside_manual_follower_attachments(self):
+        attachment_name = 'outside_manual_leading_attachments'
+        variable_name = 'foodVelocity_foodAntVector_angle'
+
+        result_name = variable_name + '_around_outside_manual_following_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 0].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Angle between food velocity and food-ant vector' \
+                       ' around manual leading outside attachments'
+        result_description = 'Angle between food velocity and food-ant vector for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_ant_frame_indexed_around_attachments(
+            variable_name, attachment_name, result_name, result_label, result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_information_foodvelocity_foodantvector_angle_around_outside_manual_following_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'foodVelocity_foodAntVector_angle_around_outside_manual_following_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.1, 0.3)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def compute_foodvelocity_foodantvector_angle_around_inside_manual_follower_attachments(self):
+        attachment_name = 'inside_manual_leading_attachments'
+        variable_name = 'foodVelocity_foodAntVector_angle'
+
+        result_name = variable_name + '_around_inside_manual_following_attachments'
+
+        self.exp.load(attachment_name)
+        df = self.exp.get_df(attachment_name).copy()
+        df = df[df == 0].dropna()
+        self.exp.change_df(attachment_name, df)
+
+        result_label = 'Angle between food velocity and food-ant vector' \
+                       ' around manual leading outside attachments'
+        result_description = 'Angle between food velocity and food-ant vector for times' \
+                             ' before and after an ant coming from outside ant attached to the food,' \
+                             ' the attachments have been manually identified has leading'
+
+        self.__gather_exp_ant_frame_indexed_around_attachments(
+            variable_name, attachment_name, result_name, result_label, result_description)
+        self.exp.remove_object(attachment_name)
+
+    def compute_information_foodvelocity_foodantvector_angle_around_inside_manual_following_attachments(
+            self, redo=False, redo_info=False, redo_plot_hist=False):
+
+        variable_name = 'foodVelocity_foodAntVector_angle_around_inside_manual_following_attachments'
+        self.exp.load(variable_name)
+
+        hists_result_name = 'histograms_' + variable_name
+        info_result_name = 'information_' + variable_name
+
+        hists_label = 'Histograms of the food direction error around manual outside attachments'
+        hists_description = 'Histograms of the food direction error for each time t in time_intervals, ' \
+                            'which are times around outside ant attachments,' \
+                            ' the attachments have been manually identified has leading'
+
+        info_label = 'Information of the food around outside attachments'
+        info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times around outside ant attachments,' \
+                           ' the attachments have been manually identified has leading'
+
+        ylim_zoom = (0.1, 0.3)
+        dpi = 1/12.
+        self.__compute_information_around_attachments(self.__compute_entropy, dpi, variable_name, hists_result_name,
+                                                      info_result_name, hists_label, hists_description,
+                                                      info_label, info_description, ylim_zoom,
+                                                      redo, redo_info, redo_plot_hist)
+
+    def __gather_exp_ant_frame_indexed_around_attachments(self, variable_name, attachment_name, result_name, result_label,
+                                                          result_description):
+
+        last_frame_name = 'food_exit_frames'
+        self.exp.load([variable_name, last_frame_name, 'fps'])
+
+        t0, t1, dt = -60, 60, 0.1
+        time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
+
+        index_values = self.exp.get_df(attachment_name).reset_index()
+        index_values = index_values.set_index([id_exp_name, id_frame_name])
+        index_values = index_values.sort_index()
+        index_values = index_values.index
+        self.exp.add_new_empty_dataset(name=result_name, index_names=[id_exp_name, id_frame_name],
+                                       column_names=np.array(time_intervals, dtype=str),
+                                       index_values=index_values,
+                                       category=self.category, label=result_label, description=result_description)
+
+        def get_variable4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            fps = self.exp.get_value('fps', id_exp)
+            last_frame = self.exp.get_value(last_frame_name, id_exp)
+
+            if id_exp in self.exp.get_index(attachment_name).get_level_values(id_exp_name):
+                idx = self.exp.get_df(attachment_name).loc[id_exp, :, :].index
+                for id_exp, attach_frame, id_ant in idx:
+                    if attach_frame < last_frame:
+                        print(id_exp, attach_frame)
+                        f0 = int(attach_frame + time_intervals[0] * fps)
+                        f1 = int(attach_frame + time_intervals[-1] * fps)
+
+                        var_df = df.loc[pd.IndexSlice[id_exp, id_ant, f0:f1], :]
+                        var_df = var_df.loc[id_exp, id_ant, :]
+                        var_df.index -= attach_frame
+                        var_df.index /= fps
+
+                        var_df = var_df.reindex(time_intervals)
+
+                        self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
+
+        self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
+        self.exp.write(result_name)
