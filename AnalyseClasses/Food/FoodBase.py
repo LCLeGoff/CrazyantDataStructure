@@ -20,12 +20,12 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         self.exp.load([name_x, name_y])
         time_window = 10
 
-        result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                                category=self.category)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name_x, window=time_window, category=self.category, is_angle=False)
         self.exp.write(result_name)
 
-        result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                                category=self.category)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name_y, window=time_window, category=self.category, is_angle=False)
         self.exp.write(result_name)
 
     def compute_mm1s_food_traj(self):
@@ -37,10 +37,10 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         result_name_y = 'mm1s_'+name_y
 
         self.exp.load([name_x, name_y])
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, result_name=result_name_x,
-                                                  time_window=time_window, category=self.category)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, result_name=result_name_y,
-                                                  time_window=time_window, category=self.category)
+        self.exp.rolling_mean(name_to_average=name_x, result_name=result_name_x,
+                              window=time_window, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, result_name=result_name_y,
+                              window=time_window, category=self.category, is_angle=False)
 
         self.exp.write([result_name_x, result_name_y])
 
@@ -252,8 +252,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 10
 
         for n in names:
-            result_name = self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=n, time_window=time_window,
-                                                                    category=self.category)
+            result_name = self.exp.rolling_mean(
+                name_to_average=n, window=time_window, category=self.category, is_angle=False)
             self.exp.write(result_name)
 
     def compute_mm1s_food_speed(self):
@@ -266,8 +266,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 100
 
         for n in names:
-            result_name = self.exp.moving_mean4exp_frame_indexed_1d(
-                name_to_average=n, time_window=time_window, result_name='mm1s_'+n, category=self.category)
+            result_name = self.exp.rolling_mean(
+                name_to_average=n, window=time_window, result_name='mm1s_'+n, category=self.category, is_angle=False)
             self.exp.write(result_name)
 
     def compute_food_speed_evol(self, redo=False):
@@ -377,8 +377,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm10_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm10_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm10_' + name)
 
@@ -387,8 +387,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 100
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm1s_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm1s_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm1s_' + name)
 
@@ -397,8 +397,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 1000
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm10s_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm10s_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm10s_' + name)
 
@@ -407,8 +407,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 3000
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm30s_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm30s_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm30s_' + name)
 
@@ -417,8 +417,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         time_window = 6000
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm60s_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm60s_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm60s_' + name)
 

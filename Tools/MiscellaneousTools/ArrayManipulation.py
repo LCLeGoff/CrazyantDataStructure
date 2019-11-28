@@ -1,13 +1,53 @@
 import numpy as np
 
 
-def running_mean(x, n):
+def rolling_sum(x, n):
     x2 = np.insert(x, 0, np.zeros(n + 1))
-    s = np.cumsum(x2)
+    s = np.nancumsum(x2)
     s = np.array(list(s) + list(np.full(n, s[-1])))
     res = s[n:] - s[:-n]
     n2 = int(np.floor(n / 2) + 1)
     res = res[n2:-n2]
+    return res
+
+
+def rolling_mean(x, n):
+    rs = rolling_sum(x, n)
+
+    ones = np.ones(len(x))
+    mask = np.where(np.isnan(x))[0]
+    ones[mask] = np.nan
+    rn = rolling_sum(ones, n)
+
+    return rs/rn
+
+
+def rolling_sum_angle(x, n):
+    x2 = np.insert(x, 0, np.zeros(n + 1))
+    x2 = np.exp(1j*x2)
+    s = np.nancumsum(x2)
+    s = np.array(list(s) + list(np.full(n, s[-1])))
+    res = s[n:] - s[:-n]
+    n2 = int(np.floor(n / 2) + 1)
+    res = np.angle(res[n2:-n2])
+    return res
+
+
+def rolling_mean_angle(x, n):
+    x2 = np.insert(x, 0, np.zeros(n + 1))
+    x2 = np.exp(1j*x2)
+    s = np.nancumsum(x2)
+    s = np.array(list(s) + list(np.full(n, s[-1])))
+    res = s[n:] - s[:-n]
+    n2 = int(np.floor(n / 2) + 1)
+
+    ones = np.ones(len(x))
+    mask = np.where(np.isnan(x))[0]
+    ones[mask] = np.nan
+    rn = rolling_sum(ones, n)
+
+    res = np.angle(res[n2:-n2]/rn)
+
     return res
 
 

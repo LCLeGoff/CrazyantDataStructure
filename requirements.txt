@@ -10,3 +10,4 @@ statsmodels
 # install python3-tk using sudo apt-get install python3-tk
 # To install tslearn, is needed: sudo apt install python3.5-dev
 tslearn
+rdp

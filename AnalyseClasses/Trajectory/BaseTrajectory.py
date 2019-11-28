@@ -18,8 +18,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         self.exp.load(name)
         time_window = 10
 
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                                    category=self.category)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=False)
         self.exp.write(result_name)
 
     def compute_r_phi(self):
@@ -65,12 +65,12 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         time_window = 10
 
         category = 'TrajMM'
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                                    category=category)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name_x, window=time_window, category=category, is_angle=False)
         self.exp.write(result_name)
 
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                                    category=category)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name_y, window=time_window, category=category, is_angle=False)
         self.exp.write(result_name)
 
     def compute_speed(self, redo=False, redo_hist=False):
@@ -159,9 +159,9 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         names = [name, name_x, name_y]
 
         self.exp.load(names)
-        for n in names:
-            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(name_to_average=n, time_window=time_window,
-                                                                        category=category)
+        for name in names:
+            result_name = self.exp.rolling_mean(
+                name_to_average=name, window=time_window, category=category, is_angle=False)
             self.exp.write(result_name)
 
     def compute_mm20_speed(self, redo=False, redo_hist=False):
@@ -176,9 +176,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
                            ' smoothed with a moving mean of window length ' + str(time_window) + ' frames'
         if redo:
             self.exp.load(name)
-            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=name, time_window=time_window, category=category
-            )
+            result_name = self.exp.rolling_mean(
+                name_to_average=name, window=time_window, category=category, is_angle=False)
             self.exp.write(result_name)
 
         self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
@@ -200,9 +199,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
                            ' smoothed with a moving mean of window length 1 second'
         if redo:
             self.exp.load(name)
-            self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=name, time_window=time_window, result_name=result_name, category=category
-            )
+            self.exp.rolling_mean(
+                name_to_average=name, window=time_window, result_name=result_name, category=category, is_angle=False)
             self.exp.write(result_name)
 
         self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
@@ -218,9 +216,8 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=category, is_angle=True)
 
         self.exp.write(result_name)
 
@@ -230,8 +227,7 @@ class AnalyseTrajectory(AnalyseClassDecorator):
         time_window = 20
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=category, is_angle=True)
 
         self.exp.write(result_name)

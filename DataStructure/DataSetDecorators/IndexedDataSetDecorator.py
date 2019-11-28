@@ -267,6 +267,34 @@ class IndexedDataSetDecorator:
         df = pd.DataFrame(y, index=x)
         return df
 
+    def rolling_mean(self, window, index_names):
+
+        window = int(np.floor(window / 2) * 2 + 1)
+        df_res = self.df.groupby(index_names).rolling(window, center=True).mean()
+        for _ in range(len(index_names)):
+            df_res = df_res.reset_index(0, drop=True)
+
+        return df_res.round(6)
+
+    def rolling_mean_angle(self, window, index_names):
+        #  Bug with complex numbers and rolling. So need another algo than in rolling_mean
+        window = int(np.floor(window / 2) * 2 + 1)
+
+        df_nan = self.df.isna()
+        df2 = self.df.copy()
+        df2['cos'] = np.cos(self.df.values)
+        df2['sin'] = np.sin(self.df.values)
+        df2 = df2.drop(columns=self.df.columns[0])
+
+        df2 = df2.groupby(index_names).rolling(window, center=True).mean()
+        df2 = df2.reset_index(0, drop=True).reset_index(0, drop=True)
+
+        df_res = self.df.copy()
+        df_res[:] = np.c_[np.arctan2(df2['sin'], df2['cos'])]
+        df_res[df_nan] = np.nan
+
+        return df_res.round(6)
+
     # def mean_over(self, level_df, mean_level=None, new_level_as=None):
     #     df = self.df.copy()
     #     filter_idx = 'new_idx'

@@ -3,7 +3,7 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
-from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df
+from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -177,7 +177,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(
-            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
         plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[0, 400], cst=(-0.01, .1, .1))
         plotter.save(fig)
 
@@ -211,7 +212,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(
-            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$', label_suffix='s', label=r'$\sigma^2$', title='', marker='')
+            xlabel='Time (s)', ylabel=r'Variance $\sigma^2$',
+            label_suffix='s', label=r'$\sigma^2$', title='', marker='')
         plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-0.01, .1, .1))
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
@@ -340,13 +342,23 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='Dot product', ylabel='PDF', normed=True, xlim=(-1.1, 1.1))
         plotter.save(fig)
 
+    def compute_mm10_food_velocity_phi(self):
+        name = 'food_velocity_phi'
+        time_window = 10
+
+        self.exp.load(name)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm10_' + name, category=self.category, is_angle=True)
+
+        self.exp.write('mm10_' + name)
+
     def compute_mm1s_food_velocity_phi(self):
         name = 'food_velocity_phi'
         time_window = 100
 
         self.exp.load(name)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name, time_window=time_window,
-                                                  result_name='mm1s_' + name, category=self.category)
+        self.exp.rolling_mean(name_to_average=name, window=time_window,
+                              result_name='mm1s_' + name, category=self.category, is_angle=True)
 
         self.exp.write('mm1s_' + name)
 
@@ -357,10 +369,10 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load([name_x, name_y])
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                  result_name='mm10_' + name_x, category=self.category)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                  result_name='mm10_' + name_y, category=self.category)
+        self.exp.rolling_mean(name_to_average=name_x, window=time_window,
+                              result_name='mm10_' + name_x, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, window=time_window,
+                              result_name='mm10_' + name_y, category=self.category, is_angle=False)
 
         self.exp.write('mm10_' + name_x)
         self.exp.write('mm10_' + name_y)
@@ -372,10 +384,10 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         time_window = 100
 
         self.exp.load([name_x, name_y])
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                  result_name='mm1s_' + name_x, category=self.category)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                  result_name='mm1s_' + name_y, category=self.category)
+        self.exp.rolling_mean(name_to_average=name_x, window=time_window,
+                              result_name='mm1s_' + name_x, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, window=time_window,
+                              result_name='mm1s_' + name_y, category=self.category, is_angle=False)
 
         self.exp.write('mm1s_' + name_x)
         self.exp.write('mm1s_' + name_y)
@@ -387,10 +399,10 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         time_window = 1000
 
         self.exp.load([name_x, name_y])
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                  result_name='mm10s_' + name_x, category=self.category)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                  result_name='mm10s_' + name_y, category=self.category)
+        self.exp.rolling_mean(name_to_average=name_x, window=time_window,
+                              result_name='mm10s_' + name_x, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, window=time_window,
+                              result_name='mm10s_' + name_y, category=self.category, is_angle=False)
 
         self.exp.write('mm10s_' + name_x)
         self.exp.write('mm10s_' + name_y)
@@ -402,10 +414,10 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         time_window = 3000
 
         self.exp.load([name_x, name_y])
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_x, time_window=time_window,
-                                                  result_name='mm30s_' + name_x, category=self.category)
-        self.exp.moving_mean4exp_frame_indexed_1d(name_to_average=name_y, time_window=time_window,
-                                                  result_name='mm30s_' + name_y, category=self.category)
+        self.exp.rolling_mean(name_to_average=name_x, window=time_window,
+                              result_name='mm30s_' + name_x, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, window=time_window,
+                              result_name='mm30s_' + name_y, category=self.category, is_angle=False)
 
         self.exp.write('mm30s_' + name_x)
         self.exp.write('mm30s_' + name_y)
@@ -522,3 +534,48 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
+
+    def compute_food_orientation_speed(self, redo=False, redo_hist=False):
+
+        velocity_phi_name = 'food_velocity_phi'
+        result_name = 'food_orientation_speed'
+
+        hist_name = result_name+'_hist'
+        dtheta = np.pi/25.
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        label = 'Food orientation speed (rad/s)'
+        hist_label = 'Histogram of the %s' % label
+        description = 'Speed of the angular coordinate of the food velocity' \
+                      ' (rad, in the food system)'
+        hist_description = 'Histogram of the %s' % description
+        if redo:
+            self.exp.load([velocity_phi_name, 'fps'])
+
+            self.exp.add_copy1d(
+                name_to_copy=velocity_phi_name, copy_name=result_name, category=self.category,
+                label=label, description=description)
+
+            def get_velocity4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                fps = self.exp.get_value('fps', id_exp)
+
+                dx = np.array(df.loc[id_exp, :]).ravel()
+                dx1 = dx[1].copy()
+                dx2 = dx[-2].copy()
+                dx[1:-1] = angle_distance(dx[:-2], dx[2:]) / 2.
+                dx[0] = angle_distance(dx[0], dx1)
+                dx[-1] = angle_distance(dx2, dx[-1])
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.around(dx*fps, 6)
+
+            self.exp.groupby(velocity_phi_name, id_exp_name, get_velocity4each_group)
+
+            self.exp.write(result_name)
+
+        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\dot\varphi$', ylabel='PDF', normed=True)
+        plotter.save(fig)

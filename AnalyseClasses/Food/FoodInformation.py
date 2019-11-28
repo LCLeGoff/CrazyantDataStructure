@@ -1654,12 +1654,13 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         first_attach_index = [(id_exp, th) for id_exp in self.exp.id_exp_list for th in range(1, 11)]
         self.exp.add_new_empty_dataset(name=first_attach_name, index_names=[id_exp_name, 'rank'],
                                        column_names=self.exp.get_df(variable_name).columns,
-                                       index_values=first_attach_index)
+                                       index_values=first_attach_index, replace=True)
 
         def get_10first_attachment(df):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             print(id_exp)
-            self.exp.get_df(first_attach_name).loc[id_exp, :] = np.array(df.iloc[:10, :])
+            arr = np.array(df.iloc[:10, :])
+            self.exp.get_df(first_attach_name).loc[pd.IndexSlice[id_exp, :len(arr)], :] = arr
 
         self.exp.groupby(variable_name, id_exp_name, get_10first_attachment)
 
@@ -2354,8 +2355,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                                                       info_label, info_description, ylim_zoom,
                                                       redo, redo_info, redo_plot_hist)
 
-    def __gather_exp_ant_frame_indexed_around_attachments(self, variable_name, attachment_name, result_name, result_label,
-                                                          result_description):
+    def __gather_exp_ant_frame_indexed_around_attachments(
+            self, variable_name, attachment_name, result_name, result_label, result_description):
 
         last_frame_name = 'food_exit_frames'
         self.exp.load([variable_name, last_frame_name, 'fps'])

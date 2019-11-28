@@ -128,7 +128,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                       'which gives in radian how much the food is not going in the good direction'
 
         if redo:
-            self.exp.load(init_frame_name)
+            self.exp.load([init_frame_name, name])
 
             self.change_first_frame(name, init_frame_name)
 

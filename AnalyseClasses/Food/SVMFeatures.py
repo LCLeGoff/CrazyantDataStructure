@@ -118,7 +118,7 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
 
             xys = xys.values
 
-            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = distance(food_xys, xys)
+            self.exp.get_df(result_name).loc[id_exp, id_ant, :] = np.c_[distance(food_xys, xys)]
 
         self.exp.groupby(name_xy, [id_exp_name, id_ant_name], compute_distance4each_group)
 
@@ -133,24 +133,6 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         df_d.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
         return df_d
 
-    def __reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
-        if column_names is None:
-            column_names = self.exp.get_columns(name_to_reindex)
-
-        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
-        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
-        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
-
-        df = self.exp.get_df(name_to_reindex).copy()
-        df = df.reindex(idxs)
-        df[id_ant_name] = id_ants
-        df.reset_index(inplace=True)
-        df.columns = [id_exp_name, id_frame_name]+column_names+[id_ant_name]
-        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
-
-        return df
-
     def __compute_distance_from_food(self, df_f):
         df_d = np.around(np.sqrt((df_f.x - self.exp.xy.df.x) ** 2 + (df_f.y - self.exp.xy.df.y) ** 2), 6)
         df_d = pd.DataFrame(df_d)
@@ -161,9 +143,8 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=self.category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=False)
 
         self.exp.write(result_name)
 
@@ -172,9 +153,8 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         time_window = 20
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=self.category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=False)
 
         self.exp.write(result_name)
 
@@ -469,9 +449,8 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=self.category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=True)
 
         self.exp.write(result_name)
 
@@ -480,9 +459,8 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         time_window = 20
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=self.category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=True)
 
         self.exp.write(result_name)
 
@@ -560,8 +538,8 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
             speed_name = 'speed_xy'
             self.exp.load_as_2d(name_speed_x, name_speed_y, result_name=speed_name, xname='x', yname='y', replace=True)
 
-            df_food = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_name, name_xy)
-            df_food_speed = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, speed_name)
+            df_food = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_name, name_xy)
+            df_food_speed = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, speed_name)
 
             df_food_ant = norm_vect_df(self.exp.get_df(name_xy)-df_food)
             df_velocity = norm_vect_df(self.exp.get_df(speed_name)-df_food_speed)
@@ -705,9 +683,9 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         names = [name+'_x', name+'_y']
 
         self.exp.load(names)
-        for n in names:
-            result_name = self.exp.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average=n, time_window=time_window, category=self.category)
+        for name in names:
+            result_name = self.exp.rolling_mean(
+                name_to_average=name, window=time_window, category=self.category, is_angle=False)
             self.exp.write(result_name)
 
     def compute_ant_food_phi(self):
@@ -716,14 +694,14 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         name_x = 'x'
         name_y = 'y'
         name_xy = 'xy'
-        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y')
+        self.exp.load_as_2d(name_x, name_y, name_xy, 'x', 'y', replace=True)
 
         name_food_x = 'food_x'
         name_food_y = 'food_y'
         name_food_xy = 'food_xy'
-        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y')
+        self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y', replace=True)
 
-        df = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(name_food_xy, name_xy)
+        df = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(name_food_xy, name_xy)
 
         self.exp.add_copy(old_name=name_x, new_name=result_name, category=self.category,
                           label='Angle of the (food, ant) vector',

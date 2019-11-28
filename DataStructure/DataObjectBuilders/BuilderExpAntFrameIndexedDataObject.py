@@ -31,7 +31,8 @@ class BuilderExpAntFrameIndexedDataObject:
             return self.df.loc[pd.IndexSlice[id_exp, id_ant, frame0:frame1], :]
 
     def get_index_dict_of_id_exp_ant_frame(self):
-        return self.pandas_index_manager.get_index_dict(df=self.df, index_names=[id_exp_name, id_ant_name, id_frame_name])
+        return self.pandas_index_manager.get_index_dict(
+            df=self.df, index_names=[id_exp_name, id_ant_name, id_frame_name])
 
     def operation_on_id_exp(self, id_exp, func):
         self.df.loc[id_exp, :, :] = func(self.df.loc[id_exp, :, :])
@@ -109,3 +110,32 @@ class BuilderExpAntFrameIndexedDataObject:
             y[i] = fct(df)
         df = pd.DataFrame(y, index=x)
         return df
+
+    def rolling_mean(self, window):
+
+        window = int(np.floor(window / 2) * 2 + 1)
+        df_nan = self.df.isna()
+        df_res = self.df.groupby([id_exp_name, id_ant_name]).rolling(window, center=True).mean()
+        df_res = df_res.reset_index(0, drop=True).reset_index(0, drop=True)
+        df_res[df_nan] = np.nan
+
+        return df_res.round(6)
+
+    def rolling_mean_angle(self, window):
+        #  Bug with complex numbers and rolling. So need another algo than in rolling_mean
+        window = int(np.floor(window / 2) * 2 + 1)
+
+        df_nan = self.df.isna()
+        df2 = self.df.copy()
+        df2['cos'] = np.cos(self.df.values)
+        df2['sin'] = np.sin(self.df.values)
+        df2 = df2.drop(columns=self.df.columns[0])
+
+        df2 = df2.groupby([id_exp_name, id_ant_name]).rolling(window, center=True).mean()
+        df2 = df2.reset_index(0, drop=True).reset_index(0, drop=True)
+
+        df_res = self.df.copy()
+        df_res[:] = np.c_[np.arctan2(df2['sin'], df2['cos'])]
+        df_res[df_nan] = np.nan
+
+        return df_res.round(6)

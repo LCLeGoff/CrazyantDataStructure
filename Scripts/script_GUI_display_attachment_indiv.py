@@ -40,7 +40,7 @@ class MovieCanvas(FigureCanvas):
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
-        self.xy_df0, self.food_xy_df0, self.food_angle_speed_df, self.focused_carrying_df,\
+        self.xy_df0, self.food_xy_df0, self.food_rotation_df, self.food_spine_df, self.focused_carrying_df, \
             self.not_focused_carrying_df, self.movie = self.get_traj_and_movie()
 
         self.list_frame_batch = self.get_frame_batches()
@@ -49,7 +49,7 @@ class MovieCanvas(FigureCanvas):
         self.iter_frame = 0
         self.frame_graph = None
         self.xy_graph = None
-        self.food_spine = None
+        self.food_spine_graph = None
         self.batch_text = None
         self.clock_text = None
         self.next_frame_batch()
@@ -66,7 +66,12 @@ class MovieCanvas(FigureCanvas):
         name_outside_carrying_intervals = 'outside_ant_attachment_intervals'
         name_non_outside_carrying = 'non_outside_ant_attachment_intervals'
         name_xy = 'xy_next2food'
-        self.exp.load([name_outside_carrying_intervals, name_non_outside_carrying, name_xy, 'carrying'], reload=False)
+        name_spine = 'food_spine_angle'
+        name_rotation = 'food_rotation'
+        self.exp.load(
+            [name_outside_carrying_intervals, name_non_outside_carrying, name_xy,
+             'carrying', name_spine, name_rotation],
+            reload=False)
 
         # self.exp.load_as_2d('attachment_x', 'attachment_y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
         self.exp.load_as_2d('x', 'y', 'attachment_xy', 'x', 'y', replace=True, reload=False)
@@ -82,22 +87,21 @@ class MovieCanvas(FigureCanvas):
         outside_carrying_df = self.exp.get_df(name_outside_carrying_intervals).loc[self.id_exp, :]
         non_outside_carrying_df = self.exp.get_df(name_non_outside_carrying).loc[self.id_exp, :]
 
-        # outside_carrying_df = outside_carrying_df[outside_carrying_df > 1].dropna()
-        # non_outside_carrying_df = non_outside_carrying_df[non_outside_carrying_df > 1].dropna()
-
         movie = self.exp.get_movie(self.id_exp)
 
         self.exp.load_as_2d('food_x', 'food_y', 'food_xy', 'x', 'y', reload=False)
         food_xy_df = self.exp.food_xy.df.loc[self.id_exp, :]
         food_xy_df.x, food_xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, food_xy_df.x, food_xy_df.y)
 
-        self.exp.load('food_rotation', reload=False)
-        food_angle_speed_df = self.exp.food_rotation.df.loc[self.id_exp, :]
+        food_angle_speed_df = self.exp.get_df(name_rotation).loc[self.id_exp, :]
+        food_spine_df = self.exp.get_df(name_spine).loc[self.id_exp, :]
 
         if self.outside:
-            return xy_df, food_xy_df, food_angle_speed_df, outside_carrying_df, non_outside_carrying_df, movie
+            return xy_df, food_xy_df, food_angle_speed_df, food_spine_df, \
+                   outside_carrying_df, non_outside_carrying_df, movie
         else:
-            return xy_df, food_xy_df, food_angle_speed_df, non_outside_carrying_df, outside_carrying_df, movie
+            return xy_df, food_xy_df, food_angle_speed_df, food_spine_df, \
+                   non_outside_carrying_df, outside_carrying_df, movie
 
     def get_frame_batches(self):
 
@@ -244,13 +248,12 @@ class MovieCanvas(FigureCanvas):
         self.frame_graph = self.ax.imshow(frame_img, cmap='gray')
 
         xy = self.xy_df.loc[self.id_exp, :, :]
-        food_xy = self.food_xy_df.loc[frame]
         attach = np.array(self.attachment_df).ravel()
         marker_size = np.array(self.attachment_size_df).ravel()
 
         self.xy_graph = self.ax.scatter(xy.x, xy.y, c=attach[:len(xy.x)], s=marker_size[:len(xy.x)], cmap='jet',
                                         norm=colors.Normalize(0, 5))
-        self.food_spine, = self.ax.plot([food_xy.x, food_xy.x+self.radius], [food_xy.y, food_xy.y], c='r')
+        self.food_spine_graph, = self.ax.plot([], [], c='r')
 
         self.batch_text = self.ax.text(
             self.dx, 0, 'Batch '+str(self.frame_batch[0])+' to '+str(self.frame_batch[1]),
@@ -291,21 +294,18 @@ class MovieCanvas(FigureCanvas):
                 self.xy_graph.set_sizes(marker_size)
 
                 try:
-                    food_angle_speed = float(self.food_angle_speed_df.loc[frame]/self.fps)
-                    x2, y2 = self.food_xy_df.loc[frame]
-                    (x0, x1), (y0, y1) = self.food_spine.get_data()
+                    food_spine = float(self.food_spine_df.loc[frame])
+                    if np.isnan(food_spine):
+                        self.food_spine_graph.set_xdata([])
+                        self.food_spine_graph.set_ydata([])
+                    else:
+                        x1 = np.cos(food_spine)*self.radius
+                        y1 = np.sin(food_spine)*self.radius
 
-                    vx = x1-x0
-                    vy = y1-y0
+                        x2, y2 = self.food_xy_df.loc[frame]
 
-                    speed_cos = np.cos(food_angle_speed)
-                    speed_sin = np.sin(food_angle_speed)
-
-                    spine_x = vx*speed_cos+vy*speed_sin + x2
-                    spine_y = -vx*speed_sin+vy*speed_cos + y2
-
-                    self.food_spine.set_xdata([x2, spine_x])
-                    self.food_spine.set_ydata([y2, spine_y])
+                        self.food_spine_graph.set_xdata([x2, x1+x2])
+                        self.food_spine_graph.set_ydata([y2, y1+y2])
                 except KeyError:
                     pass
 
@@ -406,6 +406,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=49, outside=True)
+aw = ApplicationWindow(group0, id_exp=30, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

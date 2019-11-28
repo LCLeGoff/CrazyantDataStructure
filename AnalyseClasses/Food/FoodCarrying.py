@@ -7,7 +7,7 @@ from sklearn import svm
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
 from Tools.MiscellaneousTools.ArrayManipulation import get_interval_containing, get_index_interval_containing, log_range
-from Tools.MiscellaneousTools.Geometry import angle_df
+from Tools.MiscellaneousTools.Geometry import angle_df, angle_sum
 from Tools.Plotter.Plotter import Plotter
 from Tools.Plotter.ColorObject import ColorObject
 
@@ -257,36 +257,61 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         food_name = 'food_x'
         self.exp.load([food_name, carrying_name, from_outside_name])
-        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
-                            label=label, description=description)
-        self.exp.get_df(result_name)[:] = 0
+        df_res = self.exp.get_df(food_name).copy().astype(int)
+        df_res.columns = [result_name]
+        df_res[:] = 0
+        df_res[id_ant_name] = -1
 
-        def diff4each_group(df: pd.DataFrame):
-            id_exp = df.index.get_level_values(id_exp_name)[0]
-            id_ant = df.index.get_level_values(id_ant_name)[0]
+        df_carr = self.exp.get_df(carrying_name).copy()
+        df_carr.reset_index(inplace=True)
+        df_carr[id_frame_name] += 1
+        df_carr.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
 
-            from_outside = int(self.exp.get_value(from_outside_name, (id_exp, id_ant)))
-            df.iloc[:-1, :] = (np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :]))*from_outside
-            df.iloc[-1, -1] = 0
-            return df
-
-        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+        df_carr = df_carr.reindex(self.exp.get_index(carrying_name))
+        self.exp.get_data_object(carrying_name).df -= df_carr
+        self.exp.get_data_object(carrying_name).df = self.exp.get_data_object(carrying_name).df.mask(df_carr.isna(), 0)
 
         def interval4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
-            df2 = df.copy()
+            frames = set(df_res.loc[id_exp, :].index.get_level_values(id_frame_name))
+            print(id_exp)
+            df2 = df.loc[id_exp, :].copy()
             df2 = df2.mask(df2[carrying_name] < 0, 0)
-            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+            df2 = df2.sum(level=id_frame_name)
 
-            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+            list_frames1 = set(df2[df2 == 1].dropna().index) & frames
+            list_frames2 = set(df2[df2 == 2].dropna().index) & frames
 
-            df2 = df2.loc[id_exp, :]
-            df2 = df2.reindex(food_frames, fill_value=0)
-            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            df3 = df.loc[id_exp, :, :][df.loc[id_exp, :, :] == 1].dropna()
+            df3.reset_index(inplace=True)
+            df3.drop(columns='carrying', inplace=True)
+            df3.set_index(id_frame_name, inplace=True)
+
+            for frame in list_frames1:
+                id_ant = int(df3.loc[frame])
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ant))
+                if from_outside == 1:
+                    df_res.loc[id_exp, frame] = [1, id_ant]
+
+            for frame in list_frames2:
+                id_ants = list(df3.loc[frame, id_ant_name])
+
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ants[0]))
+                if from_outside == 1:
+                    df_res.loc[id_exp, frame] = [1, id_ants[0]]
+
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ants[1]))
+                if from_outside == 1:
+                    df_res.loc[id_exp, frame+2] = [1, id_ants[1]]
+
             return df
 
         self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
-        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
+
+        df_res.reset_index(inplace=True)
+        df_res.set_index([id_exp_name, id_frame_name, id_ant_name], inplace=True)
+        self.exp.add_new_dataset_from_df(df_res, name=result_name, category=self.category,
+                                         label=label, description=description)
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
@@ -295,41 +320,66 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         from_outside_name = 'from_outside'
         result_name = 'non_outside_ant_attachments'
 
-        label = 'non outside ant attachment time series'
-        description = 'Time series where 1 is when an ant not coming from outside attaches to the food and 0 when not'
+        label = 'inside ant attachment time series'
+        description = 'Time series where 1 is when an ant coming from inside attaches to the food and 0 when not'
 
         food_name = 'food_x'
         self.exp.load([food_name, carrying_name, from_outside_name])
-        self.exp.add_copy1d(name_to_copy=food_name, copy_name=result_name, category=self.category,
-                            label=label, description=description)
-        self.exp.get_df(result_name)[:] = 0
+        df_res = self.exp.get_df(food_name).copy().astype(int)
+        df_res.columns = [result_name]
+        df_res[:] = 0
+        df_res[id_ant_name] = -1
 
-        def diff4each_group(df: pd.DataFrame):
-            id_exp = df.index.get_level_values(id_exp_name)[0]
-            id_ant = df.index.get_level_values(id_ant_name)[0]
+        df_carr = self.exp.get_df(carrying_name).copy()
+        df_carr.reset_index(inplace=True)
+        df_carr[id_frame_name] += 1
+        df_carr.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
 
-            from_outside = int(self.exp.get_value(from_outside_name, (id_exp, id_ant)))
-            df.iloc[:-1, :] = (np.array(df.iloc[1:, :]) - np.array(df.iloc[:-1, :]))*(1-from_outside)
-            df.iloc[-1, -1] = 0
-            return df
-
-        self.exp.change_df(carrying_name, self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], diff4each_group))
+        df_carr = df_carr.reindex(self.exp.get_index(carrying_name))
+        self.exp.get_data_object(carrying_name).df -= df_carr
+        self.exp.get_data_object(carrying_name).df = self.exp.get_data_object(carrying_name).df.mask(df_carr.isna(), 0)
 
         def interval4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
-            df2 = df.copy()
+            frames = set(df_res.loc[id_exp, :].index.get_level_values(id_frame_name))
+            print(id_exp)
+            df2 = df.loc[id_exp, :].copy()
             df2 = df2.mask(df2[carrying_name] < 0, 0)
-            df2 = df2.sum(level=[id_exp_name, id_frame_name])
+            df2 = df2.sum(level=id_frame_name)
 
-            food_frames = set(self.exp.get_df(result_name).loc[id_exp, :].index.get_level_values(id_frame_name))
+            list_frames1 = set(df2[df2 == 1].dropna().index) & frames
+            list_frames2 = set(df2[df2 == 2].dropna().index) & frames
 
-            df2 = df2.loc[id_exp, :]
-            df2 = df2.reindex(food_frames, fill_value=0)
-            self.exp.get_df(result_name).loc[id_exp, :] = np.array(df2)
+            df3 = df.loc[id_exp, :, :][df.loc[id_exp, :, :] == 1].dropna()
+            df3.reset_index(inplace=True)
+            df3.drop(columns='carrying', inplace=True)
+            df3.set_index(id_frame_name, inplace=True)
+
+            for frame in list_frames1:
+                id_ant = int(df3.loc[frame])
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ant))
+                if from_outside == 0:
+                    df_res.loc[id_exp, frame] = [1, id_ant]
+
+            for frame in list_frames2:
+                id_ants = list(df3.loc[frame, id_ant_name])
+
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ants[0]))
+                if from_outside == 0:
+                    df_res.loc[id_exp, frame] = [1, id_ants[0]]
+
+                from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ants[1]))
+                if from_outside == 0:
+                    df_res.loc[id_exp, frame + 2] = [1, id_ants[1]]
+
             return df
 
         self.exp.groupby(carrying_name, id_exp_name, interval4each_group)
-        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
+
+        df_res.reset_index(inplace=True)
+        df_res.set_index([id_exp_name, id_frame_name, id_ant_name], inplace=True)
+        self.exp.add_new_dataset_from_df(df_res, name=result_name, category=self.category,
+                                         label=label, description=description)
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
@@ -371,7 +421,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             df.index = df.index.droplevel('id_ant')
             self.exp.add_new1d_from_df(df, 'temp', 'CharacteristicTimeSeries1d', replace=True)
 
-            temp_name = self.exp.compute_time_intervals(name_to_intervals='temp')
+            temp_name = self.exp.compute_time_intervals(name_to_intervals='temp', replace=True)
 
             df_attach = self.exp.get_df(name).copy()
             df_attach.loc[:, :, -1] = np.nan
@@ -402,10 +452,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.save(fig)
 
     def compute_isolated_ant_carrying_intervals(self):
-        attachment_name = 'ant_attachments'
+        attachment_name = 'ant_attachment_intervals'
         result_name = 'isolated_ant_carrying_intervals'
-        dt1 = 5
-        dt2 = 5
+        dt1 = 2
+        dt2 = 2
 
         label = 'Isolated ant carrying intervals'
         description = 'Carrying intervals starting at a time' \
@@ -414,10 +464,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
     def compute_isolated_outside_ant_carrying_intervals(self):
-        attachment_name = 'outside_ant_attachments'
+        attachment_name = 'outside_ant_attachment_intervals'
         result_name = 'isolated_outside_ant_carrying_intervals'
-        dt1 = 0
-        dt2 = 5
+        dt1 = 2
+        dt2 = 2
 
         label = 'Isolated outside ant carrying intervals'
         description = 'Carrying intervals of outside ant starting at a time' \
@@ -426,10 +476,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
     def compute_isolated_non_outside_ant_carrying_intervals(self):
-        attachment_name = 'non_outside_ant_attachments'
+        attachment_name = 'non_outside_ant_attachment_intervals'
         result_name = 'isolated_non_outside_ant_carrying_intervals'
-        dt1 = 5
-        dt2 = 5
+        dt1 = 2
+        dt2 = 2
 
         label = 'Isolated non outside ant carrying intervals'
         description = 'Carrying intervals of non outside ant starting at a time' \
@@ -438,43 +488,27 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
     def __isolated_attachments(self, dt1, dt2, attachment_name, description, label, result_name):
-        self.exp.load([attachment_name, 'fps'])
-        self.exp.get_data_object(attachment_name).df = 1-self.exp.get_df(attachment_name)
-        interval_name = self.exp.compute_time_intervals(name_to_intervals=attachment_name)
-        self.exp.add_new1d_empty(name=result_name, object_type='CharacteristicEvents1d', category=self.category,
-                                 label=label, description=description)
+        self.exp.load(attachment_name)
+
+        df_temp = self.exp.get_data_object(attachment_name).df
 
         def fct(df: pd.DataFrame):
-            id_exp = df.index.get_level_values(id_exp_name)[0]
-            print(id_exp)
-            fps = self.exp.get_value('fps', id_exp)
 
-            array = np.array(df.reset_index())
-            array = array[array[:, -1] > dt2, :]
+            df2 = df.copy()
+            df2['temp'] = np.inf
+            df2['temp'].iloc[1:] = df.iloc[:-1].values.ravel()
+            df2['res'] = (df[df.columns[0]] > dt2)*(df2['temp'] > dt1)
 
-            if len(array) > 1:
-                frame1 = int(array[0, 1])
-                frame2 = int(array[1, 1])
-                if frame2 - frame1 > dt2 * fps:
-                    self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+            df[~df2['res']] = np.nan
 
-                for i in range(1, len(array) - 1):
-                    frame0 = int(array[i - 1, 1])
-                    frame1 = int(array[i, 1])
-                    frame2 = int(array[i + 1, 1])
-                    if frame2 - frame1 > dt2 * fps and frame1 - frame0 > dt1 * fps:
-                        self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+            return df
 
-                frame0 = int(array[-2, 1])
-                frame1 = int(array[-1, 1])
-                if frame1 - frame0 > dt1 * fps:
-                    self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+        df_temp = df_temp.groupby(id_exp_name).apply(fct)
+        df_temp.dropna(inplace=True)
 
-            elif len(array) == 1:
-                frame1 = int(array[0, 1])
-                self.exp.get_df(result_name).loc[(id_exp, frame1), result_name] = float(df.loc[id_exp, frame1])
+        self.exp.add_new1d_from_df(df=df_temp, name=result_name, object_type='Events1d',
+                                   category=self.category, label=label, description=description)
 
-        self.exp.groupby(interval_name, id_exp_name, fct)
         self.exp.write(result_name)
 
     def compute_nbr_attachment_per_exp(self):
@@ -614,8 +648,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         if redo:
             food_name_x = 'mm10_food_x'
             food_name_y = 'mm10_food_y'
-            name_x = 'mm10_attachment_x'
-            name_y = 'mm10_attachment_y'
+            name_x = 'attachment_x'
+            name_y = 'attachment_y'
             food_name = 'food_xy'
             name_xy = 'xy'
             self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
@@ -626,7 +660,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
             def erode4each_group(df):
                 df_img = np.array(df, dtype=np.uint8)
-                df_img = cv2.erode(df_img, kernel=np.ones(200, np.uint8))
+                df_img = cv2.erode(df_img, kernel=np.ones(100, np.uint8))
                 df[:] = df_img
                 return df
 
@@ -692,9 +726,18 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         time_window = 10
 
         self.exp.load(name)
-        result_name = self.exp.moving_mean4exp_frame_indexed_1d(
-            name_to_average=name, time_window=time_window, category=self.category
-        )
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, category=self.category, is_angle=True)
+
+        self.exp.write(result_name)
+
+    def compute_mm1s_food_rotation(self):
+        name = 'food_rotation'
+        time_window = 100
+
+        self.exp.load(name)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, window=time_window, result_name='mm1s_'+name, category=self.category, is_angle=True)
 
         self.exp.write(result_name)
 
@@ -710,8 +753,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         food_name = 'food_xy'
         self.exp.load_as_2d(food_name_x, food_name_y, result_name=food_name, xname='x', yname='y', replace=True)
 
-        name_x = 'ant_body_length_x'
-        name_y = 'ant_body_length_y'
+        name_x = 'ant_body_end_x'
+        name_y = 'ant_body_end_y'
         name_xy = 'xy'
         self.exp.load_as_2d(name_x, name_y, result_name=name_xy, xname='x', yname='y', replace=True)
 
@@ -896,7 +939,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                       end_index_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food rotation distribution over time (rad)',
-                                      description='Histogram of the instantaneous rotation of the foodover time ' \
+                                      description='Histogram of the instantaneous rotation of the food over time '
                                                   ' (rad)')
             self.exp.write(result_name)
         else:
@@ -1004,6 +1047,44 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.plot_fit(typ='exp', preplot=(fig, ax), cst=(-1, 1, 1), window=[90, 1000])
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
+
+    def compute_food_spine_angle(self, redo=False):
+        result_name = 'food_spine_angle'
+        print(result_name)
+
+        label = 'Food spine angle (rad)'
+        description = 'Instantaneous angle of the food spine'
+
+        if redo:
+            name = 'food_rotation'
+            self.exp.load([name, 'fps'])
+
+            self.exp.add_copy1d(
+                name_to_copy=name, copy_name=result_name, category=self.category, label=label, description=description)
+
+            def get_speed4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp)
+
+                fps = float(self.exp.get_value('fps', id_exp))
+                df2 = np.array(df)/fps
+                df2[0] = 0
+
+                last_a = 0
+                for i in range(1, len(df2)):
+                    a2 = df2[i]
+                    if ~np.isnan(a2):
+                        df2[i] = angle_sum(last_a, -a2)[0]
+                        last_a = a2
+
+                # df2 = np.exp(1j*(df.copy()/fps*-1))
+                # df2 = df2.cumsum()
+                # df2 = pd.DataFrame(np.angle(df2), index=df2.index, columns=df2.columns)
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.around(df2, 6)
+
+            self.exp.groupby(name, id_exp_name, get_speed4each_group)
+            self.exp.write(result_name)
 
     def compute_food_rotation_acceleration(self, redo=False, redo_hist=False):
         result_name = 'food_rotation_acceleration'
@@ -1391,8 +1472,12 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
             fig, ax = plotter.plot(xlabel='lag(s)', ylabel='', label_suffix=' min', marker='.', ls='',
                                    preplot=(fig, ax), c=c, markeredgecolor='k')
 
-            ax.plot(self.exp.get_df(res_vel_name).loc[(vel, error), '0'],
-                    self.exp.get_df(res_error_name).loc[(vel, error), '0'], 'o', c=c)
+            try:
+                ax.plot(self.exp.get_df(res_vel_name).loc[(vel, error), '0'],
+                        self.exp.get_df(res_error_name).loc[(vel, error), '0'], 'o', c=c)
+            except KeyError:
+                ax.plot(self.exp.get_df(res_vel_name).loc[(vel, error), 0],
+                        self.exp.get_df(res_error_name).loc[(vel, error), 0], 'o', c=c)
 
         ax.set_xlim((0, 8))
         ax.set_ylim((0, np.pi))
@@ -1459,14 +1544,14 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
                 from_outside = self.exp.get_value(from_outside_name, (id_exp, id_ant))
 
-                self.exp.get_data_object(carrying_name).df.loc[id_exp, id_ant, :] *= from_outside
+                df[:] *= from_outside
                 return df
 
             self.exp.groupby(carrying_name, [id_exp_name, id_ant_name], is_from_outside4each_group)
 
             self.exp.sum_over_exp_and_frames(name_to_average=carrying_name, result_name=result_name,
                                              category=self.category, label='Number of outside carriers',
-                                             description='Number of ants from outside carrying the food')
+                                             description='Number of ants from outside carrying the food', replace=True)
 
             self.exp.get_data_object(result_name).df = self.exp.get_df(result_name).reindex(
                 self.exp.get_index(food_name), fill_value=0)

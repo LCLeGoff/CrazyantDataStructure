@@ -13,7 +13,7 @@ from DataStructure.DataObjects.TimeSeries2d import TimeSeries2dBuilder
 from DataStructure.VariableNames import dataset_name, id_exp_name, id_ant_name, id_frame_name
 from Movies.Movies import Movies
 from Scripts.root import root_movie
-from Tools.MiscellaneousTools.ArrayManipulation import running_mean, turn_to_list
+from Tools.MiscellaneousTools.ArrayManipulation import turn_to_list
 from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Tools.Plotter.Plotter import Plotter
@@ -1367,179 +1367,49 @@ class ExperimentGroups:
                     else:
                         return df_fit
 
-    def moving_mean(
-            self, name_to_average, time_window, result_name=None,
-            category=None, label=None, description=None, replace=False, segmented_computation=False):
+    def rolling_mean(
+            self, name_to_average, window, is_angle, result_name=None, index_names=None,
+            category=None, label=None, description=None, replace=False):
 
         if not self.__is_1d(name_to_average):
             raise TypeError('moving mean not implemented for 2d')
 
-        elif not self.__is_indexed_by_exp_ant_frame(name_to_average):
-            raise TypeError('moving mean not implemented for if not indexed by (exp, ant, frame)')
-
         else:
-            return self.moving_mean4exp_ant_frame_indexed_1d(
-                name_to_average, time_window,
-                result_name=result_name, category=category, label=label, description=description,
-                replace=replace, segmented_computation=segmented_computation)
-
-    def moving_mean4exp_ant_frame_indexed_1d(
-            self, name_to_average, time_window, result_name=None,
-            category=None, label=None, description=None, replace=False, segmented_computation=False):
-
-        if not self.__is_1d(name_to_average):
-            raise TypeError(name_to_average + ' is not 1d')
-
-        elif not self.__is_indexed_by_exp_ant_frame(name_to_average):
-            raise TypeError(name_to_average + ' is not indexed by (exp, ant, frame)')
-
-        else:
-
             if result_name is None:
-                result_name = 'mm' + str(time_window) + '_' + name_to_average
+                result_name = 'mm' + str(window) + '_' + name_to_average
 
             if category is None:
                 category = self.get_category(name_to_average)
 
             if label is None:
-                label = 'MM of ' + name_to_average + ' on ' + str(time_window) + ' frames'
+                label = 'MM of ' + name_to_average + ' on ' + str(window) + ' frames'
 
             if description is None:
                 description = 'Moving mean of ' + name_to_average + ' on a time window of ' + str(
-                    time_window) + ' frames'
+                    window) + ' frames'
 
-            self.add_copy(
-                old_name=name_to_average, new_name=result_name, category=category,
-                label=label, description=description, replace=replace
-            )
-            self.get_df(result_name).dropna(inplace=True)
+            if self.__is_indexed_by_exp_ant_frame(name_to_average) or self.__is_indexed_by_exp_frame(name_to_average):
 
-            time_window = int(np.floor(time_window / 2) * 2 + 1)
+                if is_angle is True:
+                    df = self.get_data_object(name_to_average).rolling_mean_angle(window)
+                else:
+                    df = self.get_data_object(name_to_average).rolling_mean(window)
+                df.columns = [result_name]
+                self.add_new1d_from_df(df=df, name=result_name, object_type=self.get_object_type(name_to_average),
+                                       category=category, label=label, description=description, replace=replace)
 
-            def mm4each_group(df: pd.DataFrame):
-                name = df.columns[0]
+            elif self.get_object_type(name_to_average) == dataset_name:
 
-                if len(df) > 0:
-                    id_exp = df.index.get_level_values(id_exp_name)[0]
-                    id_ant = df.index.get_level_values(id_ant_name)[0]
-                    frame0 = df.index.get_level_values(id_frame_name)[0]
-                    frame1 = df.index.get_level_values(id_frame_name)[-1]
-
-                    rg = range(frame0, frame1 + 1)
-                    time_lg = frame1 - frame0 + 1
-
-                    idx = pd.MultiIndex.from_tuples(
-                        list(zip(np.full(time_lg, id_exp), np.full(time_lg, id_ant), rg)),
-                        names=[id_exp_name, id_ant_name, id_frame_name])
-
-                    df2 = df.reindex(idx)
-                    time_array = np.array((1 - df2.isna()).astype(float))
-                    mask0 = np.where(time_array == 0)[0]
-                    mask1 = np.where(time_array == 1)[0]
-                    values_array = np.array(df2[name])
-                    values_array[mask0] = 0
-                    mm_val = running_mean(values_array, time_window)[mask1]
-                    mm_time = running_mean(time_array, time_window)[mask1]
-
-                    df[name] = np.around(mm_val / mm_time, 3)
-
-                return df
-
-            if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
-                lg = len(set(self.get_df(result_name).index.get_level_values(id_exp_name)))
-                lg = int(np.floor(lg / 5) * 5)
-                for i in range(5, lg, 5):
-                    idx_sl = pd.IndexSlice[i - 5:i, :, :]
-                    self.__dict__[result_name].df.loc[idx_sl, :] = \
-                        self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
-
-                idx_sl = pd.IndexSlice[lg:, :, :]
-                self.__dict__[result_name].df.loc[idx_sl, :] = \
-                    self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
+                if is_angle is True:
+                    df = self.get_data_object(name_to_average).rolling_mean_angle(window, index_names=index_names)
+                else:
+                    df = self.get_data_object(name_to_average).rolling_mean(window, index_names=index_names)
+                df.columns = [result_name]
+                self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                             label=label, description=description, replace=replace)
 
             else:
-                self.__dict__[result_name].df \
-                    = self.get_df(result_name).groupby([id_exp_name, id_ant_name]).apply(mm4each_group)
-
-        return result_name
-
-    def moving_mean4exp_frame_indexed_1d(
-            self, name_to_average, time_window, result_name=None,
-            category=None, label=None, description=None, replace=False, segmented_computation=False):
-
-        if not self.__is_1d(name_to_average):
-            raise TypeError(name_to_average + ' is not 1d')
-
-        elif not self.__is_indexed_by_exp_frame(name_to_average):
-            raise TypeError(name_to_average + ' is not indexed by (exp, frame)')
-
-        else:
-
-            if result_name is None:
-                result_name = 'mm' + str(time_window) + '_' + name_to_average
-
-            if category is None:
-                category = self.get_category(name_to_average)
-
-            if label is None:
-                label = 'MM of ' + name_to_average + ' on ' + str(time_window) + ' frames'
-
-            if description is None:
-                description = 'Moving mean of ' + name_to_average + ' on a time window of ' + str(
-                    time_window) + ' frames'
-
-            self.add_copy(
-                old_name=name_to_average, new_name=result_name, category=category,
-                label=label, description=description, replace=replace
-            )
-            self.get_df(result_name).dropna(inplace=True)
-
-            time_window = int(np.floor(time_window / 2) * 2 + 1)
-
-            def mm4each_group(df: pd.DataFrame):
-                name = df.columns[0]
-
-                if len(df) > 0:
-                    id_exp = df.index.get_level_values(id_exp_name)[0]
-                    frame0 = df.index.get_level_values(id_frame_name)[0]
-                    frame1 = df.index.get_level_values(id_frame_name)[-1]
-
-                    rg = range(frame0, frame1 + 1)
-                    time_lg = frame1 - frame0 + 1
-
-                    idx = pd.MultiIndex.from_tuples(
-                        list(zip(np.full(time_lg, id_exp), rg)),
-                        names=[id_exp_name, id_frame_name])
-
-                    df2 = df.reindex(idx)
-                    time_array = np.array((1 - df2.isna()).astype(float))
-                    mask0 = np.where(time_array == 0)[0]
-                    mask1 = np.where(time_array == 1)[0]
-                    values_array = np.array(df2[name])
-                    values_array[mask0] = 0
-                    mm_val = running_mean(values_array, time_window)[mask1]
-                    mm_time = running_mean(time_array, time_window)[mask1]
-
-                    df[name] = np.around(mm_val / mm_time, 6)
-
-                return df
-
-            if segmented_computation is True or len(self.get_df(result_name)) > 2e6:
-                lg = len(set(self.get_df(result_name).index.get_level_values(id_exp_name)))
-                lg = int(np.floor(lg / 5) * 5)
-                for i in range(5, lg, 5):
-                    idx_sl = pd.IndexSlice[i - 5:i, :, :]
-                    self.__dict__[result_name].df.loc[idx_sl, :] = \
-                        self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name]).apply(mm4each_group)
-
-                idx_sl = pd.IndexSlice[lg:, :, :]
-                self.__dict__[result_name].df.loc[idx_sl, :] = \
-                    self.get_df(result_name).loc[idx_sl, :].groupby([id_exp_name]).apply(mm4each_group)
-
-            else:
-                self.__dict__[result_name].df \
-                    = self.get_df(result_name).groupby([id_exp_name]).apply(mm4each_group)
-
+                raise TypeError('moving mean not implemented for '+self.get_object_type(name_to_average))
         return result_name
 
     def convert_xy_to_movie_system(self, id_exp, x, y):

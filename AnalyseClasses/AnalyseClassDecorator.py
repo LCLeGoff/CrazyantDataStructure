@@ -1,5 +1,7 @@
+import pandas as pd
+
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
-from DataStructure.VariableNames import id_frame_name
+from DataStructure.VariableNames import id_frame_name, id_exp_name, id_ant_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
 
@@ -43,3 +45,21 @@ class AnalyseClassDecorator:
         self.exp.get_df(name).reset_index(inplace=True)
         self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
         self.exp.get_df(name).set_index(index_names, inplace=True)
+
+    def reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
+        if column_names is None:
+            column_names = self.exp.get_columns(name_to_reindex)
+
+        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
+        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
+        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
+        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
+
+        df = self.exp.get_df(name_to_reindex).copy()
+        df = df.reindex(idxs)
+        df[id_ant_name] = id_ants
+        df.reset_index(inplace=True)
+        df.columns = [id_exp_name, id_frame_name]+column_names+[id_ant_name]
+        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+
+        return df

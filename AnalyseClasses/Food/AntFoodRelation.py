@@ -3,7 +3,7 @@ import numpy as np
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_distance, angle_mean, angle_df
+from Tools.MiscellaneousTools.Geometry import angle_distance, angle_mean, angle_df, angle_distance_df
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -185,7 +185,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             exit_angle_name = 'food_exit_angle'
             dist2food_name = 'distance2food'
 
-            df_exit_angle = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            df_exit_angle = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
                 exit_angle_name, dist2food_name, column_names=self.exp.get_columns(ant_food_phi_name))
 
             df = self.exp.get_df(ant_food_phi_name).where(df_dist[dist2food_name], np.nan)
@@ -219,7 +219,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
                        ant_food_phi_name, init_frame_name, name_radius])
 
         df_radius = self.reindexing_exp_indexed_by_exp_ant_frame_indexed(name_radius, dist2food_name)
-        df_border_dist = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+        df_border_dist = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
             dist2border_name, dist2food_name, column_names=self.exp.get_columns(dist2food_name))
 
         df_dist = self.exp.get_df(dist2food_name).copy()
@@ -304,7 +304,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
             exit_angle_name = 'food_exit_angle'
             dist2food_name = 'distance2food'
 
-            df_exit_angle = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            df_exit_angle = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
                 exit_angle_name, dist2food_name, column_names=self.exp.get_columns(ant_food_phi_name))
 
             df_phi = self.exp.get_df(ant_food_phi_name).where(df_dist[dist2food_name], np.nan)
@@ -352,24 +352,6 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
 
-    def __reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
-        if column_names is None:
-            column_names = self.exp.get_columns(name_to_reindex)
-
-        id_exps = self.exp.get_df(name2).index.get_level_values(id_exp_name)
-        id_ants = self.exp.get_df(name2).index.get_level_values(id_ant_name)
-        frames = self.exp.get_df(name2).index.get_level_values(id_frame_name)
-        idxs = pd.MultiIndex.from_tuples(list(zip(id_exps, frames)), names=[id_exp_name, id_frame_name])
-
-        df = self.exp.get_df(name_to_reindex).copy()
-        df = df.reindex(idxs)
-        df[id_ant_name] = id_ants
-        df.reset_index(inplace=True)
-        df.columns = [id_exp_name, id_frame_name]+column_names+[id_ant_name]
-        df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
-
-        return df
-
     def reindexing_exp_indexed_by_exp_ant_frame_indexed(self, name2reindex, name_of_index):
         df = self.exp.get_df(name_of_index).copy()
         df[:] = np.nan
@@ -396,19 +378,105 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
         return df
 
+    def compute_foodVelocity_foodAntAttachmentVector_angle(self):
+        vector_name = 'foodVelocity_foodAntAttachmentVector_angle'
+
+        ant_xy_name = 'ant_xy'
+        self.exp.load_as_2d('mm10_x', 'mm10_y', ant_xy_name, 'x', 'y', replace=True)
+
+        food_speed_name = 'food_velocity'
+        self.exp.load_as_2d(food_speed_name+'_x', food_speed_name+'_y', food_speed_name, 'x', 'y', replace=True)
+        df_food_speed = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, ant_xy_name)
+
+        food_xy_name = 'mm10_food_xy'
+        self.exp.load_as_2d(food_xy_name[:-2]+'x', food_xy_name[:-2]+'y', food_xy_name, 'x', 'y', replace=True)
+        df_food_xy = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_xy_name, ant_xy_name)
+
+        df_ant_food_vector = self.exp.get_df(ant_xy_name)-df_food_xy
+
+        df_angle = angle_df(df_ant_food_vector, df_food_speed)
+
+        label = 'Food velocity, food-ant attachment position vector angle (rad)'
+        description = 'Angle between the food velocity and the food-ant attachment position vector (rad)'
+        self.exp.add_copy(
+            old_name='mm10_x', new_name=vector_name, category=self.category, label=label, description=description)
+        self.exp.change_df(vector_name, df_angle)
+
+        self.exp.write(vector_name)
+
+    def compute_mm10_foodVelocity_foodAntAttachmentVector_angle(self):
+        name = 'foodVelocity_foodAntAttachmentVector_angle'
+        window = 10
+
+        self.exp.load(name)
+        result_name = self.exp.rolling_mean(name_to_average=name, window=window, category=self.category, is_angle=True)
+        self.exp.write(result_name)
+
+    def compute_mm1s_foodVelocity_foodAntAttachmentVector_angle(self):
+        name = 'foodVelocity_foodAntAttachmentVector_angle'
+        window = 100
+
+        self.exp.load(name)
+        result_name = self.exp.rolling_mean(
+            name_to_average=name, result_name='mm1s_'+name,
+            window=window, category=self.category, is_angle=True)
+        self.exp.write(result_name)
+
+    def compute_foodVelocity_AntBodyOrientation_angle(self):
+        vector_name = 'foodVelocity_AntBodyOrientation_angle'
+
+        ant_body_name = 'mm10_orientation'
+        food_orientation_name = 'food_velocity_phi'
+        self.exp.load([ant_body_name, food_orientation_name])
+
+        df_ant_body = self.exp.get_df(ant_body_name)
+        df_food_orientation = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            food_orientation_name, ant_body_name)
+
+        df_angle = angle_distance_df(df_ant_body, df_food_orientation)
+
+        label = 'Food orientation - ant body orientation vector angle (rad)'
+        description = 'Angle between the food orientation and the ant body orientation vector (rad)'
+        self.exp.add_copy(
+            old_name=ant_body_name, new_name=vector_name, category=self.category, label=label, description=description)
+        self.exp.change_df(vector_name, df_angle)
+
+        self.exp.write(vector_name)
+
+    def compute_foodRotation_AntBodyOrientation_angle(self):
+        vector_name = 'foodRotation_AntBodyOrientation_angle'
+
+        ant_body_name = 'mm10_orientation'
+        food_rotation_name = 'food_rotation'
+        self.exp.load([ant_body_name, food_rotation_name])
+
+        df_ant_body = self.exp.get_df(ant_body_name)
+        df_food_rotation = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            food_rotation_name, ant_body_name)
+
+        df_angle = angle_distance_df(df_ant_body, df_food_rotation)
+
+        label = 'Food rotation - ant body orientation vector angle (rad)'
+        description = 'Angle between the food rotation and the ant body orientation vector (rad)'
+        self.exp.add_copy(
+            old_name=ant_body_name, new_name=vector_name, category=self.category, label=label, description=description)
+        self.exp.change_df(vector_name, df_angle)
+
+        self.exp.write(vector_name)
+
     def compute_foodVelocity_foodAntVector_angle(self):
         vector_name = 'foodVelocity_foodAntVector_angle'
 
         ant_xy_name = 'ant_xy'
-        self.exp.load_as_2d('x', 'y', ant_xy_name, 'x', 'y')
+        self.exp.load_as_2d('mm10_x', 'mm10_y', ant_xy_name, 'x', 'y', replace=True)
 
-        food_speed_name = 'food_speed'
-        self.exp.load_as_2d(food_speed_name+'_x', food_speed_name+'_y', food_speed_name, 'x', 'y')
-        df_food_speed = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, ant_xy_name)
+        food_speed_name = 'food_velocity'
+        self.exp.load_as_2d(food_speed_name+'_x', food_speed_name+'_y', food_speed_name, 'x', 'y', replace=True)
+        df_food_speed = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, ant_xy_name)
 
-        food_xy_name = 'food_xy'
-        self.exp.load_as_2d(food_xy_name[:-2]+'x', food_xy_name[:-2]+'y', food_xy_name, 'x', 'y')
-        df_food_xy = self.__reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_xy_name, ant_xy_name)
+        food_xy_name = 'mm10_food_xy'
+        self.exp.load_as_2d(food_xy_name[:-2]+'x', food_xy_name[:-2]+'y', food_xy_name, 'x', 'y', replace=True)
+        df_food_xy = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_xy_name, ant_xy_name)
 
         df_ant_food_vector = self.exp.get_df(ant_xy_name)-df_food_xy
 
@@ -417,7 +485,7 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         label = 'Food velocity, food-ant vector angle (rad)'
         description = 'Angle between the food velocity and the food-ant vector (rad)'
         self.exp.add_copy(
-            old_name='x', new_name=vector_name, category=self.category, label=label, description=description)
+            old_name='mm10_x', new_name=vector_name, category=self.category, label=label, description=description)
         self.exp.change_df(vector_name, df_angle)
 
         self.exp.write(vector_name)
@@ -491,3 +559,23 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
         plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(normed=True)
         plotter.save(fig)
+
+    def compute_angle_body_food_orientation(self):
+        name = 'angle_body_food'
+
+        name_food_orientation = 'food_velocity_phi'
+        name_ant_orientation = 'mm10_orientation'
+        self.exp.load([name_ant_orientation, name_food_orientation])
+
+        df_food_orientation = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(
+            name_food_orientation, name_ant_orientation)
+
+        df_ant_orientation = self.exp.get_df(name_ant_orientation)
+
+        df_angle_body = angle_distance_df(df_ant_orientation, df_food_orientation)
+
+        self.exp.add_new1d_from_df(df=df_angle_body, name=name, object_type='TimeSeries1d', category=self.category,
+                                   label='body-food orientation angle',
+                                   description='Angle between the food orientation and the body orientation')
+
+        self.exp.write(name)

@@ -41,6 +41,25 @@ def get_line(pts1, pts2):
             return a, b
 
 
+def get_line_tab(pts1, pts2):
+    a = (pts1[:, 1] - pts2[:, 1]) / (pts1[:, 0] - pts2[:, 0])
+    b = pts1[:, 1] - a * pts1[:, 0]
+
+    mask = np.where(pts1[:, 1] == pts2[:, 1])[0]
+    a[mask] = 0
+    b[mask] = pts1[mask, 1]
+
+    mask = np.where(pts1[:, 0] == pts2[:, 0])[0]
+    a[mask] = np.nan
+    b[mask] = pts1[mask, 1]
+
+    mask = np.where((pts1[:, 0] == pts2[:, 0])*(pts1[:, 1] == pts2[:, 1]))[0]
+    a[mask] = np.nan
+    b[mask] = np.nan
+
+    return a, b
+
+
 def convert2vect(u):
     if isinstance(u, list) or isinstance(u, tuple) or u.ndim == 1:
         u2 = np.array(u)[np.newaxis]
@@ -177,7 +196,30 @@ def angle_distance(phi, theta):
     return np.angle(np.exp(1j*(phi-theta)))
 
 
-def angle_sum(phis):
+def angle_sum(phi, theta):
+    return np.angle(np.exp(1j*(phi+theta)))
+
+
+def angle_distance_df(phi, theta, column_name=None):
+    if column_name is None:
+        column_name = 'angle_distance'
+
+    if isinstance(phi, pd.DataFrame):
+        phi2 = phi.copy()[phi.columns[0]]
+    else:
+        phi2 = phi.copy()
+
+    if isinstance(theta, pd.DataFrame):
+        theta2 = theta.copy()[theta.columns[0]]
+    else:
+        theta2 = theta.copy()
+
+    df_res = np.exp(1j*phi2)-np.exp(1j*theta2)
+    df_res = pd.DataFrame(np.angle(df_res), index=df_res.index, columns=[column_name])
+    return df_res
+
+
+def angle_sum_tab(phis):
     return cmath.phase(sum(cmath.rect(1, phi) for phi in phis))
 
 
