@@ -121,7 +121,7 @@ class MovieCanvas(FigureCanvas):
         lg2 = self.batch_length2*fps
         frame0 = self.exp.get_df('xy_next2food').loc[self.id_exp, :, :].index.get_level_values(id_frame_name)[0]
         frame1 = self.exp.get_df('xy_next2food').loc[self.id_exp, :, :].index.get_level_values(id_frame_name)[-1]
-        frames = range(frame0+lg1, frame1-lg2, lg1)
+        frames = range(frame0, frame1-lg2, lg1)
         list_batch_frames = [[frame-lg1, frame+lg2] for frame in frames]
 
         return list_batch_frames

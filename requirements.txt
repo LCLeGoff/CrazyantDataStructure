@@ -11,3 +11,4 @@ statsmodels
 # To install tslearn, is needed: sudo apt install python3.5-dev
 tslearn
 rdp
+more-itertools

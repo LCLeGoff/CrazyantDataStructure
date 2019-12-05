@@ -130,13 +130,14 @@ def j_function(xs, arr, a, b, di):
 def linearize2(arr, n_piece=5, di=20):
     arr = arr[~np.isnan(arr[:, 1]), :]
     lg = len(arr)
-    combs = np.array(list(itertools.combinations(range(1, int(lg / di) - 1), n_piece-1)))*di
+    combs = list(itertools.combinations(np.arange(1, int(lg / di) - 1)*di, n_piece-1))
     xs = list(combs[0])
+    xs3 = [0]+list(xs)+[lg-1]
+
     s_min, a, b = cost_function(xs, arr)
     # j_fct = j_function(xs, arr, a, b, di)
 
     # fig, ax = pb.subplots(2)
-    # xs3 = [0]+list(xs)+[lg-1]
     #
     # ax[0].plot(arr[:, 0], arr[:, 1])
     # g0, = ax[0].plot(arr[xs3, 0], arr[xs3, 1], marker='o')
@@ -159,7 +160,7 @@ def linearize2(arr, n_piece=5, di=20):
         # g2.set_xdata(arr[[0] + list(xs2) + [lg - 1], 0])
         # g2.set_ydata(arr[[0] + list(xs2) + [lg - 1], 1])
 
-        s = cost_function(xs2, arr)
+        s, a, b = cost_function(xs2, arr)
         if s < s_min:
             s_min = s
             xs = xs2
@@ -182,63 +183,208 @@ window = 20
 n_piece = 5
 di = 30
 features = []
+features_a_angle = []
+features_angle = []
+features_angle_012 = []
+features_a_speed = []
+features_speed = []
+features_a_rotation = []
+x_features = []
 labels2 = []
-for i, (id_exp, f) in enumerate(list_t[:1]):
+list_t_features = []
+for i, (id_exp, f) in enumerate(list_t):
     print(i, id_exp, f)
-    arr = np.zeros((601, 3))
-    df_temp = Exps.get_df(name_attachment_angle).loc[id_exp, :, f].transpose()
+    arr = np.zeros((601, 4))
+    df_temp = Exps.get_df(name_attachment_angle).loc[id_exp, :, f].transpose().abs()
     df_temp = df_temp.rolling(center=True, window=window).mean()
     df_temp = df_temp.reset_index().astype(float).values
     min_angle = np.nanmin(df_temp[:, 1])
-    max_angle = np.nanmax(df_temp[:, 1])
     df_temp[:, 1] -= min_angle
+    max_angle = np.nanmax(df_temp[:, 1])
     df_temp[:, 1] /= max_angle
     arr[:, :2] = df_temp
 
     df_temp = Exps.get_df(name_speed).loc[id_exp, :, f].transpose()
     df_temp = df_temp.rolling(center=True, window=window).mean()
     df_temp = df_temp.reset_index().astype(float).values
+    min_speed = np.nanmin(df_temp[:, 1])
+    df_temp[:, 1] -= min_speed
+    max_speed = np.nanmax(df_temp[:, 1])
+    df_temp[:, 1] /= max_speed
+    arr[:, 2] = df_temp[:, 1]
+
+    df_temp = Exps.get_df(name_rotation).loc[id_exp, :, f].transpose().abs()
+    df_temp = df_temp.rolling(center=True, window=window).mean()
+    df_temp = df_temp.reset_index().astype(float).values
     df_temp[:, 1] -= np.nanmin(df_temp[:, 1])
     df_temp[:, 1] /= np.nanmax(df_temp[:, 1])
-    arr[:, 2] = df_temp[:, 1]
+    arr[:, 3] = df_temp[:, 1]
 
     arr = arr[~np.isnan(arr[:, 1]), :]
     arr = arr[~np.isnan(arr[:, 2]), :]
     if len(arr) > di*n_piece:
-        xs = linearize2(arr, n_piece=n_piece, di=di)
+        xs = linearize2(arr[:, :3], n_piece=n_piece, di=di)
+
+        features_angle.append(list(arr[xs, 1]*max_angle+min_angle))
+        features_speed.append(list(arr[xs, 2]*max_speed+min_speed))
+
+        x_features.append(list(arr[xs, 0]))
 
         pts = arr[:, :2]
         a, _ = get_line_tab(pts[xs[:-1], :], pts[xs[1:], :])
         feature = list(a)
+        features_a_angle.append(list(a))
 
         ang = pts[xs, 1]
         ang2 = pts[xs, 1]
         ang2 *= max_angle
         ang2 += min_angle
-        ang[:] = 0
-        ang[:-1] += ang2[:-1] > 1.1
-        ang[:-1] += ang2[1:] > 1.1
-        feature += list(ang[:-1])
+        ang2 = (ang2 < 1.1).astype(int)
+        ang = ang2[1:]+ang2[:-1]
+        ang *= ang2[1:]
+        feature += list(ang)
+        features_angle_012.append(ang)
 
         pts = arr[:, [0, 2]]
         a, _ = get_line_tab(pts[xs[:-1], :], pts[xs[1:], :])
         feature += list(a)
+        features_a_speed.append(list(a))
+
+        pts = arr[:, [0, 3]]
+        a, _ = get_line_tab(pts[xs[:-1], :], pts[xs[1:], :])
+        feature += list(a)
+        features_a_rotation.append(list(a))
 
         features.append(feature)
         labels2.append(labels[i])
+        list_t_features.append((id_exp, f))
 
 features = np.array(features)
-labels2 = np.array(labels2)
+features_a_angle = np.array(features_a_angle)
+features_angle_012 = np.array(features_angle_012)
+features_a_speed = np.array(features_a_speed)
+features_a_rotation = np.array(features_a_rotation)
+
+x_features = np.array(x_features)
+features_angle = np.array(features_angle)
+features_speed = np.array(features_speed)
+labels2 = np.c_[labels2]
+list_t_features = np.array(list_t_features)
 
 
-fig, ax = pb.subplots(3)
-ax[0].plot(arr[:, 0], arr[:, 1])
-ax[0].plot(arr[xs, 0], arr[xs, 1], marker='o')
-ax[1].plot(arr[:, 0], arr[:, 2])
-ax[1].plot(arr[xs, 0], arr[xs, 2], marker='o')
-ax[2].plot(arr[:, 0], arr[:, 3])
-ax[2].plot(arr[xs, 0], arr[xs, 3], marker='o')
+# fig, ax0 = pb.subplots()
+# fig, ax1 = pb.subplots()
+# fig, ax2 = pb.subplots()
+# fig, ax3 = pb.subplots()
+# cat0 = []
+# cat1 = []
+# cat2 = []
+# cat3 = []
+#
+# for i in range(len(labels2)):
+#     j = np.where((features1[i, 1:-1] == 1))[0]
+#     if len(j) == 0:
+#         j = np.where((features1[i, 1:-1] == 2))[0]
+#         if len(j) == 0:
+#             cat0.append(i)
+#             ax0.plot(features2[i, 0], features2[i, 1], '^', mec='k', c=str(labels2[i][0]))
+#         else:
+#             cat1.append(i)
+#             j = j[0]+1
+#             ax1.plot(features2[i, j]*(x_features[i, j+1]-x_features[i, j]), features2[i, j + 1]*(x_features[i, j+2]-x_features[i, j+1]), 's', mec='k', c=str(labels2[i][0]))
+#     else:
+#         j = np.where((features1[i, 1:-1] == 1)*(features1[i, 2:] == 2))[0]
+#         if len(j) == 0:
+#             cat2.append(i)
+#             ax2.plot(features2[i, 0], features2[i, 1], 'P', mec='k', c=str(labels2[i][0]))
+#         else:
+#             cat3.append(i)
+#             j = j[0]+1
+#             ax3.plot(features2[i, j], features2[i, j+1], 'o', mec='k', c=str(labels2[i][0]))
+
+def plot(i):
+    if isinstance(i, tuple):
+        id_exp, f = i
+    else:
+        id_exp, f = list_t_features[i]
+        i = np.where(np.sum(np.array(list_t_features) == [id_exp, f], axis=1) == 2)[0][0]
+        print(i)
+    arr = np.zeros((601, 3))
+
+    df_temp = Exps.get_df(name_attachment_angle).loc[id_exp, :, f].transpose().abs()
+    df_temp = df_temp.rolling(center=True, window=window).mean()
+    df_temp = df_temp.reset_index().astype(float).values
+    arr[:, :2] = df_temp
+
+    df_temp = Exps.get_df(name_speed).loc[id_exp, :, f].transpose()
+    df_temp = df_temp.rolling(center=True, window=window).mean()
+    df_temp = df_temp.reset_index().astype(float).values
+    arr[:, 2] = df_temp[:, 1]
+
+    arr = arr[~np.isnan(arr[:, 1]), :]
+    arr = arr[~np.isnan(arr[:, 2]), :]
+
+    df_temp = Exps.get_df(name_rotation).loc[id_exp, :, f].transpose().abs()
+    df_temp = df_temp.rolling(center=True, window=window).mean()
+    df_temp = df_temp.reset_index().astype(float).values
+
+    if labels2[i] == 1:
+        c = 'r'
+    else:
+        c = 'k'
+    fig, ax = pb.subplots(3)
+    fig.suptitle((i, (id_exp, f)))
+    ax[0].plot(arr[:, 0], arr[:, 1], c=c)
+    ax[1].plot(arr[:, 0], arr[:, 2], c=c)
+    ax[2].plot(df_temp[:, 0], df_temp[:, 1], c=c)
+    for x in x_features[i]:
+        print(x)
+        ax[0].axvline(x, ls='--', c='gray')
+        ax[1].axvline(x, ls='--', c='gray')
+        ax[2].axvline(x, ls='--', c='gray')
+    ax[0].set_xlim(-3, 3)
+    ax[0].set_ylim(0, 3.14)
+    ax[0].grid()
+    ax[1].set_xlim(-3, 3)
+    ax[1].set_ylim(0, 10)
+    ax[1].grid()
+    ax[2].set_xlim(-3, 3)
+    ax[2].set_ylim(0, 3.14)
+    ax[2].grid()
+
+    # pb.show()
+
+
+fig, ax = pb.subplots(2, 3, figsize=(10, 10))
+for k1 in range(ax.shape[0]):
+    for k2 in range(ax.shape[1]):
+        ax[k1, k2].axvline(0, ls='--', c='gray')
+        ax[k1, k2].axhline(0, ls='--', c='gray')
+
+for i in range(len(labels2)):
+    if np.sum(features_angle_012[i, 1:-1]) == 2*(n_piece-2):
+        j = np.argmax(features_a_angle[i, 1:-1])
+        j += 1
+        c = str(labels2[i][0])
+        dx = x_features[i, 1:]-x_features[i, :-1]
+        ax[0, 0].plot(features_a_speed[i, j], features_a_speed[i, j+1], 'o', mec='k', c=c)
+        ax[0, 1].plot(features_a_speed[i, j]*dx[j], features_a_speed[i, j+1]*dx[j+1], 'o', mec='k', c=c)
+        ax[0, 2].plot(features_speed[i, j], features_speed[i, j+1], 'o', mec='k', c=c)
+        ax[1, 0].plot(features_speed[i, j+1], features_a_speed[i, j+1], 'o', mec='k', c=c)
+        ax[1, 1].plot(features_speed[i, j+1], features_speed[i, j+2]-features_speed[i, j+1], 'o', mec='k', c=c)
+        ax[1, 2].plot(features_a_speed[i, j+1], features_speed[i, j+2]-features_speed[i, j+1], 'o', mec='k', c=c)
+
 pb.show()
+
+
+# fig, ax = pb.subplots(3)
+# ax[0].plot(arr[:, 0], arr[:, 1])
+# ax[0].plot(arr[xs, 0], arr[xs, 1], marker='o')
+# ax[1].plot(arr[:, 0], arr[:, 2])
+# ax[1].plot(arr[xs, 0], arr[xs, 2], marker='o')
+# ax[2].plot(arr[:, 0], arr[:, 3])
+# ax[2].plot(arr[xs, 0], arr[xs, 3], marker='o')
+# pb.show()
 
 
 # window = 20
@@ -317,6 +463,8 @@ pb.show()
 #
 # labels2 = np.delete(labels, to_remove, 0)
 # res = np.delete(res, to_remove, 0)
+
+mask = np.where()
 
 m = len(labels2)
 sh = np.random.permutation(m)

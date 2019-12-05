@@ -1,3 +1,5 @@
+import itertools
+
 import pandas as pd
 import numpy as np
 import scipy.stats as scs
@@ -6,7 +8,7 @@ import sklearn.decomposition as decomp
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
-from Tools.MiscellaneousTools.Geometry import angle_distance_df, angle_distance, angle_mean
+from Tools.MiscellaneousTools.Geometry import angle_distance_df, angle_distance, angle_mean, get_line_tab
 
 
 class AnalyseLeaderFollower(AnalyseClassDecorator):
@@ -916,3 +918,110 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         pb.scatter(x_inside_pca[:, 0], x_inside_pca[:, 1], c=y_inside, marker='*')
 
         pb.show()
+
+    @staticmethod
+    def __cost_function(xs3, tab):
+        lg = len(tab)
+        xs2 = [0] + list(xs3) + [lg - 1]
+        s = 0
+
+        for k in range(1, tab.shape[1]):
+            pts2 = tab[:, [0, k]]
+            a2, b2 = get_line_tab(pts2[xs2[:-1], :], pts2[xs2[1:], :])
+            for ii in range(len(xs2) - 1):
+                s2 = np.sum((a2[ii] * tab[xs2[ii]:xs2[ii + 1] + 1, 0] + b2[ii] - tab[xs2[ii]:xs2[ii + 1] + 1, k]) ** 2)
+                s += s2
+        return s
+
+    def __linearring(self, tab, n=5, d=20):
+        lg = len(tab)
+        combs = list(itertools.combinations(np.arange(1, int(lg / d) - 1) * d, n - 1))
+        xs2 = list(combs[0])
+        xs3 = [0] + list(xs2) + [lg - 1]
+
+        s_min = self.__cost_function(xs2, tab)
+
+        for xs2 in combs:
+
+            s = self.__cost_function(xs2, tab)
+            if s < s_min:
+                s_min = s
+                xs2 = xs2
+
+                xs3 = [0] + list(xs2) + [lg - 1]
+
+        return xs3
+
+    def compute_leader_follower(self):
+        name_speed = 'mm1s_food_speed_leader_feature'
+        name_attachment_angle = 'mm1s_attachment_angle_leader_feature'
+        name_rotation = 'mm10_food_rotation_leader_feature'
+        name_attachment = 'ant_attachment_intervals'
+        self.exp.load([name_speed, name_attachment_angle, name_attachment, name_rotation])
+
+        result_name = 'is_leader'
+        label = 'leader attachment'
+        description = 'Is attachment from a leader ant?'
+        self.exp.add_copy(old_name=name_attachment, new_name=result_name,
+                          category=self.category, label=label, description=description)
+        self.exp.get_df(result_name)[:] = 0
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int, inplace=True))
+
+        influence_angle = 1.1
+        window = 20
+
+        def is_leader4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            frame = df.index.get_level_values(id_frame_name)[0]
+            print(id_exp, frame)
+
+            arr = np.zeros((601, 3))
+
+            tab_angle = df.loc[id_exp, :, frame].transpose().abs()
+            tab_angle = tab_angle.rolling(center=True, window=window).mean()
+            tab_angle = tab_angle.reset_index().astype(float).values
+            arr[:, :2] = tab_angle.copy()
+            arr[:, 1] -= np.nanmin(arr[:, 1])
+            arr[:, 1] /= np.nanmax(arr[:, 1])
+
+            tab_speed = self.exp.get_df(name_speed).loc[id_exp, :, frame].transpose()
+            tab_speed = tab_speed.rolling(center=True, window=window).mean()
+            tab_speed = tab_speed.reset_index().astype(float).values
+            arr[:, 2] = tab_speed[:, 1]
+            arr[:, 2] -= np.nanmin(arr[:, 2])
+            arr[:, 2] /= np.nanmax(arr[:, 2])
+
+            tab_rotation = self.exp.get_df(name_rotation).loc[id_exp, :, frame].transpose()
+            tab_rotation = tab_rotation.rolling(center=True, window=window).mean()
+            tab_rotation = tab_rotation.reset_index().astype(float).values
+
+            mask = np.where((tab_angle[:, 1] < influence_angle)*(tab_speed[:, 1] > 2))[0]
+            if len(mask) > 0:
+                mask = np.where(~np.isnan(arr[:, 1]*~np.isnan(arr[:, 2])))[0]
+                arr = arr[mask, :]
+                tab_angle = tab_angle[mask, :]
+                tab_speed = tab_speed[mask, :]
+                tab_rotation = tab_rotation[mask, :]
+                if len(arr) != 0 and arr[0, 0] < -1 and arr[-1, 0] > 1.5:
+                    xs = self.__linearring(arr)
+
+                    ang2 = tab_angle[xs, 1]
+                    ang2 = (ang2 < influence_angle).astype(int)
+                    ang = ang2[1:] + ang2[:-1]
+                    ang *= ang2[1:]
+
+                    mask = np.where((ang[1:-1] == 1) * (ang[2:] == 2))[0]
+                    if len(mask) != 0:
+                        j = mask[0] + 1
+                        if 2 > arr[xs[j + 1], 0] > -1:
+                            a_speed, _ = get_line_tab(tab_speed[xs[:-1], :], tab_speed[xs[1:], :])
+                            a_rotation, _ = get_line_tab(tab_rotation[xs[:-1], :], tab_rotation[xs[1:], :])
+                            if (a_speed[j] > 0.1 or a_speed[j + 1] > 0.1 or a_rotation[j + 1] > 0.1)\
+                                    and tab_speed[xs[j + 2], 1] > 2:
+                                self.exp.get_df(result_name).loc[id_exp, :, frame] = 1
+            return df
+
+        self.exp.groupby(name_attachment_angle, [id_exp_name, id_frame_name], is_leader4each_group)
+
+        self.exp.write(result_name)
+

@@ -365,13 +365,13 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.get_manual_leader_follower()
 # LeaderFollower.print_manual_leader_stats()
 #
-LeaderFollower.prepare_food_speed_features()
+# LeaderFollower.prepare_food_speed_features()
 # LeaderFollower.prepare_mm10_food_speed_features()
 # LeaderFollower.prepare_mm1s_food_speed_features()
 #
-LeaderFollower.prepare_food_orientation_features()
-LeaderFollower.prepare_mm10_food_orientation_features()
-LeaderFollower.prepare_mm1s_food_orientation_features()
+# LeaderFollower.prepare_food_orientation_features()
+# LeaderFollower.prepare_mm10_food_orientation_features()
+# LeaderFollower.prepare_mm1s_food_orientation_features()
 # LeaderFollower.prepare_food_orientation_speed_features()
 #
 # LeaderFollower.prepare_food_rotation_features()
@@ -408,3 +408,5 @@ LeaderFollower.prepare_mm1s_food_orientation_features()
 # LeaderFollower.draw_3_main()
 # LeaderFollower.test()
 # LeaderFollower.test2()
+
+LeaderFollower.compute_leader_follower()
