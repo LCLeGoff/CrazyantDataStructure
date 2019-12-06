@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools.ArrayManipulation import get_entropy, get_max_entropy
 from Tools.Plotter.Plotter import Plotter
 
@@ -65,7 +65,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
 
         last_frame_name = 'food_exit_frames'
         leader_name = 'is_leader'
-        self.exp.load([variable_name, last_frame_name, 'fps'])
+        self.exp.load([variable_name, last_frame_name, leader_name, 'fps'])
 
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
@@ -79,6 +79,8 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                                        index_values=index_values,
                                        category=self.category, label=result_label, description=result_description)
 
+        leader_index = list(self.exp.get_index(leader_name).droplevel(id_ant_name))
+
         def get_variable4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             fps = self.exp.get_value('fps', id_exp)
@@ -90,20 +92,23 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 attachment_frames.sort()
 
                 for attach_frame in attachment_frames:
-                    is_leader = self.exp.get_df(leader_name).iloc[id_exp, :, attach_frame]
-                    if is_leader == 1 and attach_frame < last_frame:
-                        print(id_exp, attach_frame)
-                        f0 = int(attach_frame + time_intervals[0] * fps)
-                        f1 = int(attach_frame + time_intervals[-1] * fps)
+                    print(id_exp, attach_frame)
+                    if (id_exp, attach_frame) in leader_index:
+                        is_leader = self.exp.get_df(leader_name).loc[id_exp, :, attach_frame]
+                        is_leader = int(is_leader.iloc[0])
+                        if is_leader == 1 and attach_frame < last_frame:
+                            print(id_exp, attach_frame)
+                            f0 = int(attach_frame + time_intervals[0] * fps)
+                            f1 = int(attach_frame + time_intervals[-1] * fps)
 
-                        var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
-                        var_df = var_df.loc[id_exp, :]
-                        var_df.index -= attach_frame
-                        var_df.index /= fps
+                            var_df = df.loc[pd.IndexSlice[id_exp, f0:f1], :]
+                            var_df = var_df.loc[id_exp, :]
+                            var_df.index -= attach_frame
+                            var_df.index /= fps
 
-                        var_df = var_df.reindex(time_intervals)
+                            var_df = var_df.reindex(time_intervals)
 
-                        self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
+                            self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
 
         self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
         self.exp.write(result_name)
@@ -125,7 +130,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside leader ant attachments'
 
-        ylim_zoom = (0.2, 0.55)
+        ylim_zoom = (0., .7)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments(self.__compute_entropy, dpi, variable_name,
                                                              hists_result_name, info_result_name, hists_label,
@@ -149,7 +154,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around inside leader ant attachments'
 
-        ylim_zoom = (0.2, 0.55)
+        ylim_zoom = (0., 0.3)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments(self.__compute_entropy, dpi, variable_name,
                                                              hists_result_name, info_result_name, hists_label,
@@ -176,7 +181,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around leader ant attachments'
 
-        ylim_zoom = (0.15, 0.3)
+        ylim_zoom = (0.2, .3)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments(self.__compute_entropy, dpi, variable_name,
                                                              hists_result_name, info_result_name, hists_label,
@@ -360,7 +365,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         start_frame_intervals = np.arange(0, 2.5, dx)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
-        ylim_zoom = (0.2, 0.6)
+        ylim_zoom = (0., 2)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments_evol(
             self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
@@ -388,10 +393,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around inside leader ant attachments'
 
         dx = 0.5
-        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
+        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
-        ylim_zoom = (0.2, 0.6)
+        ylim_zoom = (0., 2)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments_evol(
             self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
@@ -423,10 +428,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                            ' for each time t in time_intervals, which are times around leader ant attachments'
 
         dx = 0.5
-        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
+        start_frame_intervals = np.arange(-2, 2.5, dx)*60*100
         end_frame_intervals = start_frame_intervals + dx*60*100*2
 
-        ylim_zoom = (0.1, 0.6)
+        ylim_zoom = (0., 2)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments_evol(
             self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,

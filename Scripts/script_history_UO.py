@@ -1,5 +1,6 @@
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.CleaningData import CleaningData
+from AnalyseClasses.Food.FoodInformationLeader import AnalyseFoodInformationLeader
 from AnalyseClasses.Food.FoodInformationTrajectory import AnalyseFoodInformationTrajectory
 from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
 from AnalyseClasses.Food.FoodBase import AnalyseFoodBase
@@ -409,4 +410,15 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.test()
 # LeaderFollower.test2()
 
-LeaderFollower.compute_leader_follower()
+# LeaderFollower.compute_leader_follower()
+
+FoodInfoLeader = AnalyseFoodInformationLeader(group)
+# FoodInfoLeader.compute_mm1s_food_direction_error_around_outside_leader_attachments()
+FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments()
+# FoodInfoLeader.compute_mm1s_food_direction_error_around_inside_leader_attachments()
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments()
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments()
+
+FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments_evol()
+FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments_evol()
+FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments_evol()
