@@ -409,4 +409,4 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.test()
 # LeaderFollower.test2()
 
-LeaderFollower.compute_leader_follower()
+# LeaderFollower.compute_leader_follower()

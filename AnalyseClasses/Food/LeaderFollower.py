@@ -1025,3 +1025,22 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
+    def print_leader_stats(self):
+
+        leading_name = 'is_leading'
+        outside_name = 'outside_leading_attachments'
+        inside_name = 'inside_manual_leading_attachments'
+        self.exp.load([all_name, outside_name, inside_name])
+
+        print()
+        for label, name in [('all', all_name), ('outside', outside_name), ('inside', inside_name)]:
+
+            df = self.exp.get_df(name).dropna()
+            m = float(np.nanmean(df))
+            n = len(df)
+            s1 = int(np.nansum(df))
+            s2 = int(np.nansum(1-df))
+            lower = scs.beta.ppf(0.025, s1, s2)
+            upper = scs.beta.ppf(0.975, s1, s2)
+
+            print('%s: %.3f, (%.3f, %.3f), %i' % (label, round(m, 3), round(lower, 3), round(upper, 3), n))
