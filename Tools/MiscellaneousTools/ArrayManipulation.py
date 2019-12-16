@@ -94,16 +94,26 @@ def auto_corr(tab):
     return r / (variance * (np.arange(len(tab), 0, -1)))
 
 
-def get_entropy(tab, get_variance=False):
+def get_entropy(tab):
     tab2 = np.array(tab)
+    mask = np.where(tab2 != 0)[0]
+    tab2 = tab2[mask]
+
+    h = -np.sum(tab2 * np.log2(tab2))
+    return h
+
+
+def get_entropy2(tab, get_variance=False):
+    tab2 = np.array(tab)
+    s = np.nansum(tab2)
+    tab2 = tab2 / s
     mask = np.where(tab2 != 0)[0]
     tab2 = tab2[mask]
 
     h = -np.sum(tab2 * np.log2(tab2))
     if get_variance is True:
         v = np.sum(tab2 * np.log2(tab2)**2)
-        n = len(tab2)
-        v = (v-h**2)/float(n)
+        v = (v-h**2)/float(s)
         return h, v
     else:
         return h

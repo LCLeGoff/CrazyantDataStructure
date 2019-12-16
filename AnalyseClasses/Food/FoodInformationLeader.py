@@ -3,7 +3,7 @@ import pandas as pd
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
-from Tools.MiscellaneousTools.ArrayManipulation import get_entropy, get_max_entropy
+from Tools.MiscellaneousTools.ArrayManipulation import get_max_entropy, get_entropy2
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -15,17 +15,21 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
     def __compute_entropy(self, time_intervals, hists_result_name, info_result_name):
         for t in time_intervals:
             hist = self.exp.get_df(hists_result_name)[t]
-            entropy = get_entropy(hist)
+            entropy, v = get_entropy2(hist, get_variance=True)
             max_entropy = get_max_entropy(hist)
 
-            self.exp.get_df(info_result_name).loc[t] = np.around(max_entropy - entropy, 6)
+            info = np.around(max_entropy - entropy, 6)
+            self.exp.get_df(info_result_name).loc[t, 'info'] = info
+
+            self.exp.get_df(info_result_name).loc[t, 'err1'] = 1.95 * np.sqrt(v)
+            self.exp.get_df(info_result_name).loc[t, 'err2'] = 1.95 * np.sqrt(v)
 
     def __compute_entropy_evol(self, time_intervals, hists_result_name, info_result_name):
         column_names = self.exp.get_columns(info_result_name)
         for inter in column_names:
             for dt in time_intervals:
                 hist = self.exp.get_df(hists_result_name).loc[pd.IndexSlice[dt, :], inter]
-                entropy = get_entropy(hist)
+                entropy = get_entropy2(hist)
                 max_entropy = get_max_entropy(hist)
 
                 self.exp.get_df(info_result_name).loc[dt, inter] = np.around(max_entropy - entropy, 3)
@@ -108,9 +112,11 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
 
                             var_df = var_df.reindex(time_intervals)
 
-                            self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] = np.array(var_df[variable_name])
+                            self.exp.get_df(result_name).loc[(id_exp, attach_frame), :] =\
+                                np.array(var_df[variable_name])
 
         self.exp.groupby(variable_name, id_exp_name, func=get_variable4each_group)
+        self.exp.change_df(result_name, self.exp.get_df(result_name).dropna(how='all'))
         self.exp.write(result_name)
 
     def compute_information_mm1s_food_direction_error_around_outside_leader_attachments(
@@ -130,7 +136,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside leader ant attachments'
 
-        ylim_zoom = (0., .7)
+        ylim_zoom = (0., 1)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments(self.__compute_entropy, dpi, variable_name,
                                                              hists_result_name, info_result_name, hists_label,
@@ -154,7 +160,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         info_description = 'Information of the food  (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around inside leader ant attachments'
 
-        ylim_zoom = (0., 0.3)
+        ylim_zoom = (0., 0.5)
         dpi = 1/12.
         self.__compute_information_around_leader_attachments(self.__compute_entropy, dpi, variable_name,
                                                              hists_result_name, info_result_name, hists_label,
@@ -203,10 +209,8 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                                            category=self.category, label=hists_label, description=hists_description)
 
             for t in time_intervals:
-                values = self.exp.get_df(variable_name)[str(t)].dropna()
+                values = self.exp.get_df(variable_name)[str(t)].abs().dropna()
                 hist = np.histogram(values, bins=bins, normed=False)[0]
-                s = float(np.sum(hist))
-                hist = hist / s
 
                 self.exp.get_df(hists_result_name)[t] = hist
 
@@ -219,7 +223,8 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         if redo or redo_info:
             time_intervals = self.exp.get_df(hists_result_name).columns
 
-            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time', column_names='info',
+            self.exp.add_new_empty_dataset(name=info_result_name, index_names='time',
+                                           column_names=['info', 'err1', 'err2'],
                                            index_values=time_intervals, category=self.category,
                                            label=info_label, description=info_description)
 
@@ -249,16 +254,18 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
 
         self.exp.remove_object(info_result_name)
         self.exp.load(info_result_name)
+
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
         fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
-        plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel=ylabel, title='')
+        plotter.plot_with_error(preplot=(fig, ax[0]), xlabel='time (s)', ylabel=ylabel, title='')
+        plotter.plot_with_error(preplot=(fig, ax[1]), title='')
 
         ax[0].axvline(0, ls='--', c='k')
-        plotter.plot(preplot=(fig, ax[1]), title='')
         ax[1].axvline(0, ls='--', c='k')
         ax[1].set_xlim((-2, 8))
         ax[1].set_ylim(ylim_zoom)
         plotter.save(fig)
+        self.exp.remove_object(info_result_name)
 
     def __plot_info_evol(self, info_result_name, ylabel, ylim_zoom):
 
@@ -266,14 +273,11 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         self.exp.load(info_result_name)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(info_result_name))
-        fig, ax = plotter.create_plot(figsize=(4.5, 8), nrows=2)
-        plotter.plot(preplot=(fig, ax[0]), xlabel='time (s)', ylabel=ylabel, title='')
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=ylabel, title='')
 
-        ax[0].axvline(0, ls='--', c='k')
-        plotter.plot(preplot=(fig, ax[1]), title='')
-        ax[1].axvline(0, ls='--', c='k')
-        ax[1].set_xlim((-2, 8))
-        ax[1].set_ylim(ylim_zoom)
+        ax.axvline(0, ls='--', c='k')
+        ax.set_xlim((-2, 8))
+        ax.set_ylim(ylim_zoom)
         plotter.save(fig)
 
     def __compute_information_around_leader_attachments_evol(
@@ -361,9 +365,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                            ' (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around outside leader ant attachments'
 
-        dx = 0.5
-        start_frame_intervals = np.arange(0, 2.5, dx)*60*100
-        end_frame_intervals = start_frame_intervals + dx*60*100*2
+        dx = 0.25
+        dx2 = 0.5
+        start_frame_intervals = np.arange(0, 1.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx2*60*100
 
         ylim_zoom = (0., 2)
         dpi = 1/12.
@@ -392,9 +397,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                            ' (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around inside leader ant attachments'
 
-        dx = 0.5
-        start_frame_intervals = np.arange(-1, 2.5, dx)*60*100
-        end_frame_intervals = start_frame_intervals + dx*60*100*2
+        dx = 0.25
+        dx2 = 0.5
+        start_frame_intervals = np.arange(0, 1.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx2*60*100
 
         ylim_zoom = (0., 2)
         dpi = 1/12.
@@ -427,9 +433,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                            ' (max entropy - entropy of the food direction error)' \
                            ' for each time t in time_intervals, which are times around leader ant attachments'
 
-        dx = 0.5
-        start_frame_intervals = np.arange(-2, 2.5, dx)*60*100
-        end_frame_intervals = start_frame_intervals + dx*60*100*2
+        dx = 0.25
+        dx2 = 0.5
+        start_frame_intervals = np.arange(0, 1.5, dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx2*60*100
 
         ylim_zoom = (0., 2)
         dpi = 1/12.
@@ -437,3 +444,26 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self.__compute_entropy_evol, dpi,  start_frame_intervals, end_frame_intervals,
             variable_name, hists_result_name, info_result_name, init_frame_name,
             hists_label, hists_description, info_label, info_description, ylim_zoom, redo, redo_info)
+
+    def plot_inside_and_outside_leader_information(self):
+        outside_name = 'information_mm1s_food_direction_error_around_outside_leader_attachments'
+        inside_name = 'information_mm1s_food_direction_error_around_inside_leader_attachments'
+        self.exp.load([outside_name, inside_name])
+        result_name = 'information_outside_inside_leader_attachment'
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
+        fig, ax = plotter.create_plot()
+        plotter.plot_with_error(
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Information (bit)', title='', label='outside', c='red')
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
+        plotter.plot_with_error(
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Information (bit)',
+            title='', label='inside')
+        
+        ax.set_xlim(-2, 8)
+        ax.set_ylim(0, .8)
+        plotter.draw_vertical_line(ax, label='attachment')
+        plotter.draw_legend(ax)
+
+        plotter.save(fig, name=result_name)
