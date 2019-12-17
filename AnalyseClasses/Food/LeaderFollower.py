@@ -8,7 +8,7 @@ import sklearn.decomposition as decomp
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
-from Tools.MiscellaneousTools.Geometry import angle_distance_df, angle_distance, angle_mean, get_line_tab
+import Tools.MiscellaneousTools.Geometry as Geo
 
 
 class AnalyseLeaderFollower(AnalyseClassDecorator):
@@ -88,7 +88,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Food speed'
         result_name = 'food_speed_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm10_food_speed_features(self):
@@ -96,7 +96,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Food speed'
         result_name = 'mm10_food_speed_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm1s_food_speed_features(self):
@@ -104,7 +104,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Food speed'
         result_name = 'mm1s_food_speed_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_food_orientation_features(self):
@@ -129,7 +129,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         # df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         # self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm10_food_orientation_features(self):
@@ -154,7 +154,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         # df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         # self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm1s_food_orientation_features(self):
@@ -179,7 +179,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         # df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         # self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_food_orientation_speed_features(self):
@@ -201,7 +201,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
             id_exp = df.index.get_level_values(id_exp_name)[0]
 
             df2 = df.loc[id_exp, :].values
-            df2 = angle_distance(df2[:-1], df2[1:])
+            df2 = Geo.angle_distance(df2[:-1], df2[1:])
             df2 = np.concatenate([[df.iloc[0]], df2])
 
             df2 = np.nancumsum(df2)
@@ -212,7 +212,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm10_food_rotation_features(self):
@@ -226,7 +226,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
             id_exp = df.index.get_level_values(id_exp_name)[0]
 
             df2 = df.loc[id_exp, :].values
-            df2 = angle_distance(df2[:-1], df2[1:])
+            df2 = Geo.angle_distance(df2[:-1], df2[1:])
             df2 = np.concatenate([[df.iloc[0]], df2])
 
             df2 = np.nancumsum(df2)
@@ -237,7 +237,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm1s_food_rotation_features(self):
@@ -251,7 +251,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
             id_exp = df.index.get_level_values(id_exp_name)[0]
 
             df2 = df.loc[id_exp, :].values
-            df2 = angle_distance(df2[:-1], df2[1:])
+            df2 = Geo.angle_distance(df2[:-1], df2[1:])
             df2 = np.concatenate([[df.iloc[0]], df2])
 
             df2 = np.nancumsum(df2)
@@ -262,7 +262,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         df_res = self.exp.groupby(variable_name, id_exp_name, remove_modulo)
         self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_nb_carriers_features(self):
@@ -270,7 +270,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Carrier number'
         result_name = 'nb_carriers_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_food_confidence_features(self):
@@ -278,7 +278,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Food confidence'
         result_name = 'food_confidence_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_food_accuracy_features(self):
@@ -286,7 +286,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Food accuracy'
         result_name = 'food_accuracy_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_ant_speed_features(self):
@@ -294,7 +294,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Ant speed'
         result_name = 'ant_speed_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_attachment_angle_features(self):
@@ -323,7 +323,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         # df_res = self.exp.groupby(variable_name, [id_exp_name, id_ant_name], remove_modulo)
         # self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm10_attachment_angle_features(self):
@@ -331,7 +331,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Attachment angle'
         result_name = 'mm10_attachment_angle_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_mm1s_attachment_angle_features(self):
@@ -339,7 +339,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Attachment angle'
         result_name = 'mm1s_attachment_angle_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_attachment_angle_not_modulo_features(self):
@@ -355,7 +355,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
             print(id_exp, id_ant)
 
             df2 = df.loc[id_exp, id_ant, :].values
-            df2 = angle_distance(df2[:-1], df2[1:])
+            df2 = Geo.angle_distance(df2[:-1], df2[1:])
             df2 = np.concatenate([[df.iloc[0]], df2])
 
             mask = np.where(np.isnan(df2))[0]
@@ -368,7 +368,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         df_res = self.exp.groupby(variable_name, [id_exp_name, id_ant_name], remove_modulo)
         self.exp.change_df(variable_name, df_res)
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_body_orientation_alignment_features(self):
@@ -376,7 +376,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Ant body and food orientation alignment'
         result_name = 'body_orientation_alignment_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_body_rotation_alignment_features(self):
@@ -384,7 +384,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'Ant body and food rotation alignment'
         result_name = 'body_rotation_alignment_leader_feature'
 
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self._get_feature_from_exp_ant_frame_indexed(variable_name, label_name, result_name, attachment_name)
 
     def prepare_outside_features(self):
@@ -392,7 +392,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         label_name = 'From outside'
 
         variable_name = 'from_outside'
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         self.exp.load([variable_name, attachment_name])
 
         label = label_name + ' feature for leader/follower'
@@ -732,7 +732,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
     @staticmethod
     def apply_min_max_angle(df):
-        return (angle_distance_df(df.max(axis=1), df.min(axis=1))).values.ravel()
+        return (Geo.angle_distance_df(df.max(axis=1), df.min(axis=1))).values.ravel()
 
     def visualisation_after_vs_before(self, name, title, fct):
         outside_name = 'outside_leader_feature'
@@ -927,7 +927,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
         for k in range(1, tab.shape[1]):
             pts2 = tab[:, [0, k]]
-            a2, b2 = get_line_tab(pts2[xs2[:-1], :], pts2[xs2[1:], :])
+            a2, b2 = Geo.get_line_tab(pts2[xs2[:-1], :], pts2[xs2[1:], :])
             for ii in range(len(xs2) - 1):
                 s2 = np.sum((a2[ii] * tab[xs2[ii]:xs2[ii + 1] + 1, 0] + b2[ii] - tab[xs2[ii]:xs2[ii + 1] + 1, k]) ** 2)
                 s += s2
@@ -956,7 +956,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         name_speed = 'mm1s_food_speed_leader_feature'
         name_attachment_angle = 'mm1s_attachment_angle_leader_feature'
         name_rotation = 'mm10_food_rotation_leader_feature'
-        name_attachment = 'ant_attachment_intervals'
+        name_attachment = 'attachment_intervals'
         self.exp.load([name_speed, name_attachment_angle, name_attachment, name_rotation])
 
         result_name = 'is_leader'
@@ -1014,8 +1014,8 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
                     if len(mask) != 0:
                         j = mask[0] + 1
                         if 2 > arr[xs[j + 1], 0] > -1:
-                            a_speed, _ = get_line_tab(tab_speed[xs[:-1], :], tab_speed[xs[1:], :])
-                            a_rotation, _ = get_line_tab(tab_rotation[xs[:-1], :], tab_rotation[xs[1:], :])
+                            a_speed, _ = Geo.get_line_tab(tab_speed[xs[:-1], :], tab_speed[xs[1:], :])
+                            a_rotation, _ = Geo.get_line_tab(tab_rotation[xs[:-1], :], tab_rotation[xs[1:], :])
                             if (a_speed[j] > 0.1 or a_speed[j + 1] > 0.1 or a_rotation[j + 1] > 0.1)\
                                     and tab_speed[xs[j + 2], 1] > 2:
                                 self.exp.get_df(result_name).loc[id_exp, :, frame] = 1
@@ -1025,22 +1025,145 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
+    def get_leading_attachment_intervals(self):
+        leader_name = 'is_leader'
+        self.exp.load(leader_name)
+        for sup in ['', 'outside_', 'inside_']:
+            name = '%sattachment_intervals' % sup
+            self.exp.load(name)
+            result_name = '%sleading_attachments' % sup
+
+            self.exp.add_copy(old_name=name, new_name=result_name, category=self.category,
+                              label='%s leading attachments', description='%s leading attachments')
+
+            for id_exp, id_ant, frame in self.exp.get_index(name):
+                if self.exp.get_index(leader_name).isin([(id_exp, id_ant, frame)]).any():
+                    leading = self.exp.get_value(leader_name, (id_exp, id_ant, frame))
+                    if leading == 0:
+                        if self.exp.get_index(result_name).isin([(id_exp, id_ant, frame)]).any():
+                            self.exp.get_df(result_name).loc[id_exp, id_ant, frame] = np.nan
+
+            self.exp.change_df(result_name, self.exp.get_df(result_name).dropna())
+
+            self.exp.write(result_name)
+
+    @staticmethod
+    def print_stat(label, df2, df_res):
+        m = float(np.nanmean(df2))
+        s1 = int(np.nansum(df2))
+        s2 = int(np.nansum(1 - df2))
+        lower = scs.beta.ppf(0.025, s1, s2)
+        upper = scs.beta.ppf(0.975, s1, s2)
+        print('%s: %.3f, (%.3f, %.3f)' % (label, round(m, 2), round(lower, 2), round(upper, 2)))
+        df_res[label] = [round(m, 3), round(lower, 3), round(upper, 3)]
+
     def print_leader_stats(self):
+        leader_name = 'is_leader'
+        from_outside_name = 'from_outside'
+        first_frame = 'first_attachment_time_of_outside_ant'
+        marking_name = 'markings'
 
-        leading_name = 'is_leading'
-        outside_name = 'outside_leading_attachments'
-        inside_name = 'inside_manual_leading_attachments'
-        self.exp.load([all_name, outside_name, inside_name])
+        self.exp.load([leader_name, from_outside_name, marking_name])
 
-        print()
-        for label, name in [('all', all_name), ('outside', outside_name), ('inside', inside_name)]:
+        self.change_first_frame(leader_name, first_frame)
 
-            df = self.exp.get_df(name).dropna()
-            m = float(np.nanmean(df))
-            n = len(df)
-            s1 = int(np.nansum(df))
-            s2 = int(np.nansum(1-df))
-            lower = scs.beta.ppf(0.025, s1, s2)
-            upper = scs.beta.ppf(0.975, s1, s2)
+        df_res = pd.DataFrame(index=['mean', 'lower', 'upper'])
 
-            print('%s: %.3f, (%.3f, %.3f), %i' % (label, round(m, 3), round(lower, 3), round(upper, 3), n))
+        df = self.exp.get_df(leader_name).copy()
+        df[from_outside_name] = 0
+
+        has_marked_name = 'has_marked'
+        df[has_marked_name] = np.nan
+
+        idx = list(set(list(df.index.droplevel(id_frame_name))))
+        idx.sort()
+
+        for id_exp, id_ant in idx:
+            # print(id_exp, id_ant)
+            from_outside = int(self.exp.get_df(from_outside_name).loc[id_exp, id_ant])
+            df.loc[pd.IndexSlice[id_exp, id_ant, :], from_outside_name] = from_outside
+            if from_outside:
+                try:
+                    df2 = self.exp.get_df(marking_name).loc[pd.IndexSlice[id_exp, id_ant, :], :]
+                    has_marked = 1-int(len(df2) == 0)
+                    df.loc[pd.IndexSlice[id_exp, id_ant, :], has_marked_name] = has_marked
+                except KeyError:
+                    df[has_marked_name] = 0
+
+        outside_mask = df[from_outside_name] == 1
+        leader_mask = df[leader_name] == 1
+
+        df2 = df[leader_name]
+        self.print_stat('proportion of leading attachments', df2, df_res)
+
+        df2 = df[outside_mask][leader_name]
+        self.print_stat('proportion of leading attachments among outside attachments', df2, df_res)
+
+        df2 = df[~outside_mask][leader_name]
+        self.print_stat('proportion of leading attachments among inside attachments', df2, df_res)
+
+        df2 = df[leader_mask][from_outside_name]
+        self.print_stat('proportion of outside attachments among leading attachments', df2, df_res)
+
+        df2 = 1-df[leader_mask][from_outside_name]
+        self.print_stat('proportion of inside attachments among leading attachments', df2, df_res)
+
+        df = self.exp.get_df(from_outside_name).copy()
+        has_leaded_name = 'has_leaded'
+        df[has_leaded_name] = np.nan
+
+        has_carried_name = 'has_carried'
+        df[has_carried_name] = np.nan
+
+        has_marked_name = 'has_marked'
+        df[has_marked_name] = np.nan
+
+        for id_exp, id_ant in df.index:
+            # print(id_exp, id_ant)
+
+            try:
+                df_leader = self.exp.get_df(leader_name).loc[id_exp, id_ant, :]
+                has_carried = 1-int(len(df_leader) == 0)
+                df.loc[(id_exp, id_ant), has_carried_name] = has_carried
+                has_leaded = 1-int(np.nansum(df_leader) == 0)
+                df.loc[(id_exp, id_ant), has_leaded_name] = has_leaded
+
+            except KeyError:
+                df.loc[(id_exp, id_ant), has_carried_name] = 0
+                df.loc[(id_exp, id_ant), has_leaded_name] = 0
+
+            try:
+                df_mark = self.exp.get_df(marking_name).loc[id_exp, id_ant, :]
+                has_marked = 1-int(np.nansum(df_mark) == 0)
+                df.loc[(id_exp, id_ant), has_marked_name] = has_marked
+            except KeyError:
+                df.loc[(id_exp, id_ant), has_marked_name] = 0
+
+        outside_mask = df[from_outside_name] == 1
+        carried_mask = df[has_carried_name] == 1
+        leaded_mask = df[has_leaded_name] == 1
+        marker_mask = df[has_marked_name] == 1
+
+        df2 = df[outside_mask][has_carried_name]
+        self.print_stat('proportion of outside ants having carrying', df2, df_res)
+
+        df2 = df[outside_mask][has_marked_name]
+        self.print_stat('proportion of outside ants having marked', df2, df_res)
+
+        df2 = df[outside_mask & carried_mask][has_leaded_name]
+        self.print_stat('proportion of outside carrier ants having leaded', df2, df_res)
+
+        df2 = df[outside_mask & carried_mask][has_marked_name]
+        self.print_stat('proportion of outside carrier ants having marked', df2, df_res)
+
+        df2 = df[outside_mask & marker_mask][has_leaded_name]
+        self.print_stat('proportion of outside marker ants having leaded', df2, df_res)
+
+        df2 = df[outside_mask & leaded_mask][has_marked_name]
+        self.print_stat('proportion of outside leader ants having marked', df2, df_res)
+
+        result_name = 'leading_marking_stats'
+        self.exp.add_new_dataset_from_df(df=df_res.transpose(), name=result_name, category=self.category,
+                                         label='Statistics on leading and marking behavior',
+                                         description='Statistics on leading and marking behavior')
+        self.exp.write(result_name)

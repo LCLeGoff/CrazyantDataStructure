@@ -27,8 +27,8 @@ name_radius = 'food_radius'
 Exps.load([name_speed, name_body_orientation, name_orientation, name_radius])
 name_xy = 'xy'
 Exps.load_as_2d('mm10_x', 'mm10_y', name_xy, 'x', 'y', replace=True)
-name_food_xy = 'food_xy'
-Exps.load_as_2d('mm10_food_x', 'mm10_food_y', name_food_xy, 'x', 'y', replace=True)
+# name_food_xy = 'food_xy'
+# Exps.load_as_2d('mm10_food_x', 'mm10_food_y', name_food_xy, 'x', 'y', replace=True)
 
 
 def get_sequence(tab, dt=5):
@@ -56,111 +56,131 @@ def get_sequence(tab, dt=5):
     return res
 
 
-df_all = pd.read_csv(Exps.root + 'manual_markings.csv', index_col=[id_exp_name, id_ant_name, id_frame_name])
-df_all['algo2'] = 0
-al = []
-for id_exp, id_ant in [(30, 81), (30, 87), (49, 122)]:
+id_exp = 30
 
-    da_max = 0.5
-    dv_min = 2
-    v_max = 5
-    djj = 5
-    dtheta_max = 90*np.pi/180
-    min_dist = 2
+da_max = 0.5
+dv_min = 2
+v_max = 5
+djj = 5
+dtheta_max = 90*np.pi/180
+min_dist = 2
 
-    id_ants = np.array(Exps.get_index(name_speed).get_level_values(id_ant_name))
-    y, x = np.histogram(id_ants, range(1, max(id_ants)+1))
-    id_ants = list(x[:-1][y > 500])
+id_ants = np.array(Exps.get_index(name_speed).get_level_values(id_ant_name))
+y, x = np.histogram(id_ants, range(1, max(id_ants)+1))
+id_ants = list(x[:-1][y > 500])
 
+res = []
+for id_ant in id_ants:
+    print(id_ant)
     df_speed0 = Exps.get_df(name_speed).loc[id_exp, id_ant, :].copy()/10.
     df_orient0 = Exps.get_df(name_orientation).loc[id_exp, id_ant, :].copy()/100.
 
     speed_tab = df_speed0.loc[id_exp, id_ant, :].dropna().reset_index().values
-    orient_tab = df_orient0.loc[id_exp, id_ant, :].dropna().reset_index().values
+    orient_df = df_orient0.loc[id_exp, id_ant, :].dropna()
 
-    frames = speed_tab[:, 0].copy()
+    orient_frames = set(orient_df.index)
 
     xs = np.array(get_sequence(speed_tab[:, 1], dt=5))
-    a_speed, _ = Geo.get_line_tab(speed_tab[xs[:-1], :], speed_tab[xs[1:], :])
+    if len(xs) > 3:
+        a_speed, _ = Geo.get_line_tab(speed_tab[xs[:-1], :], speed_tab[xs[1:], :])
 
-    da = np.abs(a_speed[1:]+a_speed[:-1])
-    v = speed_tab[xs, :]
-    dv = v[1:, 1]-v[:-1, 1]
-    mask = list(np.where((a_speed[:-1] < 0)*(dv[:-1] < -dv_min)*(dv[1:] > dv_min)*(v[1:-1, 1] < v_max))[0]+1)
+        da = np.abs(a_speed[1:]+a_speed[:-1])
+        v = speed_tab[xs, :]
+        dv = v[1:, 1]-v[:-1, 1]
+        mask = list(np.where((a_speed[:-1] < 0)*(dv[:-1] < -dv_min)*(dv[1:] > dv_min)*(v[1:-1, 1] < v_max))[0]+1)
 
-    for ii in mask:
-        f0, f1, f2 = v[ii-1:ii+2, 0].astype(int)
-        if f2-f0 < 32:
-            jj1 = xs[ii]
-            jj0, jj2 = jj1-djj, jj1+djj
-            theta0, theta1, theta2 = orient_tab[[jj0, jj1, jj2], 1]
-            dtheta0 = Geo.angle_distance(theta0, theta1)
-            dtheta1 = Geo.angle_distance(theta1, theta2)
-            dtheta = np.abs(dtheta0)+np.abs(dtheta1)
-            dtheta_2 = np.abs(Geo.angle_distance(theta0, theta2))
-            dtheta_3 = dtheta0+dtheta1
+        for ii in mask:
+            f0, f1, f2 = v[ii-1:ii+2, 0].astype(int)
+            print(f1, f2-f0, round(v[ii, 1], 2), round(dv[ii-1], 2), round(dv[ii], 2), end=" ")
+            if f2-f0 < 32:
+                if {f0, f1, f2}.issubset(orient_frames):
+                    theta0, theta1, theta2 = orient_df.loc[[f0, f1, f2]].values.ravel()
+                    dtheta0 = Geo.angle_distance(theta0, theta1)
+                    dtheta1 = Geo.angle_distance(theta1, theta2)
+                    # dtheta = np.abs(dtheta0)+np.abs(dtheta1)
+                    dtheta = np.abs(Geo.angle_distance(theta0, theta2))
+                    print((round(dtheta0, 2), round(dtheta1, 2), round(dtheta, 2)), end=" ")
 
-            if dtheta_2 < dtheta_max:
-                dist = Geo.squared_distance_df(Exps.get_df(name_xy).loc[id_exp, :, f1], Exps.get_df(name_xy).loc[id_exp, id_ant, f1])
-                dist = round(dist.drop((id_exp, id_ant, f1)).min()/10., 1)
-                if dist > min_dist:
-                    al.append(
-                        (id_exp, id_ant, f1, round(v[ii, 1], 2), round(dtheta, 2), round(dtheta_2, 2), round(dtheta_3, 2), round(dtheta0, 2), round(dtheta1, 2), dist, 1))
-                    df_all['algo2'].loc[id_exp, id_ant, f1] = 1
-                else:
-                    al.append((id_exp, id_ant, f1, round(v[ii, 1], 2), round(dtheta, 2), round(dtheta_2, 2), round(dtheta_3, 2), round(dtheta0, 2), round(dtheta1, 2), dist, 0))
-            else:
-                al.append((id_exp, id_ant, f1, round(v[ii, 1], 2), round(dtheta, 2), round(dtheta_2, 2), round(dtheta_3, 2), round(dtheta0, 2), round(dtheta1, 2), np.nan, 0))
+                    if dtheta < dtheta_max or (dtheta > np.pi and dtheta0*dtheta1 < 0):
+                        xys = Exps.get_df(name_xy).loc[id_exp, :, f1]
+                        xy = Exps.get_df(name_xy).loc[id_exp, id_ant, f1]
+                        dist = Geo.squared_distance_df(xys, xy)
+                        dist = round(dist.drop((id_exp, id_ant, f1)).min()/10., 1)
+                        print(dist, end=" ")
+                        if dist > min_dist:
+                            res.append((id_exp, id_ant, f1))
+            print()
+    print()
 
-[print(e) for e in al]
-al = np.array(al)
+df = pd.DataFrame(res, columns=[id_exp_name, id_ant_name, id_frame_name])
+df.set_index([id_exp_name, id_ant_name, id_frame_name], inplace=True)
+res = np.array(res)
+df['df'] = res[:, -1]
+
+id_ants = list(set(res[:, 1]))
+for id_ant in id_ants:
+    df2 = df.loc[id_exp, id_ant, :].copy()
+    if len(df2) < 5:
+        df.loc[id_exp, id_ant, :] = np.nan
+        df = df.dropna()
 
 
-tp = np.nansum(df_all.algo * df_all.manual)
-fp = np.nansum((1 - df_all.algo) * df_all.manual)
-tn = np.nansum((1 - df_all.algo) * (1 - df_all.manual))
-fn = np.nansum(df_all.algo * (1 - df_all.manual))
-print('TP:%i, FP:%i, TN:%i, FN:%i' % (tp, fp, tn, fn))
-accuracy = (tp+tn)/(tp+fp+tn+fn)
-precision = tp/(tp+fp)
-recall = tp/(tp+tn)
-f1 = 2*precision*recall/(precision+recall)
-print('accuracy:%.2f, precision:%.2f, recall:%.2f, f1:%.2f' % (accuracy, precision, recall, f1))
+# def do4each_grooup(df: pd.DataFrame):
+#     df.iloc[1:] = df.iloc[1:]-df.iloc[:-1]
+#     df.iloc[0] =
 
-tp = np.nansum(df_all.algo2 * df_all.manual)
-fp = np.nansum((1 - df_all.algo2) * df_all.manual)
-tn = np.nansum((1 - df_all.algo2) * (1 - df_all.manual))
-fn = np.nansum(df_all.algo2 * (1 - df_all.manual))
-print('TP:%i, FP:%i, TN:%i, FN:%i' % (tp, fp, tn, fn))
-accuracy = (tp+tn)/(tp+fp+tn+fn)
-precision = tp/(tp+fp)
-recall = tp/(tp+tn)
-f1 = 2*precision*recall/(precision+recall)
-print('accuracy:%.2f, precision:%.2f, recall:%.2f, f1:%.2f' % (accuracy, precision, recall, f1))
 
-c = []
-c2 = []
-for e in al:
-    c.append(df_all.loc[(int(e[0]), int(e[1]), int(e[2])), 'manual'])
-    c2.append(e[-1])
-
-c = np.array(c)*2
-c = np.where(np.isnan(c), 1, c)
-c2 = np.array(c2)*2
-c2 = np.where(np.isnan(c2), 1, c2)
-
-labels = ['v', 'dtheta', 'dtheta_2', 'dtheta_3', 'dtheta0', 'dtheta1']
-for i in range(len(labels)):
-    for j in range(i+1, len(labels)):
-        pb.subplots()
-        pb.subplot(121)
-        pb.scatter(al[:, i+3], al[:, j+3], c=c)
-        pb.title((labels[i], labels[j]))
-
-        pb.subplot(122)
-        pb.scatter(al[:, i+3], al[:, j+3], c=c2)
-        pb.title((labels[i], labels[j]))
-pb.show()
+print(len(res))
+[print(e) for e in res]
+#
+# df_all = pd.read_csv(Exps.root + 'manual_markings.csv', index_col=[id_exp_name, id_ant_name, id_frame_name])
+# df_all['algo2'] = np.nan
+# c = []
+# c2 = []
+# for frame, v, df, dtheta, dist, algo in al:
+#     df_all.loc[(id_exp, id_ant, frame), 'algo2'] = algo
+#     c.append(df_all.loc[(id_exp, id_ant, frame), 'manual'])
+#     c2.append(algo)
+#
+# tp = np.nansum(df_all.algo * df_all.manual)
+# fp = np.nansum((1 - df_all.algo) * df_all.manual)
+# tn = np.nansum((1 - df_all.algo) * (1 - df_all.manual))
+# fn = np.nansum(df_all.algo * (1 - df_all.manual))
+# print('TP:%i, FP:%i, TN:%i, FN:%i' % (tp, fp, tn, fn))
+# accuracy = (tp+tn)/(tp+fp+tn+fn)
+# precision = tp/(tp+fp)
+# recall = tp/(tp+tn)
+# f1 = 2*precision*recall/(precision+recall)
+# print('accuracy:%.2f, precision:%.2f, recall:%.2f, f1:%.2f' % (accuracy, precision, recall, f1))
+#
+# tp = np.nansum(df_all.algo2 * df_all.manual)
+# fp = np.nansum((1 - df_all.algo2) * df_all.manual)
+# tn = np.nansum((1 - df_all.algo2) * (1 - df_all.manual))
+# fn = np.nansum(df_all.algo2 * (1 - df_all.manual))
+# print('TP:%i, FP:%i, TN:%i, FN:%i' % (tp, fp, tn, fn))
+# accuracy = (tp+tn)/(tp+fp+tn+fn)
+# precision = tp/(tp+fp)
+# recall = tp/(tp+tn)
+# f1 = 2*precision*recall/(precision+recall)
+# print('accuracy:%.2f, precision:%.2f, recall:%.2f, f1:%.2f' % (accuracy, precision, recall, f1))
+#
+#
+# labels = ['v', 'df', 'dtheta']
+# c = np.array(c)*2
+# c = np.where(np.isnan(c), 1, c)
+# c2 = np.array(c2)*2
+# c2 = np.where(np.isnan(c2), 1, c2)
+# for i in range(len(labels)):
+#     for j in range(i+1, len(labels)):
+#         pb.subplots()
+#         pb.subplot(121)
+#         pb.scatter(al[:, i+1], al[:, j+1], c=c)
+#         pb.title((labels[i], labels[j]))
+#         pb.colorbar()
+#         pb.subplot(122)
+#         pb.scatter(al[:, i+1], al[:, j+1], c=c2)
+#         pb.title((labels[i], labels[j]))
+#         pb.colorbar()
 
 # name_speed = 'mm1s_food_speed_leader_feature'
 # name_rotation = 'mm10_food_rotation_leader_feature'

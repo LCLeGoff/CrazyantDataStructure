@@ -91,6 +91,10 @@ class AnalyseTrajectory(AnalyseClassDecorator):
                 description='Instantaneous speed of the ants'
             )
             self.exp.add_copy1d(
+                name_to_copy=name_x, copy_name=name+'_phi', category=self.category, label='Speed',
+                description='Angular coordinate of the instantaneous speed of the ants'
+            )
+            self.exp.add_copy1d(
                 name_to_copy=name_x, copy_name=name + '_x', category=self.category, label='X speed',
                 description='X coordinate of the instantaneous speed of the ants'
             )
@@ -131,10 +135,11 @@ class AnalyseTrajectory(AnalyseClassDecorator):
                 self.exp.speed_x.df.loc[id_exp, id_ant, :] = np.c_[np.around(dx * fps, 3)]
                 self.exp.speed_y.df.loc[id_exp, id_ant, :] = np.c_[np.around(dy * fps, 3)]
                 self.exp.speed.df.loc[id_exp, id_ant, :] = np.c_[np.around(np.sqrt(dx**2+dy**2) * fps, 3)]
+                self.exp.speed_phi.df.loc[id_exp, id_ant, :] = np.c_[np.around(angle(list(zip(dx, dy)))*fps, 3)]
 
             self.exp.groupby('xy', [id_exp_name, id_ant_name], compute_speed4each_group)
 
-            self.exp.write([name, name+'_x', name+'_y'])
+            self.exp.write([name, name+'_x', name+'_y', name+'_phi'])
 
         if redo or redo_hist:
             self.exp.load(name)

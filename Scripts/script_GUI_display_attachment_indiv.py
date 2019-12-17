@@ -63,8 +63,8 @@ class MovieCanvas(FigureCanvas):
         self.time_loop()
 
     def get_traj_and_movie(self):
-        name_outside_carrying_intervals = 'outside_ant_attachment_intervals'
-        name_non_outside_carrying = 'non_outside_ant_attachment_intervals'
+        name_outside_carrying_intervals = 'outside_attachment_intervals'
+        name_non_outside_carrying = 'inside_attachment_intervals'
         name_xy = 'xy_next2food'
         name_spine = 'food_spine_angle'
         name_rotation = 'food_rotation'
@@ -194,7 +194,7 @@ class MovieCanvas(FigureCanvas):
 
         attachment_focused_color = 5*int(self.outside) + 2*int(1-self.outside)
 
-        self.exp.load(['carrying', 'ant_attachment_intervals', 'from_outside'], reload=False)
+        self.exp.load(['carrying', 'attachment_intervals', 'from_outside'], reload=False)
         carrying_df = self.exp.get_df('carrying').loc[self.id_exp, :, :]
 
         from_outside_df = carrying_df.copy()
@@ -212,7 +212,7 @@ class MovieCanvas(FigureCanvas):
         attachment_df[(carrying_df == 1)*(from_outside_df == 0)] = carrying_non_outside_color
         attachment_df[(carrying_df == 1)*(from_outside_df == 1)] = carrying_outside_color
 
-        idx = self.exp.get_df('ant_attachment_intervals').loc[self.id_exp, :, :].index
+        idx = self.exp.get_df('attachment_intervals').loc[self.id_exp, :, :].index
         attachment_df.loc[idx] = attachment_focused_color
         attachment_size_df.loc[idx] = 50
 
@@ -406,6 +406,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=30, outside=True)
+aw = ApplicationWindow(group0, id_exp=20, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

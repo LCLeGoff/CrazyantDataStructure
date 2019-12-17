@@ -188,9 +188,9 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
                                xscale='log', yscale='log', ls='', normed=True)
         plotter.save(fig)
 
-    def compute_ant_attachments(self):
+    def compute_attachments(self):
         carrying_name = 'carrying'
-        result_name = 'ant_attachments'
+        result_name = 'attachments'
 
         label = 'ant attachment time series'
         description = 'Time series where 1 is when an ant attaches to the food and 0 when not'
@@ -247,10 +247,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
-    def compute_outside_ant_attachments(self):
+    def compute_outside_attachments(self):
         carrying_name = 'carrying'
         from_outside_name = 'from_outside'
-        result_name = 'outside_ant_attachments'
+        result_name = 'outside_attachments'
 
         label = 'outside ant attachment time series'
         description = 'Time series where 1 is when an ant coming from outside attaches to the food and 0 when not'
@@ -315,10 +315,10 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.write(result_name)
         self.exp.remove_object(carrying_name)
 
-    def compute_non_outside_ant_attachments(self):
+    def compute_inside_attachments(self):
         carrying_name = 'carrying'
         from_outside_name = 'from_outside'
-        result_name = 'non_outside_ant_attachments'
+        result_name = 'inside_attachments'
 
         label = 'inside ant attachment time series'
         description = 'Time series where 1 is when an ant coming from inside attaches to the food and 0 when not'
@@ -385,8 +385,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_attachment_intervals(self, redo=False, redo_hist=False):
 
-        result_name = 'ant_attachment_intervals'
-        name = 'ant_attachments'
+        result_name = 'attachment_intervals'
+        name = 'attachments'
 
         label = 'Between attachment intervals'
         description = 'Time intervals between attachment intervals (s)'
@@ -395,18 +395,18 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_outside_attachment_intervals(self, redo=False, redo_hist=False):
 
-        result_name = 'outside_ant_attachment_intervals'
-        name = 'outside_ant_attachments'
+        result_name = 'outside_attachment_intervals'
+        name = 'outside_attachments'
 
         label = 'Between outside attachment intervals'
         description = 'Time intervals between outside attachment intervals (s)'
 
         self.__compute_attachment_intervals(description, label, name, redo, redo_hist, result_name)
 
-    def compute_non_outside_attachment_intervals(self, redo=False, redo_hist=False):
+    def compute_inside_attachment_intervals(self, redo=False, redo_hist=False):
 
-        result_name = 'non_outside_ant_attachment_intervals'
-        name = 'non_outside_ant_attachments'
+        result_name = 'inside_attachment_intervals'
+        name = 'inside_attachments'
 
         label = 'Between non outside attachment intervals'
         description = 'Time non intervals between outside attachment intervals (s)'
@@ -452,7 +452,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         plotter.save(fig)
 
     def compute_isolated_ant_carrying_intervals(self):
-        attachment_name = 'ant_attachment_intervals'
+        attachment_name = 'attachment_intervals'
         result_name = 'isolated_ant_carrying_intervals'
         dt1 = 2
         dt2 = 2
@@ -464,7 +464,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
     def compute_isolated_outside_ant_carrying_intervals(self):
-        attachment_name = 'outside_ant_attachment_intervals'
+        attachment_name = 'outside_attachment_intervals'
         result_name = 'isolated_outside_ant_carrying_intervals'
         dt1 = 2
         dt2 = 2
@@ -475,8 +475,8 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
         self.__isolated_attachments(dt1, dt2, attachment_name, description, label, result_name)
 
-    def compute_isolated_non_outside_ant_carrying_intervals(self):
-        attachment_name = 'non_outside_ant_attachment_intervals'
+    def compute_isolated_inside_ant_carrying_intervals(self):
+        attachment_name = 'inside_attachment_intervals'
         result_name = 'isolated_non_outside_ant_carrying_intervals'
         dt1 = 2
         dt2 = 2
@@ -560,7 +560,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_first_attachment_time_of_outside_ant(self):
         result_name = 'first_attachment_time_of_outside_ant'
-        carrying_name = 'outside_ant_carrying_intervals'
+        carrying_name = 'outside_attachment_intervals'
         self.exp.load(carrying_name)
 
         self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
@@ -1635,7 +1635,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         self.exp.mean_evolution(name_to_var=name, start_index_intervals=start_frame_intervals,
                                 end_index_intervals=end_frame_intervals,
                                 category=self.category, result_name=result_name,
-                                label=label, description=description)
+                                label=label, description=description, replace=True)
         self.exp.write(result_name)
         self.exp.remove_object(name)
 
@@ -1692,7 +1692,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_nb_attachments_evol(self, redo=False):
 
-        name = 'ant_attachments'
+        name = 'attachments'
         result_name = 'nb_attachments_evol'
         init_frame_name = 'food_first_frame'
 
@@ -1718,7 +1718,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_nb_outside_attachments_evol(self, redo=False):
 
-        name = 'outside_ant_attachments'
+        name = 'outside_attachments'
         result_name = 'nb_outside_attachments_evol'
         init_frame_name = 'food_first_frame'
 
@@ -1765,7 +1765,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_nb_outside_attachments_evol_around_first_attachment(self, redo=False):
 
-        name = 'outside_ant_attachments'
+        name = 'outside_attachments'
         result_name = 'nb_outside_attachments_evol_around_first_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
@@ -1794,7 +1794,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_nb_non_outside_attachments_evol_around_first_attachment(self, redo=False):
 
-        name = 'non_outside_ant_attachments'
+        name = 'inside_attachments'
         result_name = 'nb_non_outside_attachments_evol_around_first_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
@@ -1848,7 +1848,7 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
 
     def compute_nb_attachments_evol_around_first_attachment(self, redo=False):
 
-        name = 'ant_attachments'
+        name = 'attachments'
         result_name = 'nb_attachments_evol_around_first_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 

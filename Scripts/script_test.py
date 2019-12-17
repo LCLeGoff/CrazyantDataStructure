@@ -504,8 +504,8 @@ print('  precision: %f,\n  recall: %f,\n  accuracy: %f,\n  f1: %f,\n ' % tuple(m
 
 # name_food_speed = 'mm1s_food_speed'
 # name_food_rotation = 'food_rotation'
-# name_attachment = 'ant_attachment_intervals'
-# name_outside_attachment = 'outside_ant_attachment_intervals'
+# name_attachment = 'attachment_intervals'
+# name_outside_attachment = 'outside_attachment_intervals'
 # Exps.load([name_food_speed, name_food_rotation, name_attachment, name_outside_attachment])
 #
 

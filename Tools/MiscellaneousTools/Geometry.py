@@ -61,7 +61,9 @@ def get_line_tab(pts1, pts2):
 
 
 def convert2vect(u):
-    if isinstance(u, list) or isinstance(u, tuple) or u.ndim == 1:
+    if isinstance(u, list) and isinstance(u[0], tuple):
+        u2 = np.array(u)
+    elif isinstance(u, list) or isinstance(u, tuple) or u.ndim == 1:
         u2 = np.array(u)[np.newaxis]
     else:
         u2 = u.copy()
@@ -170,8 +172,8 @@ def norm_angle_tab(theta):
 
 
 def norm_angle_tab2(theta):
-    theta[theta > np.pi/2.] -= np.pi
-    theta[theta < -np.pi/2.] += np.pi
+    theta = np.where(theta > np.pi/2., theta-np.pi)
+    theta = np.where(theta < -np.pi/2., theta+np.pi)
     return theta
 
 
@@ -214,7 +216,7 @@ def angle_distance_df(phi, theta, column_name=None):
     else:
         theta2 = theta.copy()
 
-    df_res = np.exp(1j*phi2)-np.exp(1j*theta2)
+    df_res = np.exp(1j*(phi2-theta2))
     df_res = pd.DataFrame(np.angle(df_res), index=df_res.index, columns=[column_name])
     return df_res
 

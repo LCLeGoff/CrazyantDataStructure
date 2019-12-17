@@ -1,5 +1,6 @@
 from AnalyseClasses.AnalyseStarter import AnalyseStarter
 from AnalyseClasses.CleaningData import CleaningData
+from AnalyseClasses.Food.AntMarkings import AnalyseAntMarkings
 from AnalyseClasses.Food.FoodInformationLeader import AnalyseFoodInformationLeader
 from AnalyseClasses.Food.FoodInformationTrajectory import AnalyseFoodInformationTrajectory
 from AnalyseClasses.Food.AntFoodRelation import AnalyseAntFoodRelation
@@ -143,10 +144,10 @@ Carrying = AnalyseFoodCarrying(group)
 # Carrying.compute_outside_ant_carrying_intervals(True)
 # Carrying.compute_non_outside_ant_carrying_intervals(True)
 #
-# Carrying.compute_ant_attachments()
-# Carrying.compute_outside_ant_attachments()
-# Carrying.compute_non_outside_ant_attachments()
-#
+# Carrying.compute_attachments()
+# Carrying.compute_outside_attachments()
+# Carrying.compute_inside_attachments()
+
 # Carrying.compute_attachment_intervals(True)
 # Carrying.compute_outside_attachment_intervals(True)
 # Carrying.compute_non_outside_attachment_intervals(True)
@@ -216,7 +217,7 @@ AntFoodRelation = AnalyseAntFoodRelation(group)
 # AntFoodRelation.compute_slowing_ant_density_around_food_evol_first_outside_attachment(True)
 # AntFoodRelation.compute_slowing_outside_ant_density_around_food_evol_first_outside_attachment(True)
 # AntFoodRelation.compute_slowing_non_outside_ant_density_around_food_evol_first_outside_attachment(True)
-#
+# #
 # AntFoodRelation.loop_density_around_food_evol(True)
 # AntFoodRelation.loop_density_around_food_evol_first_outside_attachment(True)
 #
@@ -347,10 +348,10 @@ FoodInfoTraj = AnalyseFoodInformationTrajectory(group)
 #
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment(True)
-#
+
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
 # FoodInfoTraj.w30s_food_direction_error_vs_path_efficiency_hist2d_around_first_outside_attachment_norm_time(True)
-# #
+
 # FoodInfoTraj.w10s_smooth_food_direction_error_vs_path_efficiency_scatter_around_first_outside_attachment(True)
 #
 # FoodInfoTraj.w10s_food_direction_error_vs_path_efficiency_velocity()
@@ -411,14 +412,27 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.test2()
 
 # LeaderFollower.compute_leader_follower()
+# LeaderFollower.get_leading_attachment_intervals()
+# LeaderFollower.print_leader_stats()
 
 FoodInfoLeader = AnalyseFoodInformationLeader(group)
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_outside_leader_attachments()
-FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments()
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments(True)
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_inside_leader_attachments()
-# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments()
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments(True)
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments()
+#
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments_evol(True)
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments_evol(True)
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments_evol(True)
 
-FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments_evol()
-FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments_evol()
-FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments_evol()
+AntMarkings = AnalyseAntMarkings(group)
+# AntMarkings.compute_markings(True)
+# AntMarkings.compute_markings_xy()
+
+# AntMarkings.compute_marking_repartition(True)
+AntMarkings.outside_marking_repartition_evol(True)
+AntMarkings.inside_marking_repartition_evol(True)
+
+# AntMarkings.compute_markings_time_distance(True)
+# AntMarkings.compute_markings_distance(True)

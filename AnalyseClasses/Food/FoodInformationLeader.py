@@ -31,7 +31,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 self.exp.get_df(info_result_name).loc[dt, inter] = np.around(max_entropy - entropy, 3)
 
     def compute_mm1s_food_direction_error_around_outside_leader_attachments(self):
-        attachment_name = 'outside_ant_attachment_intervals'
+        attachment_name = 'outside_attachment_intervals'
         self.exp.load(attachment_name)
         variable_name = 'mm1s_food_direction_error'
 
@@ -46,7 +46,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             variable_name, attachment_name, result_name, result_label, result_description)
 
     def compute_mm1s_food_direction_error_around_inside_leader_attachments(self):
-        attachment_name = 'non_outside_ant_attachment_intervals'
+        attachment_name = 'inside_attachment_intervals'
         self.exp.load(attachment_name)
         variable_name = 'mm1s_food_direction_error'
 
@@ -64,8 +64,9 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self, variable_name, attachment_name, result_name, result_label, result_description):
 
         last_frame_name = 'food_exit_frames'
+        first_frame_name = 'first_attachment_time_of_outside_ant'
         leader_name = 'is_leader'
-        self.exp.load([variable_name, last_frame_name, leader_name, 'fps'])
+        self.exp.load([variable_name, first_frame_name, last_frame_name, leader_name, 'fps'])
 
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
@@ -85,6 +86,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             fps = self.exp.get_value('fps', id_exp)
             last_frame = self.exp.get_value(last_frame_name, id_exp)
+            first_frame = self.exp.get_value(first_frame_name, id_exp)
 
             if id_exp in self.exp.get_index(attachment_name).get_level_values(id_exp_name):
                 attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :, :]
@@ -92,12 +94,14 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 attachment_frames.sort()
 
                 for attach_frame in attachment_frames:
-                    print(id_exp, attach_frame)
+                    # print(id_exp, attach_frame)
                     if (id_exp, attach_frame) in leader_index:
                         is_leader = self.exp.get_df(leader_name).loc[id_exp, :, attach_frame]
                         is_leader = int(is_leader.iloc[0])
-                        if is_leader == 1 and attach_frame < last_frame:
-                            print(id_exp, attach_frame)
+                        if attach_frame < first_frame:
+                            print(id_exp, attach_frame, first_frame)
+                        if is_leader == 1 and last_frame > attach_frame > first_frame:
+                            # print(id_exp, attach_frame)
                             f0 = int(attach_frame + time_intervals[0] * fps)
                             f1 = int(attach_frame + time_intervals[-1] * fps)
 
@@ -197,6 +201,9 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         bins = np.arange(0, np.pi + dtheta, dtheta)
         hists_index_values = np.around((bins[1:] + bins[:-1]) / 2., 3)
         if redo:
+
+            first_frame_name = 'first_attachment_time_of_outside_ant'
+            self.exp.load(first_frame_name)
 
             self.exp.add_new_empty_dataset(name=hists_result_name, index_names='food_direction_error',
                                            column_names=time_intervals, index_values=hists_index_values,
