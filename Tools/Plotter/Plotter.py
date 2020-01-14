@@ -181,7 +181,8 @@ class Plotter(BasePlotters):
         ax.legend(loc=loc, framealpha=framealpha, ncol=ncol)
 
     def __plot_xy_with_error(self, ax, x, y, label):
-        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=[label, 'error inf.', 'error sup.'], **self.line)
+        self.line['markerfacecolor'] = 'w'
+        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=label, **self.line)
         if self.column_name not in self.obj.get_column_names():
             self.column_name = str(self.column_name)
 
@@ -195,7 +196,7 @@ class Plotter(BasePlotters):
         if self.obj.get_dimension() == 1:
             y = smooth(self.__norm_y(self.obj.get_array(), normed, x), window)
         else:
-            if self.column_name is None:
+            if self.column_name is None or self.column_name == 'None':
                 y = []
                 for i, column_name in enumerate(self.obj.get_column_names()):
                     y.append(smooth(self.__norm_y(self.obj.df[column_name], normed, x), window))
