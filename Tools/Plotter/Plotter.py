@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
-from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit
+from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit, cst_fit
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -54,7 +54,7 @@ class Plotter(BasePlotters):
 
     def plot_with_error(
             self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
-            preplot=None, figsize=None, **kwargs):
+            preplot=None, figsize=None, draw_lims=False, **kwargs):
 
         if self.obj.get_dimension() == 3:
             fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
@@ -62,7 +62,7 @@ class Plotter(BasePlotters):
             x = self.obj.get_index_array()
 
             y = fct(self.__get_y(normed, x))
-            self.__plot_xy_with_error(ax, x, y, label)
+            self.__plot_xy_with_error(ax, x, y, label, draw_lims=draw_lims)
 
             return fig, ax
         else:
@@ -180,9 +180,9 @@ class Plotter(BasePlotters):
     def draw_legend(ax, loc=0, framealpha=0.2, ncol=1):
         ax.legend(loc=loc, framealpha=framealpha, ncol=ncol)
 
-    def __plot_xy_with_error(self, ax, x, y, label):
+    def __plot_xy_with_error(self, ax, x, y, label, draw_lims=False):
         self.line['markerfacecolor'] = 'w'
-        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=label, **self.line)
+        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=label, lolims=draw_lims, uplims=draw_lims, **self.line)
         if self.column_name not in self.obj.get_column_names():
             self.column_name = str(self.column_name)
 
@@ -266,7 +266,9 @@ class Plotter(BasePlotters):
 
             mask = np.where((y_fit != 0)*~(np.isnan(y_fit))*~(np.isinf(y_fit)))[0]
 
-            if typ == 'linear':
+            if typ == 'cst':
+                res_fit = cst_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'linear':
                 res_fit = linear_fit(x_fit[mask], y_fit[mask])
             elif typ == 'exp':
                 res_fit = exp_fit(x_fit[mask], y_fit[mask], cst=cst)
@@ -285,7 +287,10 @@ class Plotter(BasePlotters):
             x_fit, y_fit = res_fit[-2], res_fit[-1]
             res_fit[:-2] = np.around(res_fit[:-2], 4)
 
-            if cst is False:
+            if typ == 'cst':
+                label2 = 'c'
+                label3 = str(res_fit[0][0])
+            elif cst is False:
                 label2 = '(a, b)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
             else:

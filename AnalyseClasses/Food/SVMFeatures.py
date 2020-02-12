@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
+import Tools.MiscellaneousTools.Geometry as Geo
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import angle_df, norm_angle_tab, norm_vect_df, angle_distance
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools.Geometry import distance
 
@@ -144,7 +144,7 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
 
         self.exp.load(name)
         result_name = self.exp.rolling_mean(
-            name_to_average=name, window=time_window, category=self.category, is_angle=False)
+            name_to_average=name, window=time_window, category='MM_distance2food', is_angle=False)
 
         self.exp.write(result_name)
 
@@ -430,11 +430,11 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
         df_food = self.__reindexing_food_xy(id_ants, idxs)
 
         df_food_ant_vector = self.exp.get_df(name_xy) - df_food
-        tab_food_ant_angle = np.around(angle_df(df_food_ant_vector), 6)
+        tab_food_ant_angle = np.around(Geo.angle_df(df_food_ant_vector), 6)
 
         tab_orientations = self.exp.get_df(name_orientation).values.ravel()
 
-        tab_angle_body = norm_angle_tab(angle_distance(np.pi, tab_food_ant_angle) + tab_orientations)
+        tab_angle_body = Geo.norm_angle(Geo.angle_distance(np.pi, tab_food_ant_angle) + tab_orientations)
 
         self.exp.add_new1d_from_array(
             array=np.c_[id_exps, id_ants, frames, tab_angle_body],
@@ -541,10 +541,10 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
             df_food = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_name, name_xy)
             df_food_speed = self.reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(food_speed_name, speed_name)
 
-            df_food_ant = norm_vect_df(self.exp.get_df(name_xy)-df_food)
-            df_velocity = norm_vect_df(self.exp.get_df(speed_name)-df_food_speed)
+            df_food_ant = Geo.norm_vect_df(self.exp.get_df(name_xy)-df_food)
+            df_velocity = Geo.norm_vect_df(self.exp.get_df(speed_name)-df_food_speed)
 
-            df = angle_df(df_velocity, df_food_ant)
+            df = Geo.angle_df(df_velocity, df_food_ant)
 
             self.exp.add_new1d_from_df(
                 df=df, name=result_name, object_type='TimeSeries1d',
@@ -708,6 +708,6 @@ class AnalyseSVMFeatures(AnalyseClassDecorator):
                           description='Angle of the (food, ant) vector')
 
         df = self.exp.get_df(name_xy) - df
-        self.exp.change_df(result_name, angle_df(df))
+        self.exp.change_df(result_name, Geo.angle_df(df))
 
         self.exp.write(result_name)

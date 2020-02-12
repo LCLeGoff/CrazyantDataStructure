@@ -2,12 +2,12 @@ import numpy as np
 import random as rd
 import scipy.stats as scs
 import pandas as pd
+import Tools.MiscellaneousTools.Geometry as Geo
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
 from ExperimentGroups import ExperimentGroups
 from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
-from Tools.MiscellaneousTools.Geometry import angle_distance
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -580,19 +580,19 @@ class PlotUOModel(AnalyseClassDecorator):
 
     def plot_persistence(self, suff=None):
         name = 'PersistenceModel'
-        # self.__plot_cosinus_correlation_vs_length(name, suff)
-        self.__plot_cosinus_correlation_vs_arclength(name, suff)
+        self.__plot_cosinus_correlation_vs_length(name, suff)
+        # self.__plot_cosinus_correlation_vs_arclength(name, suff)
 
     def __plot_cosinus_correlation_vs_length(self, name, suff=None):
 
-        self.exp.load(name)
+        self.exp.load(name, reload=False)
         column_names = self.exp.get_data_object(name).get_column_names()
 
         n_replica = max(self.exp.get_df(name).index.get_level_values(id_exp_name))
         duration = max(self.exp.get_df(name).index.get_level_values('t'))
 
-        speed = 4.66
-        index_values = np.arange(duration + 1)/speed
+        speed = 3
+        index_values = np.arange(duration + 1)*speed/10.
 
         self.exp.add_new_empty_dataset('plot', index_names='lag', column_names=column_names,
                                        index_values=index_values,
@@ -604,12 +604,13 @@ class PlotUOModel(AnalyseClassDecorator):
             for id_exp in range(1, max(df.index.get_level_values(id_exp_name))+1):
                 df2 = df.loc[id_exp, :]
 
-                orientations = np.array(df2)
+                orientations = Geo.norm_angle(df2)
+
                 res = np.zeros(len(orientations))
                 weight = np.zeros(len(orientations))
 
                 for i in range(1, len(orientations)):
-                    res[:-i] += np.cos(orientations[i] - orientations[i:]).ravel()
+                    res[:-i] += np.cos(Geo.angle_distance(orientations[i], orientations[i:])).ravel()
                     weight[:-i] += 1.
 
                 res /= weight
@@ -649,7 +650,7 @@ class PlotUOModel(AnalyseClassDecorator):
             for id_exp in range(1, max(df.index.get_level_values(id_exp_name))+1):
                 df2 = df.loc[id_exp, :]
                 orientations = np.array(df2).ravel()
-                d_orientations = angle_distance(orientations[1:], orientations[:-1])
+                d_orientations = Geo.angle_distance(orientations[1:], orientations[:-1])
                 arclength = np.cumsum(np.abs(d_orientations)) * radius
 
                 orientations2 = np.zeros(len(index_values))
@@ -1091,7 +1092,7 @@ class PlotUOModel(AnalyseClassDecorator):
         time_name = 't'
         column_names = self.exp.get_data_object(name).get_column_names()
 
-        dx = 0.1
+        dx = 0.05
         dx2 = 0.01
         start_time_intervals = np.arange(0, 3., dx2)*60*100
         end_time_intervals = start_time_intervals + dx*60*100*2
@@ -1142,17 +1143,18 @@ class PlotUOModel(AnalyseClassDecorator):
             else:
                 title = ''
 
-            plotter.plot(
-                xlabel='Time (s)', ylabel='Variance', preplot=(fig, ax0), label='Model', marker='', title=title)
+            c = 'darkorange'
             plotter_exp_variance.plot(
                 xlabel='Time (s)', ylabel='Variance', preplot=(fig, ax0),
-                c='w', label='Experiment', marker='', title=title)
+                label='Experiment', marker='', title=title)
+            plotter.plot(
+                xlabel='Time (s)', ylabel='Variance', preplot=(fig, ax0), label='Model', c=c, marker='', title=title)
 
-            plotter.plot(xlabel='Time (s)', ylabel='Fisher information', fct=lambda a: 1/a,
-                         preplot=(fig2, ax02), label='Model', marker='', title=title)
             plotter_exp_variance.plot(
                 xlabel='Time (s)', ylabel='Fisher information', fct=lambda a: 1/a, preplot=(fig2, ax02),
-                c='w', label='Experiment', marker='', title=title)
+                label='Experiment', marker='', title=title)
+            plotter.plot(xlabel='Time (s)', ylabel='Fisher information', fct=lambda a: 1/a,
+                         preplot=(fig2, ax02), label='Model', c=('%s' % c), marker='', title=title)
 
             ax0.legend()
             plotter.draw_vertical_line(ax0)

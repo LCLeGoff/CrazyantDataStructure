@@ -406,6 +406,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=20, outside=True)
+aw = ApplicationWindow(group0, id_exp=58, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

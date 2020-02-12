@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
+import Tools.MiscellaneousTools.Geometry as Geo
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name
-from Tools.MiscellaneousTools.Geometry import angle, dot2d_df, distance_df, angle_distance
+from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -64,7 +64,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 dy[0] = dy1 - dy[0]
                 dy[-1] = dy[-1] - dy2
 
-                dvel_phi = angle(np.array(list(zip(dx, dy))))
+                dvel_phi = Geo.angle(np.array(list(zip(dx, dy))))
                 self.exp.get_df(result_velocity_phi_name).loc[id_exp, :] = np.around(dvel_phi, 6)
 
                 self.exp.get_df(result_velocity_x_name).loc[id_exp, :] = np.around(dx*fps, 3)
@@ -293,7 +293,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 food_exit['x'] = np.cos(food_exit_phi)
                 food_exit['y'] = np.sin(food_exit_phi)
 
-                dot_prod = dot2d_df(vel, food_exit) / distance_df(vel)
+                dot_prod = Geo.dot2d_df(vel, food_exit) / Geo.distance_df(vel)
                 self.exp.get_df(result_name).loc[id_exp, :] = np.around(dot_prod, 3)
 
             self.exp.groupby(result_name, id_exp_name, compute_length4each_group)
@@ -563,9 +563,9 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 dx = np.array(df.loc[id_exp, :]).ravel()
                 dx1 = dx[1].copy()
                 dx2 = dx[-2].copy()
-                dx[1:-1] = angle_distance(dx[:-2], dx[2:]) / 2.
-                dx[0] = angle_distance(dx[0], dx1)
-                dx[-1] = angle_distance(dx2, dx[-1])
+                dx[1:-1] = Geo.angle_distance(dx[:-2], dx[2:]) / 2.
+                dx[0] = Geo.angle_distance(dx[0], dx1)
+                dx[-1] = Geo.angle_distance(dx2, dx[-1])
 
                 self.exp.get_df(result_name).loc[id_exp, :] = np.around(dx*fps, 6)
 
@@ -579,3 +579,51 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
         fig, ax = plotter.plot(xlabel=r'$\dot\varphi$', ylabel='PDF', normed=True)
         plotter.save(fig)
+
+    def compute_food_velocity_phi_diff(self, redo, redo_hist=False):
+        result_name = 'mm1s_food_velocity_phi_diff'
+
+        if redo:
+            velocity_phi_name = 'mm1s_food_velocity_phi'
+            food_speed_name = 'mm10_food_speed'
+            self.exp.load([velocity_phi_name, food_speed_name])
+
+            label = 'Food orientation time difference'
+            description = 'Food orientation difference'
+
+            self.exp.add_copy(
+                velocity_phi_name, result_name, category=self.category, label=label, description=description)
+
+            def get_diff4each(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                print(id_exp)
+                v = self.exp.get_df(food_speed_name).loc[id_exp, :]
+                v = np.array(v.reindex(df.loc[id_exp, :].index)).ravel()
+
+                orient = df.values.ravel()
+                mask = np.where(~np.isnan(orient))[0]
+                d_orient = Geo.angle_distance(orient[mask[1:]], orient[mask[:-1]])
+                orient[:] = np.nan
+                orient[mask[1:]] = d_orient
+
+                orient[v < 2] = np.nan
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.c_[np.around(orient, 6)]
+
+            self.exp.groupby(result_name, id_exp_name, get_diff4each)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        dtheta = 0.01
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        hist_name = self.compute_hist(
+            name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\varphi$', ylabel='PDF', normed=True)
+        plotter.save(fig)
+
+        init_frame_name = 'first_leading_attachment_time_of_outside_ant'
+        self.change_first_frame(result_name, init_frame_name)
+        print(float(np.var(self.exp.get_df(result_name).loc[pd.IndexSlice[:, :0], :])))

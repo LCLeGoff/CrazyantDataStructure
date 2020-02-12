@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import Tools.MiscellaneousTools.Geometry as Geo
 from cv2 import cv2
 
 from DataStructure.DataManager.DataFileManager import DataFileManager
@@ -14,7 +15,6 @@ from DataStructure.VariableNames import dataset_name, id_exp_name, id_ant_name, 
 from Movies.Movies import Movies
 from Scripts.root import root_movie
 from Tools.MiscellaneousTools.ArrayManipulation import turn_to_list
-from Tools.MiscellaneousTools.Geometry import norm_angle_tab
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 from Tools.Plotter.Plotter import Plotter
 
@@ -582,18 +582,26 @@ class ExperimentGroups:
         if object_type in ['TimeSeries1d', 'TimeSeries2d', 'Events1d', 'Events2d']:
             df = self.pandas_index_manager.convert_array_to_df(
                 array, index_names=[id_exp_name, id_ant_name, id_frame_name], column_names=name)
+            # df.index = pd.MultiIndex.from_arrays(
+            #     np.array(list(df.index), dtype=int), names=[id_exp_name, id_ant_name, id_frame_name])
 
         elif object_type in ['AntCharacteristics1d', 'AntCharacteristics2d']:
             df = self.pandas_index_manager.convert_array_to_df(
                 array, index_names=[id_exp_name, id_ant_name], column_names=name)
+            # df.index = pd.MultiIndex.from_arrays(
+            #     np.array(list(df.index), dtype=int), names=[id_exp_name, id_ant_name])
 
         elif object_type in ['Characteristics1d', 'Characteristics2d']:
             df = self.pandas_index_manager.convert_array_to_df(array, index_names=id_exp_name, column_names=name)
+            # df.index = pd.MultiIndex.from_arrays(
+            #     np.array(list(df.index), dtype=int), names=id_exp_name)
 
         elif object_type in ['CharacteristicTimeSeries1d', 'CharacteristicTimeSeries2d',
                              'CharacteristicEvents1d', 'CharacteristicEvents2d']:
             df = self.pandas_index_manager.convert_array_to_df(
                 array, index_names=[id_exp_name, id_frame_name], column_names=name)
+            # df.index = pd.MultiIndex.from_arrays(
+            #     np.array(list(df.index), dtype=int), names=[id_exp_name, id_frame_name])
 
         elif object_type in [dataset_name]:
             df = self.pandas_index_manager.convert_array_to_df(array, index_names=index_names, column_names=name)
@@ -1315,57 +1323,17 @@ class ExperimentGroups:
 
         return result_name
 
-    def fit(self,
-            name_to_fit, result_name=None, level=None, typ='linear', filter_name=None, filter_as_frame=False,
-            window=None, sqrt_x=False, sqrt_y=False, normed=False, list_id_exp=None,
-            xname=None, yname=None, category=None,
-            label=None, xlabel=None, ylabel=None, description=None, replace=False):
+    def fit(self, name_to_fit, typ='linear', window=None,
+            sqrt_x=False, sqrt_y=False, normed=False):
 
-        if result_name is None:
-            result_name = name_to_fit + '_fit'
-        if xname is None:
-            xname = self.get_xname(name_to_fit)
-        if yname is None:
-            yname = self.get_yname(name_to_fit)
+        if self.get_object_type(name_to_fit) == dataset_name and len(self.get_columns(name_to_fit)) == 1:
 
-        df_filter = self.get_df(filter_name)
+            fit = self.get_data_object(name_to_fit).fit(typ=typ, window=window, sqrt_x=sqrt_x, sqrt_y=sqrt_y,
+                                                        normed=normed)
+            return fit
 
-        df_fit = self.get_data_object(name_to_fit).fit(
-            level=level, typ=typ, filter_df=df_filter,
-            window=window, sqrt_x=sqrt_x, sqrt_y=sqrt_y, normed=normed, list_id_exp=list_id_exp
-        )
-
-        if filter_name is None:
-            if level is None:
-                return df_fit
-            elif level == 'exp':
-                self.add_new2d_from_df(
-                    df=df_fit, name=result_name, xname=xname, yname=yname, object_type='Characteristics2d',
-                    category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
-                    replace=replace
-                )
-                return result_name
-            elif level == 'ant':
-                self.add_new2d_from_df(
-                    df=df_fit, name=result_name, xname=xname, yname=yname, object_type='AntCharacteristics2d',
-                    category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
-                    replace=replace
-                )
-                return result_name
         else:
-            if level is None:
-                return df_fit
-            else:
-                if filter_as_frame is True:
-                    self.pandas_index_manager.rename_index_level(df_fit, 'filter', id_frame_name)
-                    if level == 'ant':
-                        self.add_new2d_from_df(
-                            df=df_fit, name=result_name, xname=xname, yname=yname, object_type='Events2d',
-                            category=category, label=label, xlabel=xlabel, ylabel=ylabel, description=description,
-                            replace=replace)
-                        return result_name
-                    else:
-                        return df_fit
+            raise TypeError(name_to_fit + ' is not a dataset or is not 1d')
 
     def rolling_mean(
             self, name_to_average, window, is_angle, result_name=None, index_names=None,
@@ -1458,7 +1426,7 @@ class ExperimentGroups:
     def convert_orientation_to_movie_system(self, id_exp, orientation):
         self.load(['traj_reoriented'])
         if int(self.traj_reoriented.df.loc[id_exp]) == 1:
-            orientation = norm_angle_tab(orientation - np.pi)
+            orientation = Geo.norm_angle(orientation - np.pi)
         return orientation
 
     def plot(self, name_to_plot, preplot=None, **kwargs):

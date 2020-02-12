@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_frame_name, id_exp_name, id_ant_name
@@ -45,6 +46,28 @@ class AnalyseClassDecorator:
         self.exp.get_df(name).reset_index(inplace=True)
         self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
         self.exp.get_df(name).set_index(index_names, inplace=True)
+
+    def cut_last_frames_for_indexed_by_exp_frame_indexed(self, name, frame_name):
+
+        def cut4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            last_frame = self.exp.get_value(frame_name, id_exp)
+            self.exp.get_df(name).loc[id_exp, last_frame:] = np.nan
+            return df
+
+        self.exp.groupby(name, id_exp_name, cut4each_group)
+        self.exp.get_df(name).dropna(inplace=True)
+
+    def cut_last_frames_for_indexed_by_exp_ant_frame_indexed(self, name, frame_name):
+
+        def cut4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            last_frame = self.exp.get_value(frame_name, id_exp)
+            self.exp.get_df(name).loc[id_exp, :, last_frame:] = np.nan
+            return df
+
+        self.exp.groupby(name, id_exp_name, cut4each_group)
+        self.exp.get_df(name).dropna(inplace=True)
 
     def reindexing_exp_frame_indexed_by_exp_ant_frame_indexed(self, name_to_reindex, name2, column_names=None):
         if column_names is None:

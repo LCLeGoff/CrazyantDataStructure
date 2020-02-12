@@ -156,19 +156,23 @@ def convert_cartesian2polar(x, y):
     return r, phi
 
 
+# def norm_angle(theta):
+#     if theta > np.pi:
+#         return theta - 2 * np.pi
+#     elif theta < -np.pi:
+#         return theta + 2 * np.pi
+#     else:
+#         return theta
+
+
 def norm_angle(theta):
-    if theta > np.pi:
-        return theta - 2 * np.pi
-    elif theta < -np.pi:
-        return theta + 2 * np.pi
-    else:
-        return theta
+    return np.angle(np.exp(1j*theta))
 
 
-def norm_angle_tab(theta):
-    theta[theta > np.pi] -= 2*np.pi
-    theta[theta < -np.pi] += 2*np.pi
-    return theta
+def norm_angle_df(theta):
+    theta2 = theta.copy()
+    theta2[:] = np.angle(np.exp(1j*theta))
+    return theta2
 
 
 def norm_angle_tab2(theta):

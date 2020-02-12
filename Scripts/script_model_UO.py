@@ -10,31 +10,35 @@ PlotUOModel = PlotUOModel(group)
 
 
 SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
+
+p_attach = 0.053
+a = np.exp(-0.0283)
+c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
+var_orientation = 0.09
+s0 = 0.4
+s1 = 0.65
+var_info = (s1-a*s0-var_orientation)/c**2
+
 #
-# p_attach = 0.65
-# a = 0.98
-# r = 1.72
-# c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
-# print((1-a)*r)
-# # #
-# # # min_var_orientation = (1-a)*r-p_attach*c**2
-# # # max_var_orientation = 0.031
-# # # var_orientation = np.around(np.mean([min_var_orientation, max_var_orientation]), 5)
+# # min_var_orientation = (1-a)*r-p_attach*c**2
+# # max_var_orientation = 0.031
+# # var_orientation = np.around(np.mean([min_var_orientation, max_var_orientation]), 5)
+# r = 1.7
 # var_orientation = np.around((1-a)*r-p_attach*c**2, 3)
 # var_info = 1
-#
+
 # SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': 0})
 # SimpleModel.write()
 
 
-# PlotUOModel.plot_simple_model_evol(suff='high_persistence')
+# PlotUOModel.plot_simple_model_evol()
 # PlotUOModel.plot_indiv_hist_evol('UOSimpleModel', 0)
 # # PlotUOModel.plot_simple_model_evol()
 
 
-group = 'UO'
-ModelAnalysis = UOModelAnalysis(group)
-ModelAnalysis.compute_model_attachment_intervals('UOSimpleModel')
+# group = 'UO'
+# ModelAnalysis = UOModelAnalysis(group)
+# ModelAnalysis.compute_model_attachment_intervals('UOSimpleModel')
 
 # OutsideModel = UOOutsideModel(root, group, new=True, n_replica=1000, time0=0)
 #
@@ -76,13 +80,12 @@ ModelAnalysis.compute_model_attachment_intervals('UOSimpleModel')
 # # # ConfidenceModel.write()
 # # # PlotUOModel.plot_confidence_model_evol(suff='high_persistence')
 # #
-# # PersistenceModel = PersistenceModel(root, group, new=True, duration=500, n_replica=250)
-# # PersistenceModel.run({'var_orientation': 1})
-# # PersistenceModel.run({'var_orientation': 0.25})
-# # PersistenceModel.run({'var_orientation': 0.09})
-# # PersistenceModel.run({'var_orientation': 0.0316})
-# # PersistenceModel.run({'var_orientation': 0.01})
-# # PersistenceModel.write()
-#
-# # PlotUOModel.plot_persistence()
+PersistenceModel = PersistenceModel(root, group, new=True, duration=60, n_replica=1000)
+# PersistenceModel.run({'var_orientation': 1})
+# PersistenceModel.run({'var_orientation': 0.09})
+# PersistenceModel.run({'var_orientation': 0.0474})
+# PersistenceModel.run({'var_orientation': 0.02})
+# PersistenceModel.write()
+
+PlotUOModel.plot_persistence()
 

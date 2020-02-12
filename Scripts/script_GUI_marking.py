@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QSlider
 from matplotlib import colors
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -19,7 +19,7 @@ from DataStructure.Builders.ExperimentGroupBuilder import ExperimentGroupBuilder
 from DataStructure.VariableNames import id_frame_name, id_ant_name
 from ExperimentGroups import ExperimentGroups
 from Scripts.root import root
-from Tools.MiscellaneousTools.Geometry import angle_distance_df, norm_angle_tab
+# from Tools.MiscellaneousTools.Geometry import angle_distance_df, norm_angle_tab
 
 
 class MovieCanvas(FigureCanvas):
@@ -28,8 +28,9 @@ class MovieCanvas(FigureCanvas):
 
         self.exp = exp
         self.id_exp = id_exp
-        self.frame_width = 8
-        self.frame_height = 10
+        self.frame_width = 1920
+        self.frame_height = 1080
+        self.zoom = 4
         self.play = 0
         self.batch_length1 = 0.5
         self.batch_length2 = 0.5
@@ -48,7 +49,7 @@ class MovieCanvas(FigureCanvas):
         self.iter_id_ant = 0
         self.id_ant = self.get_id_ant()
         self.list_frame_batch = self.get_frame_batches()
-        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_liberalization()
+        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_linearization()
 
         self.frame_graph = None
         self.xy_graph = None
@@ -78,20 +79,20 @@ class MovieCanvas(FigureCanvas):
 
         self.exp.load_as_2d('mm10_x', 'mm10_y', 'xy', 'x', 'y', replace=True, reload=False)
         speed_name = 'speed'
-        body_orient_name = 'mm10_orientation'
+        # body_orient_name = 'mm10_orientation'
         orient_name = 'speed_phi'
-        self.exp.load([speed_name, body_orient_name, orient_name])
+        self.exp.load([speed_name, orient_name])
 
         xy_df = self.exp.get_df('xy').loc[self.id_exp, :, :]
         xy_df.x, xy_df.y = self.exp.convert_xy_to_movie_system(self.id_exp, xy_df.x, xy_df.y)
 
         speed_df = self.exp.get_df(speed_name).loc[self.id_exp, :, :]/10.
-        body_orient_df = self.exp.get_df(body_orient_name).loc[self.id_exp, :, :]
+        # body_orient_df = self.exp.get_df(body_orient_name).loc[self.id_exp, :, :]
         orient_df = self.exp.get_df(orient_name).loc[self.id_exp, :, :]/100.
 
-        diff_df = angle_distance_df(orient_df, body_orient_df).abs()
-        diff_df['temp'] = angle_distance_df(orient_df, norm_angle_tab(body_orient_df+np.pi)).abs()
-        diff_df = diff_df.min(axis=1)
+        # diff_df = angle_distance_df(orient_df, body_orient_df).abs()
+        # diff_df['temp'] = angle_distance_df(orient_df, norm_angle_tab(body_orient_df+np.pi)).abs()
+        # diff_df = diff_df.min(axis=1)
 
         id_ants = np.array(xy_df.index.get_level_values(id_ant_name))
         y, x = np.histogram(id_ants, range(1, max(id_ants)+1))
@@ -99,6 +100,8 @@ class MovieCanvas(FigureCanvas):
 
         movie = self.exp.get_movie(self.id_exp)
 
+        body_orient_df = None
+        diff_df = None
         return xy_df, speed_df, body_orient_df, orient_df, diff_df, id_ants, movie
 
     def get_frame_batches(self):
@@ -114,14 +117,16 @@ class MovieCanvas(FigureCanvas):
 
         return list_batch_frames
 
-    def get_liberalization(self):
+    def get_linearization(self):
 
         speed_line = self.get_sequence(self.speed_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
-        body_orient_line = self.get_sequence(
-            self.body_orient_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
+        # body_orient_line = self.get_sequence(
+        #     self.body_orient_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
         orient_line = self.get_sequence(self.orient_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
-        diff_line = self.get_sequence(self.diff_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
+        # diff_line = self.get_sequence(self.diff_df0.loc[self.id_exp, self.id_ant, :].dropna().reset_index().values)
 
+        body_orient_line = None
+        diff_line = None
         return speed_line, body_orient_line, orient_line, diff_line
 
     @staticmethod
@@ -196,7 +201,7 @@ class MovieCanvas(FigureCanvas):
         self.list_frame_batch = self.get_frame_batches()
         self.iter_frame_batch = 0
         self.frame_batch = self.get_frame_batch()
-        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_liberalization()
+        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_linearization()
 
         self.xy_df, self.speed_df, self.body_orient_df, self.orient_df, self.diff_df,\
             self.color_df, self.size_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
@@ -211,21 +216,26 @@ class MovieCanvas(FigureCanvas):
         self.list_frame_batch = self.get_frame_batches()
         self.iter_frame_batch = 0
         self.frame_batch = self.get_frame_batch()
-        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_liberalization()
+        self.speed_line, self.body_orient_line, self.orient_line, self.diff_line = self.get_linearization()
 
         self.xy_df, self.speed_df, self.body_orient_df, self.orient_df, self.diff_df, \
             self.color_df, self.size_df, self.x0, self.y0, self.dx, self.dy = self.cropping_xy()
         self.reset_play()
 
-    def init_figure(self):
-        fig = Figure(figsize=(self.frame_width, self.frame_height))
-        gs = gridspec.GridSpec(nrows=4, ncols=2, width_ratios=[1, 2])
-        ax = fig.add_subplot(gs[:, 0])
-        ax2 = fig.add_subplot(gs[0, 1])
-        ax3 = fig.add_subplot(gs[1, 1])
-        ax4 = fig.add_subplot(gs[2, 1])
-        ax5 = fig.add_subplot(gs[3, 1])
-        fig.subplots_adjust(left=0.08, bottom=0.05, right=0.99, top=1, hspace=0.01)
+    @staticmethod
+    def init_figure():
+        fig = Figure()
+        gs = gridspec.GridSpec(nrows=3, ncols=1, height_ratios=[2, 1, 1])
+        ax = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        # ax3 = fig.add_subplot(gs[1, 1])
+        ax4 = fig.add_subplot(gs[2])
+        # ax5 = fig.add_subplot(gs[3, 1])
+        # fig.subplots_adjust(left=0.08, bottom=0.05, right=0.99, top=1, hspace=0.01)
+        fig.subplots_adjust(left=0.08, bottom=0.1, right=0.9, top=0.9)
+
+        ax3 = None
+        ax5 = None
         return fig, ax, ax2, ax3, ax4, ax5
 
     def get_frame_batch(self):
@@ -248,9 +258,9 @@ class MovieCanvas(FigureCanvas):
         pd_slice = pd.IndexSlice[self.id_exp, self.id_ant, self.frame_batch[0]:self.frame_batch[1]]
         xy_df = self.xy_df0.loc[pd_slice, :].copy()
         speed_df = self.speed_df0.loc[pd_slice, :].copy()
-        body_orient_df = self.body_orient_df0.loc[pd_slice, :].copy()
+        # body_orient_df = self.body_orient_df0.loc[pd_slice, :].copy()
         orient_df = self.orient_df0.loc[pd_slice, :].copy()
-        diff_df = self.diff_df0.loc[pd_slice, :].copy()
+        # diff_df = self.diff_df0.loc[pd_slice, :].copy()
 
         self.exp.load('from_outside', reload=False)
 
@@ -276,14 +286,19 @@ class MovieCanvas(FigureCanvas):
         xy_df.x -= x0
         xy_df.y -= y0
 
-        xy = xy_df.loc[self.id_exp, self.id_ant, :]
-        dx = max(int(max(np.nanmax(xy.x), -np.nanmin(xy.x))), 100)
-        dy = max(int(max(np.nanmax(xy.y), -np.nanmin(xy.y))), 100)
+        # xy = xy_df.loc[self.id_exp, self.id_ant, :]
+        # dx = max(int(max(np.nanmax(xy.x), -np.nanmin(xy.x))), 100)
+        # dy = max(int(max(np.nanmax(xy.y), -np.nanmin(xy.y))), 100)
         # dx = 500
         # dy = 500
+        dx = int(self.frame_width/self.zoom)
+        dy = int(self.frame_height/self.zoom)
 
         xy_df.x += dx
         xy_df.y += dy
+
+        body_orient_df = None
+        diff_df = None
 
         return xy_df, speed_df, body_orient_df, orient_df, diff_df, color_df, size_df, x0, y0, dx, dy
 
@@ -325,15 +340,15 @@ class MovieCanvas(FigureCanvas):
         self.ax_speed.set_xlim(self.frame_batch[0], self.frame_batch[1])
         self.ax_speed.set_ylim(0, 15)
 
-        self.ax_body_orient.cla()
-        self.ax_body_orient.plot(self.body_orient_df.loc[self.id_exp, self.id_ant, :])
-        self.ax_body_orient.grid()
-        self.ax_body_orient.set_xlabel('Time (frame)')
-        self.ax_body_orient.set_ylabel('Body orientation')
-
-        self.ax_body_orient.plot(self.body_orient_line[:, 0], self.body_orient_line[:, 1], marker='o')
-        self.ax_body_orient.set_xlim(self.frame_batch[0], self.frame_batch[1])
-        self.ax_body_orient.set_ylim(-np.pi, np.pi)
+        # self.ax_body_orient.cla()
+        # self.ax_body_orient.plot(self.body_orient_df.loc[self.id_exp, self.id_ant, :])
+        # self.ax_body_orient.grid()
+        # self.ax_body_orient.set_xlabel('Time (frame)')
+        # self.ax_body_orient.set_ylabel('Body orientation')
+        #
+        # self.ax_body_orient.plot(self.body_orient_line[:, 0], self.body_orient_line[:, 1], marker='o')
+        # self.ax_body_orient.set_xlim(self.frame_batch[0], self.frame_batch[1])
+        # self.ax_body_orient.set_ylim(-np.pi, np.pi)
 
         self.ax_orient.cla()
         self.ax_orient.plot(self.orient_df.loc[self.id_exp, self.id_ant, :])
@@ -345,20 +360,20 @@ class MovieCanvas(FigureCanvas):
         self.ax_orient.set_xlim(self.frame_batch[0], self.frame_batch[1])
         self.ax_orient.set_ylim(-np.pi, np.pi)
 
-        self.ax_diff.cla()
-        self.ax_diff.plot(self.diff_df.loc[self.id_exp, self.id_ant, :])
-        self.ax_diff.grid()
-        self.ax_diff.set_xlabel('Time (frame)')
-        self.ax_diff.set_ylabel('Diff Orientation')
-
-        self.ax_diff.plot(self.diff_line[:, 0], self.diff_line[:, 1], marker='o')
-        self.ax_diff.set_xlim(self.frame_batch[0], self.frame_batch[1])
-        self.ax_diff.set_ylim(0, np.pi/2.)
+        # self.ax_diff.cla()
+        # self.ax_diff.plot(self.diff_df.loc[self.id_exp, self.id_ant, :])
+        # self.ax_diff.grid()
+        # self.ax_diff.set_xlabel('Time (frame)')
+        # self.ax_diff.set_ylabel('Diff Orientation')
+        #
+        # self.ax_diff.plot(self.diff_line[:, 0], self.diff_line[:, 1], marker='o')
+        # self.ax_diff.set_xlim(self.frame_batch[0], self.frame_batch[1])
+        # self.ax_diff.set_ylim(0, np.pi/2.)
 
         self.speed_line_graph = self.ax_speed.axvline(frame, c='red')
-        self.body_orient_line_graph = self.ax_body_orient.axvline(frame, c='red')
+        # self.body_orient_line_graph = self.ax_body_orient.axvline(frame, c='red')
         self.orient_line_graph = self.ax_orient.axvline(frame, c='red')
-        self.diff_line_graph = self.ax_diff.axvline(frame, c='red')
+        # self.diff_line_graph = self.ax_diff.axvline(frame, c='red')
 
         self.draw()
 
@@ -389,9 +404,9 @@ class MovieCanvas(FigureCanvas):
                 self.xy_graph.set_sizes(size)
 
                 self.speed_line_graph.set_xdata([frame, frame])
-                self.body_orient_line_graph.set_xdata([frame, frame])
+                # self.body_orient_line_graph.set_xdata([frame, frame])
                 self.orient_line_graph.set_xdata([frame, frame])
-                self.diff_line_graph.set_xdata([frame, frame])
+                # self.diff_line_graph.set_xdata([frame, frame])
 
                 self.clock_text.set_text(frame)
 
@@ -434,22 +449,20 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.hbox_top = QHBoxLayout()
         self.hbox_top.addStretch(1)
-        # self.hbox_bottom = QHBoxLayout()
-        # self.hbox_bottom.addStretch(1)
 
         self.create_button(self.hbox_top, "Quit", self.quit)
-
         self.create_button(self.hbox_top, "Play", self.resume_play)
         self.create_button(self.hbox_top, "RePlay", self.replay)
         self.create_button(self.hbox_top, "Pause", self.pause_play)
-
         self.create_button(self.hbox_top, "Prev frames", self.prev_batch)
         self.create_button(self.hbox_top, "Next frames", self.next_batch)
-
         self.create_button(self.hbox_top, "Prev ant", self.prev_ant)
         self.create_button(self.hbox_top, "Next ant", self.next_ant)
 
-        # layout.addLayout(self.hbox_bottom)
+        self.prev_zoom = self.movie_canvas.zoom
+        self.zoom_slider = self.create_slider(self.hbox_top, 'Zoom', min_val=1, max_val=10, step=1,
+                                              value=self.prev_zoom, release_func=self.set_zoom)
+
         layout.addLayout(self.hbox_top)
 
         self.main_widget.setFocus()
@@ -475,13 +488,40 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     @staticmethod
     def create_button(hbox, text, func):
         button = QPushButton(text)
-        # button.setGeometry(
-        #     QRect(
-        #         10 + (self.bt_length+self.dl) * n_col,
-        #         600 + (self.bt_height + self.dl) * n_line,
-        #         self.bt_length, self.bt_height))
+        button.setFocusPolicy(QtCore.Qt.NoFocus)
         button.clicked.connect(func)
         hbox.addWidget(button)
+
+    @staticmethod
+    def create_slider(hbox, name, min_val, max_val, step, value, release_func):
+
+        # group_box = QtWidgets.QGroupBox(name)
+        slider = QSlider(Qt.Horizontal)
+        slider.setFocusPolicy(Qt.StrongFocus)
+        slider.setTickPosition(QSlider.TicksBothSides)
+        slider.setTickInterval(step)
+        slider.setSingleStep(step)
+        slider.setMinimum(min_val)
+        slider.setMaximum(max_val)
+        slider.setValue(value)
+        slider.setFocusPolicy(QtCore.Qt.NoFocus)
+        slider.sliderReleased.connect(release_func)
+        # slider.sliderPressed.connect(press_func)
+
+        label = QtWidgets.QLabel(name+':')
+
+        # slider_box = QtWidgets.QVBoxLayout()
+        # slider_box.addWidget(slider)
+        #
+        # group_box.setLayout(slider_box)
+
+        hbox.addWidget(label)
+        hbox.addWidget(slider)
+        return slider
+
+    def set_zoom(self):
+        self.movie_canvas.zoom = self.zoom_slider
+        self.movie_canvas.reset_play()
 
     def replay(self):
         self.movie_canvas.reset_play()
@@ -513,6 +553,6 @@ qApp = QtWidgets.QApplication(sys.argv)
 
 group0 = 'UO'
 
-aw = ApplicationWindow(group0, id_exp=3, outside=True)
+aw = ApplicationWindow(group0, id_exp=40, outside=True)
 aw.show()
 sys.exit(qApp.exec_())

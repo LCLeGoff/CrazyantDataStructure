@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from DataStructure.VariableNames import id_frame_name
+from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -294,6 +295,56 @@ class IndexedDataSetDecorator:
         df_res[df_nan] = np.nan
 
         return df_res.round(6)
+
+    def fit(self, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False):
+        x = np.array(list(self.df.index))
+        y = self.df.values.ravel()
+        a, b, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
+        return a, b, x_fit, y_fit
+
+    def _compute_result_fit(self, x, y, typ, window, sqrt_x, sqrt_y, normed):
+        x_fit, y_fit = self._set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed)
+        a, b, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ)
+        return a, b, x_fit, y_fit
+
+    @staticmethod
+    def _set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed):
+        if sqrt_x:
+            x_fit = np.sqrt(x)
+        else:
+            x_fit = np.array(x)
+
+        if normed is True:
+            s = float(sum(y))
+            y_fit = np.array(y) / s
+        elif normed == 'density':
+            y_fit = np.array(y) / float(sum(y)) / float(x[1] - x[0])
+        else:
+            y_fit = np.array(y)
+        if sqrt_y is True:
+            y_fit = np.sqrt(y_fit)
+        else:
+            y_fit = np.array(y_fit)
+
+        if window is not None:
+            x_fit = x_fit[window[0]: window[1]]
+            y_fit = y_fit[window[0]: window[1]]
+        return x_fit, y_fit
+
+    @staticmethod
+    def _compute_fit_a_and_b(x_fit, y_fit, typ):
+        mask = np.where(y_fit != 0)[0]
+        if len(mask) != 0:
+            if typ == 'linear':
+                return linear_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'exp':
+                return exp_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'power':
+                return power_fit(x_fit[mask], y_fit[mask])
+            else:
+                raise TypeError(typ + ' is not a type of fit known')
+        else:
+            return np.nan, np.nan, [], []
 
     # def mean_over(self, level_df, mean_level=None, new_level_as=None):
     #     df = self.df.copy()

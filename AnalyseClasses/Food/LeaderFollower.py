@@ -9,6 +9,7 @@ import sklearn.decomposition as decomp
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 import Tools.MiscellaneousTools.Geometry as Geo
+from Tools.Plotter.Plotter import Plotter
 
 
 class AnalyseLeaderFollower(AnalyseClassDecorator):
@@ -1025,28 +1026,6 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
-    def get_leading_attachment_intervals(self):
-        leader_name = 'is_leader'
-        self.exp.load(leader_name)
-        for sup in ['', 'outside_', 'inside_']:
-            name = '%sattachment_intervals' % sup
-            self.exp.load(name)
-            result_name = '%sleading_attachments' % sup
-
-            self.exp.add_copy(old_name=name, new_name=result_name, category=self.category,
-                              label='%s leading attachments', description='%s leading attachments')
-
-            for id_exp, id_ant, frame in self.exp.get_index(name):
-                if self.exp.get_index(leader_name).isin([(id_exp, id_ant, frame)]).any():
-                    leading = self.exp.get_value(leader_name, (id_exp, id_ant, frame))
-                    if leading == 0:
-                        if self.exp.get_index(result_name).isin([(id_exp, id_ant, frame)]).any():
-                            self.exp.get_df(result_name).loc[id_exp, id_ant, frame] = np.nan
-
-            self.exp.change_df(result_name, self.exp.get_df(result_name).dropna())
-
-            self.exp.write(result_name)
-
     @staticmethod
     def print_stat(label, df2, df_res):
         m = float(np.nanmean(df2))
@@ -1054,14 +1033,14 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         s2 = int(np.nansum(1 - df2))
         lower = scs.beta.ppf(0.025, s1, s2)
         upper = scs.beta.ppf(0.975, s1, s2)
-        print('%s: %.3f, (%.3f, %.3f)' % (label, round(m, 2), round(lower, 2), round(upper, 2)))
+        print('%s: %.3f, (%.3f, %.3f)' % (label, round(m, 3), round(lower, 3), round(upper, 3)))
         df_res[label] = [round(m, 3), round(lower, 3), round(upper, 3)]
 
     def print_leader_stats(self):
         leader_name = 'is_leader'
         from_outside_name = 'from_outside'
         first_frame = 'first_attachment_time_of_outside_ant'
-        marking_name = 'markings'
+        marking_name = 'potential_markings'
 
         self.exp.load([leader_name, from_outside_name, marking_name])
 
@@ -1155,6 +1134,9 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
 
         df2 = df[outside_mask & carried_mask][has_marked_name]
         self.print_stat('proportion of outside carrier ants having marked', df2, df_res)
+
+        df2 = df[outside_mask & carried_mask & leaded_mask][has_marked_name]
+        self.print_stat('proportion of outside carrier ants having marked and leaded', df2, df_res)
 
         df2 = df[outside_mask & marker_mask][has_leaded_name]
         self.print_stat('proportion of outside marker ants having leaded', df2, df_res)

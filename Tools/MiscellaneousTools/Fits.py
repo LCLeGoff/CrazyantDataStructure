@@ -3,6 +3,13 @@ import scipy.optimize as scopt
 import numpy as np
 
 
+def cst_fit(x, y):
+    af = sc.polyfit(x, y, 0)
+    y_fit = np.ones(len(x))*af
+    x_fit = x
+    return af, x_fit, y_fit
+
+
 def linear_fit(x, y):
     [af, bf] = sc.polyfit(x, y, 1)
     y_fit = sc.polyval([af, bf], x)

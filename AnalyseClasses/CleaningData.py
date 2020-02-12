@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
+import Tools.MiscellaneousTools.Geometry as Geo
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Geometry import pts2vect, angle, norm_angle_tab
 from math import pi
 
 
@@ -253,8 +253,8 @@ class CleaningData(AnalyseClassDecorator):
             entrance_pts1 = np.array(self.exp.entrance1.get_row(id_exp))
             entrance_pts2 = np.array(self.exp.entrance1.get_row(id_exp))
 
-            entrance_vector = pts2vect(entrance_pts1, entrance_pts2)
-            entrance_angle = angle([1, 0], entrance_vector)
+            entrance_vector = Geo.pts2vect(entrance_pts1, entrance_pts2)
+            entrance_angle = Geo.angle([1, 0], entrance_vector)
             entrance_pts1_centered = entrance_pts1 - food_center
 
             self.__orient_in_same_direction(entrance_angle, entrance_pts1_centered, id_exp, dynamic_food)
@@ -267,11 +267,11 @@ class CleaningData(AnalyseClassDecorator):
             self.__orient_in_same_vertical_direction(entrance_pts1_centered, id_exp, dynamic_food)
 
     def __orient_in_same_vertical_direction(self, entrance_pts1_centered, id_exp, dynamic_food):
-        experiment_orientation = angle([0, 1], entrance_pts1_centered)
+        experiment_orientation = Geo.angle([0, 1], entrance_pts1_centered)
         self.__invert_if_not_good_orientation(experiment_orientation, id_exp, dynamic_food)
 
     def __orient_in_same_horizontal_direction(self, entrance_pts1_centered, id_exp, dynamic_food):
-        experiment_orientation = angle([1, 0], entrance_pts1_centered)
+        experiment_orientation = Geo.angle([1, 0], entrance_pts1_centered)
         self.__invert_if_not_good_orientation(experiment_orientation, id_exp, dynamic_food)
 
     def __invert_if_not_good_orientation(self, a, id_exp, dynamic_food):
@@ -281,7 +281,7 @@ class CleaningData(AnalyseClassDecorator):
 
             self.exp.x.operation_on_id_exp(id_exp, lambda z: z * -1)
             self.exp.y.operation_on_id_exp(id_exp, lambda z: z * -1)
-            self.exp.orientation.operation_on_id_exp(id_exp, lambda z: norm_angle_tab(z+np.pi))
+            self.exp.orientation.operation_on_id_exp(id_exp, lambda z: Geo.norm_angle(z+np.pi))
             self.exp.traj_reoriented.df.loc[id_exp] = 1
             if dynamic_food is True:
                 self.exp.food_x.operation_on_id_exp(id_exp, lambda z: z * -1)

@@ -9,7 +9,7 @@ class Events1dDeleter:
         if events.category == 'Raw':
             raise OSError('not allowed to delete Events of the category Raw')
         else:
-            address = self.root + '/DataSets/' + events.category + '/' + events.name + '.csv'
+            address = '%s%s/DataSets/%s.csv' % (self.root, events.category, events.name)
             os.remove(address)
 
 

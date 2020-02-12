@@ -11,6 +11,10 @@ from AnalyseClasses.Food.FoodVelocity import AnalyseFoodVelocity
 from AnalyseClasses.Food.FoodInformation import AnalyseFoodInformation
 from AnalyseClasses.Food.FoodVeracity import AnalyseFoodVeracity
 from AnalyseClasses.Food.LeaderFollower import AnalyseLeaderFollower
+from AnalyseClasses.Food.LeadingAttachmentInfluence import AnalyseLeadingAttachmentInfluence
+from AnalyseClasses.Food.LeadingAttachments import AnalyseLeadingAttachments
+from AnalyseClasses.Food.MarkingBatch import AnalyseMarkingBatches
+from AnalyseClasses.Food.MakeMarkingMovie import MakeMarkingMovie
 from AnalyseClasses.Food.SVMFeatures import AnalyseSVMFeatures
 from AnalyseClasses.Trajectory.BaseTrajectory import AnalyseTrajectory
 from Scripts.root import root
@@ -209,6 +213,8 @@ FoodVelocity = AnalyseFoodVelocity(group)
 #
 # FoodVelocity.compute_food_orientation_speed(True)
 
+# FoodVelocity.compute_food_velocity_phi_diff(False)
+
 AntFoodRelation = AnalyseAntFoodRelation(group)
 # AntFoodRelation.compute_ant_density_around_food_evol(True)
 # AntFoodRelation.compute_ant_density_around_food_evol_first_outside_attachment(True)
@@ -393,7 +399,7 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.prepare_attachment_angle_not_modulo_features()
 # LeaderFollower.prepare_body_orientation_alignment_features()
 # LeaderFollower.prepare_body_rotation_alignment_features()
-#
+
 # LeaderFollower.prepare_outside_features()
 
 # LeaderFollower.draw_all_means()
@@ -412,27 +418,85 @@ LeaderFollower = AnalyseLeaderFollower(group)
 # LeaderFollower.test2()
 
 # LeaderFollower.compute_leader_follower()
-# LeaderFollower.get_leading_attachment_intervals()
 # LeaderFollower.print_leader_stats()
+
+LeadingAttachment = AnalyseLeadingAttachments(group)
+# LeadingAttachment.get_leading_attachment_intervals()
+# LeadingAttachment.compute_nb_leading_attachment_per_outside_ant(True)
+
+# LeadingAttachment.compute_nb_leading_attachments_evol(True)
+# LeadingAttachment.compute_nb_leading_outside_attachments_evol(True)
+# LeadingAttachment.compute_nb_leading_attachments_evol_around_first_outside_attachment()
+# LeadingAttachment.compute_nb_leading_outside_attachments_evol_around_first_outside_attachment()
+# LeadingAttachment.compute_nb_leading_inside_attachments_evol_around_first_outside_attachment()
+
+# LeadingAttachment.compute_first_leading_attachment_time_of_outside_ant()
 
 FoodInfoLeader = AnalyseFoodInformationLeader(group)
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_outside_leader_attachments()
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments(True)
+
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_inside_leader_attachments()
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments(True)
-# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments()
+
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments(True)
+# FoodInfoLeader.plot_inside_and_outside_leader_information()
+
+# list_exps = list([12, 20, 40, 30, 42, 55])
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments_partial(
+#     True, list_exps=list_exps)
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments_partial(
+#     True, list_exps=list_exps)
+# FoodInfoLeader.plot_inside_and_outside_leader_information_partial()
+
 #
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_attachments_evol(True)
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_inside_leader_attachments_evol(True)
 # FoodInfoLeader.compute_information_mm1s_food_direction_error_around_leader_attachments_evol(True)
 
-AntMarkings = AnalyseAntMarkings(group)
-# AntMarkings.compute_markings(True)
-# AntMarkings.compute_markings_xy()
+# FoodInfoLeader.compute_mm1s_food_direction_error_around_outside_leader_ordered_attachments()
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_ordered_attachments(True)
+# FoodInfoLeader.compute_information_mm1s_food_direction_error_around_outside_leader_ordered_random_attachments(True)
+#
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_outside_leader_attachments(True)
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_inside_leader_attachments(True)
+# FoodInfoLeader.plot_inside_and_outside_leader_fisher_information()
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_outside_leader_attachments_evol(True)
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_inside_leader_attachments_evol(True)
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_outside_leader_attachments_split(True)
 
-# AntMarkings.compute_marking_repartition(True)
-AntMarkings.outside_marking_repartition_evol(True)
-AntMarkings.inside_marking_repartition_evol(True)
+AntMarkings = AnalyseAntMarkings(group)
+# AntMarkings.compute_potential_markings(True)
+# AntMarkings.compute_potential_marking_intervals(True)
+# AntMarkings.compute_potential_marking_intervals_xy()
+# AntMarkings.compute_potential_markings_batches()
+
+
+# AntMarkings.compute_marking_repartition(False)
+# AntMarkings.outside_marking_repartition_evol(True)
+# AntMarkings.inside_marking_repartition_evol(True)
+
+# AntMarkings.get_manual_markings()
+# AntMarkings.compute_manual_marking_intervals(True)
+# AntMarkings.compute_inside_manual_marking_intervals(True)
+# AntMarkings.compute_outside_manual_marking_intervals(True)
+# AntMarkings.compute_manual_marking_repartition()
+# AntMarkings.compute_manual_marking_intervals_xy()
 
 # AntMarkings.compute_markings_time_distance(True)
-# AntMarkings.compute_markings_distance(True)
+# AntMarkings.compute_markings_shortest_distance(True)
+# AntMarkings.compute_marking_distance()
+
+# AntMarkings.compute_nb_manual_markings_evol_around_first_outside_attachment(True)
+# AntMarkings.compute_nb_outside_manual_markings_evol_around_first_outside_attachment(True)
+# AntMarkings.compute_nb_inside_manual_markings_evol_around_first_outside_attachment(True)
+
+MarkingBatches = AnalyseMarkingBatches(group)
+# MarkingBatches.compute_manual_marking_batches(False)
+# MarkingBatches.compute_batch_fit(redo=False, plot=False, redo_hist=False)
+
+MarkingMovie = MakeMarkingMovie(group)
+# MarkingMovie.movie_fast(40)
+
+LeadingAttachmentInfluence = AnalyseLeadingAttachmentInfluence(group)
+# LeadingAttachmentInfluence.compute_leading_attachment_influence()
