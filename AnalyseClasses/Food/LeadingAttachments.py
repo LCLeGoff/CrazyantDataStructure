@@ -271,3 +271,24 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
 
         self.exp.get_df(carrying_name).groupby(id_exp_name).apply(compute_first_attachment4each_exp)
         self.exp.write(result_name)
+
+    def compute_first_leading_attachment_time(self):
+        result_name = 'first_leading_attachment_time'
+        carrying_name = 'leading_attachment_intervals'
+        self.exp.load(carrying_name)
+
+        self.exp.add_new1d_empty(name=result_name, object_type='Characteristics1d',
+                                 category=self.category, label='First leading attachment time of an outside ant',
+                                 description='First leading attachment time of an ant')
+
+        def compute_first_attachment4each_exp(df):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+            frames = df.index.get_level_values(id_frame_name)
+            print(id_exp)
+
+            min_time = int(frames.min())
+            self.exp.change_value(result_name, id_exp, min_time)
+
+        self.exp.get_df(carrying_name).groupby(id_exp_name).apply(compute_first_attachment4each_exp)
+        self.exp.write(result_name)
+

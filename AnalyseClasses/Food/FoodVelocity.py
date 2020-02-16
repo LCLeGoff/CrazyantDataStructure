@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
+import pylab as pb
+
 import Tools.MiscellaneousTools.Geometry as Geo
 
+from scipy import interpolate
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
-from DataStructure.VariableNames import id_exp_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name
 from Tools.Plotter.Plotter import Plotter
 
 
@@ -627,3 +630,120 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         init_frame_name = 'first_leading_attachment_time_of_outside_ant'
         self.change_first_frame(result_name, init_frame_name)
         print(float(np.var(self.exp.get_df(result_name).loc[pd.IndexSlice[:, :0], :])))
+
+    def compute_var_orientation(self):
+        # velocity_phi_name = 'mm10_food_velocity_phi'
+        # food_speed_name = 'food_speed'
+        # self.exp.load([velocity_phi_name, food_speed_name])
+
+        # init_frame_name = 'first_attachment_time_of_outside_ant'
+        # self.change_first_frame(velocity_phi_name, init_frame_name)
+        # self.change_first_frame(food_speed_name, init_frame_name)
+        #
+        # df = self.exp.get_df(velocity_phi_name).copy()
+        # df_speed = self.exp.get_df(food_speed_name).copy()
+        # df[df_speed[food_speed_name] < 2] = np.nan
+        #
+        # df2 = df.rolling(window=100, center=True).apply(Geo.angle_mean)
+        # # mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) == 0)
+        # res = []
+        # for id_exp in range(1, 61):
+        #     print(id_exp)
+        #
+        #     orient = df2.loc[pd.IndexSlice[id_exp, :0], :].loc[id_exp, :]
+        #     orient2 = orient.copy()
+        #     orient2.index -= 100
+        #     d_orient = Geo.angle_distance(orient, orient2)
+        #     res += list(d_orient[~np.isnan(d_orient)].ravel())
+        #
+        # print(np.nanvar(res))
+        # dtheta = 0.01
+        # bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        # y, x = np.histogram(res, bins)
+        # pb.plot(x[:-1], y)
+        # pb.show()
+
+        self.exp.load(['mm10_food_x', 'mm10_food_y'])
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+        self.change_first_frame('mm10_food_x', init_frame_name)
+        self.change_first_frame('mm10_food_y', init_frame_name)
+        dx = 3
+        res = []
+        for id_exp in range(1, 61):
+            tab_x = self.exp.get_df('mm10_food_x').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
+            tab_y = self.exp.get_df('mm10_food_y').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
+
+            mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) > 0)
+            tab_x = tab_x[mask]
+            tab_y = tab_y[mask]
+
+            spline = interpolate.splprep([tab_x, tab_y], s=1)
+            x_i, y_i = interpolate.splev(np.linspace(0, 1, 10000), spline[0])
+            traj_length = np.sum(np.sqrt(np.diff(x_i)**2+np.diff(y_i)**2))
+
+            di = 100
+            x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length / dx * di), spline[0])
+            traj = np.array(list(zip(x_i, y_i)))
+            d_traj = np.diff(traj, axis=0)
+            orient = Geo.angle(d_traj).ravel()
+
+            d_orient = Geo.angle_distance(orient[100:], orient[:-100])
+
+            # pb.plot(tab_x, tab_y, c='k')
+            # pb.plot(x_i, y_i, c='grey')
+            # pb.plot(x_i[::di], y_i[::di], 'o', c='b')
+            # for i in range(0, len(orient), 100):
+            #     o = orient[i]
+            #     x, y, = traj[i, :]
+            #     pb.plot([x-2*np.cos(o), x+2*np.cos(o)], [y-2*np.sin(o), y+2*np.sin(o)], c='g')
+            #
+            # pb.plot(
+            #     self.exp.get_value('mm10_food_x', (id_exp, 0)), self.exp.get_value('mm10_food_y', (id_exp, 0)),
+            #     'o', c='r')
+            #
+            # pb.axis('equal')
+            # pb.show()
+
+            res += list(d_orient)
+
+            print(id_exp, round(np.var(d_orient), 5))
+        print(round(np.var(res), 5))
+
+    def compute_cos_correlation_orientation(self):
+
+        self.exp.load(['mm10_food_x', 'mm10_food_y'])
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+        self.change_first_frame('mm10_food_x', init_frame_name)
+        self.change_first_frame('mm10_food_y', init_frame_name)
+        dx = 1.2
+        res2 = np.zeros(1000)
+        for id_exp in range(1, 61):
+            tab_x = self.exp.get_df('mm10_food_x').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
+            tab_y = self.exp.get_df('mm10_food_y').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
+
+            mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) > 0)
+            tab_x = tab_x[mask]
+            tab_y = tab_y[mask]
+
+            spline = interpolate.splprep([tab_x, tab_y], s=1)
+            x_i, y_i = interpolate.splev(np.linspace(0, 1, 10000), spline[0])
+            traj_length = np.sum(np.sqrt(np.diff(x_i)**2+np.diff(y_i)**2))
+
+            x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length/dx), spline[0])
+            traj = np.array(list(zip(x_i, y_i)))
+            d_traj = np.diff(traj, axis=0)
+            orient = Geo.angle(d_traj).ravel()
+
+            res = np.zeros(len(orient))
+            weight = np.zeros(len(orient))
+
+            for i in range(1, len(orient)):
+                res[:-i] += np.cos(Geo.angle_distance(orient[i], orient[i:])).ravel()
+                weight[:-i] += 1.
+
+            res /= weight
+
+            res2[:len(res)] += res
+
+        pb.plot(np.arange(0, len(res2)*dx, dx), res2)
+        pb.show()

@@ -9,15 +9,15 @@ group = 'UO'
 PlotUOModel = PlotUOModel(group)
 
 
-SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
-
-p_attach = 0.053
-a = np.exp(-0.0283)
-c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
-var_orientation = 0.09
-s0 = 0.4
-s1 = 0.65
-var_info = (s1-a*s0-var_orientation)/c**2
+# SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
+#
+# p_attach = 0.053
+# a = np.exp(-0.0283)
+# c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
+# var_orientation = 0.09
+# s0 = 0.4
+# s1 = 0.65
+# var_info = (s1-a*s0-var_orientation)/c**2
 
 #
 # # min_var_orientation = (1-a)*r-p_attach*c**2
@@ -70,22 +70,21 @@ var_info = (s1-a*s0-var_orientation)/c**2
 # PlotUOModel.plot_rw_model_evol()
 
 
-# # # ConfidenceModel = UOConfidenceModel(root, group, new=True, n_replica=250)
-# # # var_orientation = 0.1
-# # # var_perception = 0.
-# # # p_att = 0.5
-# # # for var_information in [0.1, 0.5, 1, 2, 3, 5]:
-# # #     ConfidenceModel.run({'p_attachment': p_att, 'var_orientation': var_orientation,
-# # #                         'var_perception': var_perception, 'var_information': var_information})
-# # # ConfidenceModel.write()
-# # # PlotUOModel.plot_confidence_model_evol(suff='high_persistence')
+ConfidenceModel = UOConfidenceModel(root, group, new=True, n_replica=5000)
+var_orientation = 0.09
+p_att = 0.053
+var_information = 0.1
+ConfidenceModel.run({'p_attachment': p_att, 'var_orientation': var_orientation, 'var_information': var_information})
+ConfidenceModel.write()
+PlotUOModel.plot_confidence_model_evol()
+PlotUOModel.plot_var_model_pretty('UOConfidenceModel')
 # #
-PersistenceModel = PersistenceModel(root, group, new=True, duration=60, n_replica=1000)
+# PersistenceModel = PersistenceModel(root, group, new=True, duration=60, n_replica=1000)
 # PersistenceModel.run({'var_orientation': 1})
 # PersistenceModel.run({'var_orientation': 0.09})
 # PersistenceModel.run({'var_orientation': 0.0474})
 # PersistenceModel.run({'var_orientation': 0.02})
 # PersistenceModel.write()
 
-PlotUOModel.plot_persistence()
+# PlotUOModel.plot_persistence()
 

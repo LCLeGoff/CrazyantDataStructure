@@ -85,9 +85,9 @@ def dot2d(u, v):
 def angle(u, v=None):
     if v is None:
         u2 = convert2vect(u)
-        return norm_angle_tab(-np.arctan2(-u2[:, 1], u2[:, 0]))
+        return norm_angle(-np.arctan2(-u2[:, 1], u2[:, 0]))
     else:
-        return norm_angle_tab(np.arctan2(cross2d(u, v), dot2d(u, v)))
+        return norm_angle(np.arctan2(cross2d(u, v), dot2d(u, v)))
 
 
 def cross2d_df(u, v):
@@ -204,6 +204,10 @@ def angle_distance(phi, theta):
 
 def angle_sum(phi, theta):
     return np.angle(np.exp(1j*(phi+theta)))
+
+
+def cumsum(phi):
+    return np.angle(np.cumsum(np.exp(1j*phi)))
 
 
 def angle_distance_df(phi, theta, column_name=None):
@@ -330,4 +334,3 @@ def rotation_df(pts, theta, pts0=None):
 #     proj_vect = b-p - bh
 #
 #     return proj_vect
-

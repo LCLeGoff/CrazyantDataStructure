@@ -214,6 +214,8 @@ FoodVelocity = AnalyseFoodVelocity(group)
 # FoodVelocity.compute_food_orientation_speed(True)
 
 # FoodVelocity.compute_food_velocity_phi_diff(False)
+# FoodVelocity.compute_var_orientation()
+# FoodVelocity.compute_cos_correlation_orientation()
 
 AntFoodRelation = AnalyseAntFoodRelation(group)
 # AntFoodRelation.compute_ant_density_around_food_evol(True)
@@ -431,6 +433,7 @@ LeadingAttachment = AnalyseLeadingAttachments(group)
 # LeadingAttachment.compute_nb_leading_inside_attachments_evol_around_first_outside_attachment()
 
 # LeadingAttachment.compute_first_leading_attachment_time_of_outside_ant()
+# LeadingAttachment.compute_first_leading_attachment_time()
 
 FoodInfoLeader = AnalyseFoodInformationLeader(group)
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_outside_leader_attachments()
