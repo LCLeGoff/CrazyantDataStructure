@@ -196,7 +196,9 @@ class IndexedDataSetDecorator:
         res_df = pd.DataFrame(res, index=m_bins, columns=[column_name, 'error1', 'error2'])
         return res_df
 
-    def hist1d_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals, bins, normed=False):
+    def hist1d_evolution(
+            self, column_name, index_name, start_index_intervals, end_index_intervals, bins, fps=100., normed=False):
+
         column_name = self.get_column_name(column_name, self.df)
 
         if index_name is None:
@@ -209,7 +211,7 @@ class IndexedDataSetDecorator:
             index0 = start_index_intervals[i]
             index1 = end_index_intervals[i]
 
-            index_location = (self.df[column_name].index.get_level_values(index_name) > index0)\
+            index_location = (self.df[column_name].index.get_level_values(index_name) >= index0)\
                 & (self.df[column_name].index.get_level_values(index_name) < index1)
 
             df = self.df[column_name].loc[index_location]
@@ -217,7 +219,7 @@ class IndexedDataSetDecorator:
             h[:, i+1] = y
 
         column_names = [
-            str([start_index_intervals[i]/100., end_index_intervals[i]/100.])
+            str([start_index_intervals[i]/fps, end_index_intervals[i]/fps])
             for i in range(len(start_index_intervals))]
         df = PandasIndexManager().convert_array_to_df(array=h, index_names='bins', column_names=column_names)
         if normed:
@@ -260,7 +262,7 @@ class IndexedDataSetDecorator:
             index0 = start_index_intervals[i]
             index1 = end_index_intervals[i]
 
-            index_location = (self.df[column_name].index.get_level_values(index_name) > index0) \
+            index_location = (self.df[column_name].index.get_level_values(index_name) >= index0) \
                 & (self.df[column_name].index.get_level_values(index_name) < index1)
 
             df = self.df[column_name].loc[index_location]
@@ -296,16 +298,28 @@ class IndexedDataSetDecorator:
 
         return df_res.round(6)
 
-    def fit(self, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False):
+    def fit(self, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False, column=None, cst=None):
         x = np.array(list(self.df.index))
-        y = self.df.values.ravel()
-        a, b, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
-        return a, b, x_fit, y_fit
+        if column is None:
+            y = self.df.values.ravel()
+        else:
+            y = self.df[column].values.ravel()
 
-    def _compute_result_fit(self, x, y, typ, window, sqrt_x, sqrt_y, normed):
+        if cst is None:
+            a, b, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
+            return a, b, x_fit, y_fit
+        else:
+            a, b, c, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed, cst=cst)
+            return a, b, c, x_fit, y_fit
+
+    def _compute_result_fit(self, x, y, typ, window, sqrt_x, sqrt_y, normed, cst=None):
         x_fit, y_fit = self._set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed)
-        a, b, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ)
-        return a, b, x_fit, y_fit
+        if cst is None:
+            a, b, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ)
+            return a, b, x_fit, y_fit
+        else:
+            a, b, c, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ, cst=cst)
+            return a, b, c, x_fit, y_fit
 
     @staticmethod
     def _set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed):
@@ -332,13 +346,13 @@ class IndexedDataSetDecorator:
         return x_fit, y_fit
 
     @staticmethod
-    def _compute_fit_a_and_b(x_fit, y_fit, typ):
+    def _compute_fit_a_and_b(x_fit, y_fit, typ, cst=None):
         mask = np.where(y_fit != 0)[0]
         if len(mask) != 0:
             if typ == 'linear':
                 return linear_fit(x_fit[mask], y_fit[mask])
             elif typ == 'exp':
-                return exp_fit(x_fit[mask], y_fit[mask])
+                return exp_fit(x_fit[mask], y_fit[mask], cst=cst)
             elif typ == 'power':
                 return power_fit(x_fit[mask], y_fit[mask])
             else:

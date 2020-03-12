@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
-from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit, cst_fit
+from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit, cst_fit, \
+    centered_gauss_cst_fit, laplace_fit, centered_gauss_fit, vonmises_fit, vonmises_cst_fit
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -40,20 +41,24 @@ class Plotter(BasePlotters):
         self.arg_tools.change_arg_value('axis', kwargs)
 
     def plot(
-            self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
-            preplot=None, figsize=None, display_legend=True, **kwargs):
+            self, fct_x=lambda x: x, fct_y=lambda y: y, normed=False, title=None, title_prefix=None, label_suffix=None,
+            label=None, preplot=None, figsize=None, display_legend=True, **kwargs):
 
         fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
 
         x = self.obj.get_index_array()
+        for i in range(len(x)):
+            x[i] = fct_x(x[i])
 
-        y = fct(self.__get_y(normed, x))
+        y = self.__get_y(normed, x)
+        for i in range(len(y)):
+            y[i] = fct_y(y[i])
         self.__plot_xy(ax, x, y, label, display_legend=display_legend)
 
         return fig, ax
 
     def plot_with_error(
-            self, fct=lambda x: x, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
+            self, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
             preplot=None, figsize=None, draw_lims=False, **kwargs):
 
         if self.obj.get_dimension() == 3:
@@ -61,7 +66,7 @@ class Plotter(BasePlotters):
 
             x = self.obj.get_index_array()
 
-            y = fct(self.__get_y(normed, x))
+            y = self.__get_y(normed, x)
             self.__plot_xy_with_error(ax, x, y, label, draw_lims=draw_lims)
 
             return fig, ax
@@ -239,8 +244,8 @@ class Plotter(BasePlotters):
             fig.clf()
             plt.close()
 
-    def plot_fit(self, preplot, label=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False, normed=False,
-                 ls='-', marker='', c='w', fct=lambda x: x, cst=False):
+    def plot_fit(self, preplot, label=None, label_suff=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False,
+                 normed=False, ls='-', marker='', c='w', fct=lambda x: x, cst=False, display_legend=True):
         # ToDo: add the constant option to all fit
 
         if self.obj.get_dimension() == 1 or self.column_name is not None:
@@ -278,18 +283,40 @@ class Plotter(BasePlotters):
                 res_fit = log_fit(x_fit[mask], y_fit[mask])
             elif typ == 'inverse':
                 res_fit = inverse_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'laplace':
+                res_fit = laplace_fit(x_fit[mask], y_fit[mask])
             elif typ == 'gauss':
                 res_fit = gauss_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'cst center gauss':
+                res_fit = centered_gauss_cst_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'center gauss':
+                res_fit = centered_gauss_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'vonmises':
+                res_fit = vonmises_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'cst vonmises':
+                res_fit = vonmises_cst_fit(x_fit[mask], y_fit[mask])
             else:
                 raise NameError('Type of fit unknown')
 
             res_fit = list(res_fit)
             x_fit, y_fit = res_fit[-2], res_fit[-1]
-            res_fit[:-2] = np.around(res_fit[:-2], 4)
+            res_fit[:-2] = np.around(res_fit[:-2], 3)
 
             if typ == 'cst':
                 label2 = 'c'
                 label3 = str(res_fit[0][0])
+            elif typ == 'cst center gauss':
+                label2 = '(c, s, d)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
+            elif typ == 'center gauss':
+                label2 = '(c, s)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
+            elif typ == 'vonmises':
+                label2 = 'kappa'
+                label3 = str(res_fit[0])
+            elif typ == 'cst vonmises':
+                label2 = '(kappa, c)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
             elif cst is False:
                 label2 = '(a, b)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
@@ -297,13 +324,18 @@ class Plotter(BasePlotters):
                 label2 = '(a, b, c)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
 
-            if label is None:
+            if label is None and label_suff is None:
                 label = typ+' fit: '+label2+' = '+label3
+            elif label_suff is not None:
+                label = label_suff + ' : ' + label2 + ' = ' + label3
             else:
-                label = label+': '+label2+' = '+label3
+                label = label
 
-            ax.plot(x_fit, y_fit, label=label, ls=ls, marker=marker, c=c)
-            self.draw_legend(ax)
+            if display_legend is True:
+                ax.plot(x_fit, y_fit, label=label, ls=ls, marker=marker, c=c)
+                self.draw_legend(ax)
+            else:
+                ax.plot(x_fit, y_fit, ls=ls, marker=marker, c=c)
             return res_fit
 
         else:

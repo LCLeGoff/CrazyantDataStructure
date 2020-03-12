@@ -994,7 +994,8 @@ class ExperimentGroups:
 
     def hist1d_evolution(
             self, name_to_hist, start_index_intervals, end_index_intervals, bins, index_name=None, normed=False,
-            result_name=None, column_to_hist=None, category=None, label=None, description=None, replace=False):
+            result_name=None, column_to_hist=None, category=None, label=None, description=None, replace=False,
+            fps=100.):
 
         if result_name is None:
             result_name = name_to_hist + '_evol_hist'
@@ -1020,7 +1021,7 @@ class ExperimentGroups:
 
             df = self.get_data_object(name_to_hist).hist1d_evolution(
                 column_name=column_to_hist, index_name=index_name, start_index_intervals=start_index_intervals,
-                end_index_intervals=end_index_intervals, bins=bins, normed=normed)
+                end_index_intervals=end_index_intervals, bins=bins, normed=normed, fps=fps)
 
         else:
             raise TypeError(name_to_hist+' is not frame indexed or not Dataset')
@@ -1324,16 +1325,16 @@ class ExperimentGroups:
         return result_name
 
     def fit(self, name_to_fit, typ='linear', window=None,
-            sqrt_x=False, sqrt_y=False, normed=False):
+            sqrt_x=False, sqrt_y=False, normed=False, column=None, cst=None):
 
-        if self.get_object_type(name_to_fit) == dataset_name and len(self.get_columns(name_to_fit)) == 1:
+        if self.get_object_type(name_to_fit) == dataset_name:
 
             fit = self.get_data_object(name_to_fit).fit(typ=typ, window=window, sqrt_x=sqrt_x, sqrt_y=sqrt_y,
-                                                        normed=normed)
+                                                        normed=normed, column=column, cst=cst)
             return fit
 
         else:
-            raise TypeError(name_to_fit + ' is not a dataset or is not 1d')
+            raise TypeError(name_to_fit + ' is not a dataset')
 
     def rolling_mean(
             self, name_to_average, window, is_angle, result_name=None, index_names=None,

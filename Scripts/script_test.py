@@ -15,19 +15,23 @@ from DataStructure.VariableNames import id_frame_name, id_exp_name
 from Scripts.root import root
 from Tools.MiscellaneousTools.Geometry import angle, get_line, get_line_tab
 
-group = 'UO'
-
+group = 'FMAB'
 Exps = ExperimentGroupBuilder(root).build(group)
+Exps.load('recruitment_direction')
 
-
-name_speed = 'mm1s_food_speed_leader_feature'
-name_rotation = 'mm10_food_rotation_leader_feature'
-name_orientation = 'mm1s_food_orientation_leader_feature'
-name_attachment_angle = 'mm1s_attachment_angle_leader_feature'
-name_confidence = 'food_confidence_leader_feature'
-
-name_attachment = 'manual_leading_attachments'
-Exps.load([name_speed, name_attachment_angle, name_attachment, name_rotation])
+# group = 'UO'
+#
+# Exps = ExperimentGroupBuilder(root).build(group)
+#
+#
+# name_speed = 'mm1s_food_speed_leader_feature'
+# name_rotation = 'mm10_food_rotation_leader_feature'
+# name_orientation = 'mm1s_food_orientation_leader_feature'
+# name_attachment_angle = 'mm1s_attachment_angle_leader_feature'
+# name_confidence = 'food_confidence_leader_feature'
+#
+# name_attachment = 'manual_leading_attachments'
+# Exps.load([name_speed, name_attachment_angle, name_attachment, name_rotation])
 
 # Exps.load([name_speed, name_rotation, name_attachment, name_orientation, name_attachment_angle, name_confidence])
 # # id_exp = 30

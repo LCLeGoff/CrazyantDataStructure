@@ -1,11 +1,6 @@
-import pandas as pd
-
-import numpy as np
-
 from DataStructure.DataObjectBuilders.Builder2dDataObject import Builder2dDataObject
 from DataStructure.DataObjectBuilders.BuilderExpAntFrameIndexedDataObject import BuilderExpAntFrameIndexedDataObject
 from DataStructure.VariableNames import id_exp_name, id_ant_name, id_frame_name
-from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 

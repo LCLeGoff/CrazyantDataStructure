@@ -1526,6 +1526,34 @@ class AnalyseFoodCarrying(AnalyseClassDecorator):
         fig, ax = plotter.plot(xlabel='Number of carriers', ylabel='PDF', ls='', normed=True)
         plotter.save(fig)
 
+    def compute_nb_carriers_evol_around_first_outside_attachment(self, redo=False):
+        name = 'nb_carriers'
+        result_name = name + '_hist_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        bins = np.arange(0, 21)-0.5
+        start_frame_intervals = np.array([-2, 0])*60*100
+        end_frame_intervals = np.array([0, 5])*60*100
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
+                                      end_index_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label='Food rotation distribution over time (rad)',
+                                      description='Histogram of the instantaneous rotation of the food '
+                                                  ' over time (rad)')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel='nb of carriers', ylabel='PDF',
+                               normed=True, label_suffix='s')
+        ax.set_xticks(range(0, 21, 2))
+        ax.grid()
+        plotter.save(fig)
+
     def compute_nb_outside_carriers(self, redo=False, redo_hist=False):
 
         result_name = 'nb_outside_carriers'

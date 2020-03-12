@@ -314,7 +314,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self.exp.load(info_result_name)
 
         ylabel = 'Information (bit)'
-        ylim = (0, 0.25)
+        ylim = None
 
         self.__plot_info(hists_result_name, info_result_name, time_intervals, ylabel, ylim, ylim_zoom,
                          redo, redo_plot_hist)
@@ -323,12 +323,12 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self, hists_result_name, info_result_name, time_intervals, ylabel, ylim, ylim_zoom,
             redo, redo_plot_hist):
 
-        # if redo or redo_plot_hist:
-        #     for t in time_intervals:
-        #         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(hists_result_name), column_name=t)
-        #         fig, ax = plotter.plot(xlabel='Food direction error', ylabel='Probability')
-        #         ax.set_ylim(ylim)
-        #         plotter.save(fig, sub_folder=hists_result_name, name=t)
+        if redo or redo_plot_hist:
+            for t in time_intervals:
+                plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(hists_result_name), column_name=t)
+                fig, ax = plotter.plot(xlabel='Food direction error', ylabel='Probability')
+                ax.set_ylim(ylim)
+                plotter.save(fig, sub_folder=hists_result_name, name=t)
 
         self.exp.remove_object(info_result_name)
         self.exp.load(info_result_name)
@@ -1025,11 +1025,12 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
         fig, ax = plotter.create_plot()
         plotter.plot_with_error(
-            preplot=(fig, ax), xlabel='Time (s)', ylabel='fisher information', title='', label='outside', c='red')
+            preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
+            title='', label='outside', c='red')
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
         plotter.plot_with_error(
-            preplot=(fig, ax), xlabel='Time (s)', ylabel='fisher information',
+            preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
             title='', label='inside', c='navy')
 
         ax.set_xlim(-2, 8)
@@ -1038,6 +1039,28 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         plotter.draw_legend(ax)
 
         plotter.save(fig, name=result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
+        plotter.column_name = 'info'
+        fig, ax = plotter.create_plot()
+
+        plotter.plot(
+            fct_y=lambda x: 1 / x,
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance', title='', label='outside', c='red')
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
+        plotter.column_name = 'info'
+        plotter.plot(
+            fct_y=lambda x: 1 / x,
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance',
+            title='', label='inside', c='navy')
+
+        ax.set_xlim(-2, 8)
+        # ax.set_ylim(0.3, .8)
+        plotter.draw_vertical_line(ax, label='attachment')
+        plotter.draw_legend(ax)
+
+        plotter.save(fig, name=result_name+'_var')
 
     def compute_fisher_information_mm1s_food_direction_error_around_outside_leader_attachments_evol(
             self, redo=False):

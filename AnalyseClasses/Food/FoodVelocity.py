@@ -4,6 +4,7 @@ import pylab as pb
 
 import Tools.MiscellaneousTools.Geometry as Geo
 
+from Tools.MiscellaneousTools import Fits
 from scipy import interpolate
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name
@@ -632,82 +633,159 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         print(float(np.var(self.exp.get_df(result_name).loc[pd.IndexSlice[:, :0], :])))
 
     def compute_var_orientation(self):
-        # velocity_phi_name = 'mm10_food_velocity_phi'
-        # food_speed_name = 'food_speed'
-        # self.exp.load([velocity_phi_name, food_speed_name])
-
-        # init_frame_name = 'first_attachment_time_of_outside_ant'
-        # self.change_first_frame(velocity_phi_name, init_frame_name)
-        # self.change_first_frame(food_speed_name, init_frame_name)
-        #
-        # df = self.exp.get_df(velocity_phi_name).copy()
-        # df_speed = self.exp.get_df(food_speed_name).copy()
-        # df[df_speed[food_speed_name] < 2] = np.nan
-        #
-        # df2 = df.rolling(window=100, center=True).apply(Geo.angle_mean)
-        # # mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) == 0)
-        # res = []
-        # for id_exp in range(1, 61):
-        #     print(id_exp)
-        #
-        #     orient = df2.loc[pd.IndexSlice[id_exp, :0], :].loc[id_exp, :]
-        #     orient2 = orient.copy()
-        #     orient2.index -= 100
-        #     d_orient = Geo.angle_distance(orient, orient2)
-        #     res += list(d_orient[~np.isnan(d_orient)].ravel())
-        #
-        # print(np.nanvar(res))
-        # dtheta = 0.01
-        # bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
-        # y, x = np.histogram(res, bins)
-        # pb.plot(x[:-1], y)
-        # pb.show()
 
         self.exp.load(['mm10_food_x', 'mm10_food_y'])
         init_frame_name = 'first_attachment_time_of_outside_ant'
         self.change_first_frame('mm10_food_x', init_frame_name)
         self.change_first_frame('mm10_food_y', init_frame_name)
         dx = 3
-        res = []
+        list_dorient = []
+        list_orient = []
         for id_exp in range(1, 61):
-            tab_x = self.exp.get_df('mm10_food_x').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
-            tab_y = self.exp.get_df('mm10_food_y').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
+            tab_x = self.exp.get_df('mm10_food_x').loc[pd.IndexSlice[id_exp, -1500:0], :].values.ravel()
+            tab_y = self.exp.get_df('mm10_food_y').loc[pd.IndexSlice[id_exp, -1500:0], :].values.ravel()
 
             mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) > 0)
             tab_x = tab_x[mask]
             tab_y = tab_y[mask]
 
+            # traj_length = np.sum(np.sqrt(np.diff(tab_x)**2+np.diff(tab_y)**2))
             spline = interpolate.splprep([tab_x, tab_y], s=1)
-            x_i, y_i = interpolate.splev(np.linspace(0, 1, 10000), spline[0])
-            traj_length = np.sum(np.sqrt(np.diff(x_i)**2+np.diff(y_i)**2))
-
-            di = 100
-            x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length / dx * di), spline[0])
+            x_i, y_i = interpolate.splev(spline[1], spline[0])
+            # x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length*10), spline[0])
+            # traj_length = np.sum(np.sqrt(np.diff(x_i)**2+np.diff(y_i)**2))
+            #
+            # di = 100
+            # x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length / dx * di), spline[0])
             traj = np.array(list(zip(x_i, y_i)))
             d_traj = np.diff(traj, axis=0)
             orient = Geo.angle(d_traj).ravel()
 
             d_orient = Geo.angle_distance(orient[100:], orient[:-100])
 
-            # pb.plot(tab_x, tab_y, c='k')
-            # pb.plot(x_i, y_i, c='grey')
-            # pb.plot(x_i[::di], y_i[::di], 'o', c='b')
-            # for i in range(0, len(orient), 100):
-            #     o = orient[i]
-            #     x, y, = traj[i, :]
-            #     pb.plot([x-2*np.cos(o), x+2*np.cos(o)], [y-2*np.sin(o), y+2*np.sin(o)], c='g')
-            #
-            # pb.plot(
-            #     self.exp.get_value('mm10_food_x', (id_exp, 0)), self.exp.get_value('mm10_food_y', (id_exp, 0)),
-            #     'o', c='r')
-            #
-            # pb.axis('equal')
-            # pb.show()
+            list_dorient += list(d_orient)
+            list_orient += list(orient)
 
-            res += list(d_orient)
+        dtheta = 0.1
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        x = (bins[:-1]+bins[1:])/2.
+        y, _ = np.histogram(list_orient+list(-np.array(list_orient)), bins, density=True)
+        pb.plot(x, y, 'o', c='lightblue')
 
-            print(id_exp, round(np.var(d_orient), 5))
-        print(round(np.var(res), 5))
+        y, _ = np.histogram(list_dorient+list(-np.array(list_dorient)), bins, density=True)
+        c, s, d, x_fit, y_fit = Fits.centered_gauss_cst_fit(x, y)
+
+        pb.plot(x_fit, y_fit, c='k')
+        pb.plot(x, y, 'o', c='grey')
+
+        print(round(s**2, 5), round(np.nanvar(list_dorient), 5), round(np.nanvar(list_orient), 5))
+        pb.show()
+
+    def compute_var_orientation_per_nb_carriers(self, redo):
+        result_name = 'var_orientation_per_nb_carriers'
+
+        if redo:
+
+            name_n_ant = 'nb_carriers'
+            name_attachment = 'attachment_intervals'
+            self.exp.load([name_n_ant, name_attachment])
+
+            name_food_x = 'mm10_food_x'
+            name_food_y = 'mm10_food_y'
+            name_food_xy = 'mm10_food_xy'
+            self.exp.load_as_2d(name_food_x, name_food_y, name_food_xy, 'x', 'y')
+
+            init_frame_name = 'first_attachment_time_of_outside_ant'
+            self.change_first_frame2d(name_food_xy, init_frame_name)
+            self.change_first_frame(name_attachment, init_frame_name)
+            self.change_first_frame(name_n_ant, init_frame_name)
+
+            dx = 3
+            res_before = [[] for _ in range(20)]
+            res_after = [[] for _ in range(20)]
+
+            def do4each_group(df: pd.DataFrame):
+                vals = df.reset_index().values
+                argsort = np.argsort(vals[:, 2])
+                vals = vals[argsort]
+
+                id_exp = vals[0, 0]
+                print(id_exp)
+                frame1 = vals[0, 2]
+                tab_xy = self.exp.get_df(name_food_xy).loc[pd.IndexSlice[id_exp, :frame1], :]
+                temp(-1, id_exp, tab_xy)
+
+                for id_exp, id_ant, frame0, dframe in vals:
+
+                    frame1 = frame0+dframe*100
+                    tab_xy = self.exp.get_df(name_food_xy).loc[pd.IndexSlice[id_exp, frame0:frame1], :]
+                    temp(frame0, id_exp, tab_xy)
+
+            def temp(frame0, id_exp, tab_xy):
+
+                tab_x = tab_xy['x'].values.ravel()
+                tab_y = tab_xy['y'].values.ravel()
+
+                mask = np.where(np.abs(np.diff(tab_x)) + np.abs(np.diff(tab_y)) > 0)
+                tab_x = tab_x[mask]
+                tab_y = tab_y[mask]
+
+                traj_length = int(np.sum(np.sqrt(np.diff(tab_x)**2+np.diff(tab_y)**2)))
+
+                if traj_length > 5:
+                    spline = interpolate.splprep([tab_x, tab_y], s=1)
+                    x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length), spline[0])
+                    traj_length = np.sum(np.sqrt(np.diff(x_i) ** 2 + np.diff(y_i) ** 2))
+
+                    di = 100
+                    x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length / dx * di), spline[0])
+                    traj = np.array(list(zip(x_i, y_i)))
+                    d_traj = np.diff(traj, axis=0)
+
+                    orient = Geo.angle(d_traj).ravel()
+                    d_orient = Geo.angle_distance(orient[100:], orient[:-100])
+
+                    n_ant = self.exp.get_value(name_n_ant, (id_exp, frame0))
+                    if frame0 < 0:
+                        res_before[n_ant] += list(d_orient)
+                    else:
+                        res_after[n_ant] += list(d_orient)
+
+            self.exp.groupby(name_attachment, id_exp_name, do4each_group)
+
+            df_res = pd.DataFrame(index=np.arange(21), columns=['before', 'after'])
+
+            dtheta = 0.1
+            bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+            x = (bins[:-1]+bins[1:])/2.
+            for i in range(20):
+
+                if len(res_before[i]) != 0:
+                    y, _ = np.histogram(res_before[i], bins, density=True)
+                    _, s, _, _, _ = Fits.centered_gauss_cst_fit(x, y)
+                    df_res.loc[i, 'before'] = s**2
+
+                if len(res_after[i]) != 0:
+                    y, _ = np.histogram(res_after[i], bins, density=True)
+                    _, s, _, _, _ = Fits.centered_gauss_cst_fit(x, y)
+                    df_res.loc[i, 'after'] = s**2
+
+            self.exp.add_new_dataset_from_df(df=df_res, name=result_name, category=self.category,
+                                             label='var_orient over nb of carriers',
+                                             description='Variance of the orientation variation'
+                                                         ' over the number of carriers before and after the first'
+                                                         'attachment time of ant outside ant')
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(title='', xlabel='nb of carriers', ylabel=r'$\sigma_{orient}^2$')
+        ax.set_xlim(0, 20)
+        ax.set_xticks(range(0, 21, 2))
+        ax.set_ylim(0, 1)
+        ax.grid()
+        plotter.save(fig)
 
     def compute_cos_correlation_orientation(self):
 

@@ -47,12 +47,53 @@ class AnalyseClassDecorator:
         self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
         self.exp.get_df(name).set_index(index_names, inplace=True)
 
+    def change_normalize_frame(self, name, frame_name):
+
+        index_names = self.exp.get_index(name).names
+        self.exp.load(frame_name)
+
+        new_times = 'new_times'
+        self.exp.add_copy1d(name_to_copy=name, copy_name=new_times, replace=True)
+
+        def do4each_group(df: pd.DataFrame):
+            id_exp = df.index.get_level_values(id_exp_name)[0]
+
+            values = np.array(df.index.get_level_values(id_frame_name))
+            mi = np.min(np.abs(values))
+            ma = np.max(values)
+            values = (values-mi)/(ma-mi)
+            self.exp.get_df(new_times).loc[id_exp, :][new_times] = values
+
+        self.exp.groupby(new_times, id_exp_name, do4each_group)
+
+        self.exp.get_df(new_times).reset_index(inplace=True)
+
+        self.exp.get_df(name).reset_index(inplace=True)
+        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+        self.exp.get_df(name).set_index(index_names, inplace=True)
+
+    def change_first_frame2d(self, name, frame_name):
+
+        index_names = self.exp.get_index(name).names
+        self.exp.load(frame_name)
+
+        new_times = 'new_times'
+        self.exp.add_copy2d(name_to_copy=name, copy_name=new_times, replace=True)
+        self.exp.get_df(new_times).loc[:, new_times] = self.exp.get_index(new_times).get_level_values(id_frame_name)
+        self.exp.operation_between_2names(
+            name1=new_times, name2=frame_name, func=lambda a, b: a - b, col_name1=new_times)
+        self.exp.get_df(new_times).reset_index(inplace=True)
+
+        self.exp.get_df(name).reset_index(inplace=True)
+        self.exp.get_df(name).loc[:, id_frame_name] = self.exp.get_df(new_times).loc[:, new_times]
+        self.exp.get_df(name).set_index(index_names, inplace=True)
+
     def cut_last_frames_for_indexed_by_exp_frame_indexed(self, name, frame_name):
 
         def cut4each_group(df: pd.DataFrame):
             id_exp = df.index.get_level_values(id_exp_name)[0]
             last_frame = self.exp.get_value(frame_name, id_exp)
-            self.exp.get_df(name).loc[id_exp, last_frame:] = np.nan
+            self.exp.get_df(name).loc[pd.IndexSlice[id_exp, last_frame:], :] = np.nan
             return df
 
         self.exp.groupby(name, id_exp_name, cut4each_group)

@@ -86,9 +86,9 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         result_name = 'nb_leading_attachments_evol'
         init_frame_name = 'food_first_frame'
 
-        dx = 0.01
-        dx2 = 1 / 6.
-        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        dx = 0.05
+        dx2 = 1.
+        start_frame_intervals = np.arange(0, 2.5, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
         label = 'Number of leading %s attachments in a 10s period over time'
@@ -98,9 +98,8 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Number of attachments',
-                               label_suffix='s', marker='')
-        plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='')
         plotter.save(fig)
 
     def compute_nb_leading_attachments_evol_around_first_outside_attachment(self, redo=False):
@@ -111,9 +110,9 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         result_name = 'nb_leading_attachments_evol_around_first_outside_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
-        dx = 0.01
-        dx2 = 1 / 6.
-        start_frame_intervals = np.arange(-1, 3., dx) * 60 * 100
+        dx = 0.05
+        dx2 = 1.
+        start_frame_intervals = np.arange(0, 2.5, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
         label = 'Number of leading %s attachments in a 10s period over time'
@@ -123,20 +122,9 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
-                               label_suffix='s', marker='', title='')
-        # plotter.plot_fit(preplot=(fig, ax), typ='linear', window=[0, 95], label='linear fit')
-        plotter.plot_fit(preplot=(fig, ax), typ='log', window=[95, 500], label='log fit')
-        plotter.draw_legend(ax)
-        plotter.draw_vertical_line(ax)
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='')
         plotter.save(fig)
-
-        # plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        # fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Number of attachments',
-        #                        label_suffix='s', marker='', display_legend=False)
-        # plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed', display_legend=False)
-        # plotter.draw_vertical_line(ax)
-        # plotter.save(fig)
 
     def compute_nb_leading_outside_attachments_evol(self, redo=False):
 
@@ -146,9 +134,9 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         result_name = 'nb_outside_leading_attachments_evol'
         init_frame_name = 'food_first_frame'
 
-        dx = 0.01
-        dx2 = 1 / 6.
-        start_frame_intervals = np.arange(0, 4., dx) * 60 * 100
+        dx = 0.05
+        dx2 = 1.
+        start_frame_intervals = np.arange(0, 2.5, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
         label = 'Number of leading %s attachments in a 10s period over time'
@@ -158,9 +146,8 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Number of attachments',
-                               label_suffix='s', marker='')
-        plotter.plot_smooth(preplot=(fig, ax), window=50, c='orange', label='mean smoothed')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='')
         plotter.save(fig)
 
     def compute_nb_leading_outside_attachments_evol_around_first_outside_attachment(self, redo=False):
@@ -169,26 +156,27 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         name = 'outside_leading_attachment_intervals'
 
         result_name = 'nb_outside_leading_attachments_evol_around_first_outside_attachment'
-        init_frame_name = 'first_attachment_time_of_outside_ant'
+        init_frame_name = 'first_leading_attachment_time_of_outside_ant'
 
-        dx = 0.01
-        dx2 = 1 / 6.
-        start_frame_intervals = np.arange(0, 3., dx) * 60 * 100
+        dx = 0.05
+        dx2 = 6/6.
+        start_frame_intervals = np.arange(0, 4, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
-        label = 'Number of leading %s attachments in a 10s period over time'
-        description = 'Number of leading %s attaching to the food in a 10s period over time'
+        label = 'Number of leading %s attachments in a 1s period over time'
+        description = 'Number of leading %s attaching to the food in a 1s period over time'
 
         self._get_nb_attachments_evol(name, result_name, init_frame_name, start_frame_intervals, end_frame_intervals,
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
-                               label_suffix='s', marker='', title='')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='')
         # plotter.plot_fit(preplot=(fig, ax), typ='linear', window=[0, 550], label='linear fit', c='0.2')
-        plotter.plot_fit(preplot=(fig, ax), typ='cst', window=[0, 550], label='cst fit')
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
+        plotter.plot_fit(preplot=(fig, ax), typ='cst', window=[0, 30], label='cst fit')
+        ax.set_ylim((0.0, 0.2))
         plotter.draw_legend(ax)
-        # ax.set_ylim((0, 6))
         plotter.save(fig)
 
     def compute_nb_leading_inside_attachments_evol_around_first_outside_attachment(self, redo=False):
@@ -199,9 +187,9 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         result_name = 'nb_inside_leading_attachments_evol_around_first_outside_attachment'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
-        dx = 0.01
-        dx2 = 1 / 6.
-        start_frame_intervals = np.arange(-1, 3., dx) * 60 * 100
+        dx = 0.05
+        dx2 = 1.
+        start_frame_intervals = np.arange(-1, 2.5, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
         label = 'Number of leading %s attachments in a 10s period over time'
@@ -211,39 +199,47 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel='Mean of the number of attachments', label='Mean',
-                               label_suffix='s', marker='', title='')
-        plotter.plot_fit(preplot=(fig, ax), typ='log', window=[95, 500], label='log fit')
-        plotter.draw_legend(ax)
-        plotter.draw_vertical_line(ax)
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='')
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
+        plotter.plot_fit(preplot=(fig, ax), typ='cst')
+
         plotter.save(fig)
 
     def _get_nb_attachments_evol(self, name, result_name, init_frame_name, start_frame_intervals, end_frame_intervals,
                                  label, description, redo):
         if redo:
 
-            self.exp.load(name)
-            self.exp.load('food_x')
+            self.exp.load([name, 'food_x', 'food_exit_frames'])
+
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed('food_x', 'food_exit_frames')
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, 'food_exit_frames')
+
             self.change_first_frame(name, init_frame_name)
             self.change_first_frame('food_x', init_frame_name)
 
-            last_frame_name = 'food_exit_frames'
-            self.exp.load(last_frame_name)
-            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, last_frame_name)
+            list_exp = [3, 12, 20, 30, 42, 45, 47, 49, 55]
 
-            x = (end_frame_intervals + start_frame_intervals) / 2. / 100.
-            y = np.zeros(len(start_frame_intervals))
+            x = start_frame_intervals / 2. / 100.
+            y = np.full((len(start_frame_intervals), 3), np.nan)
+
             for i in range(len(start_frame_intervals)):
                 frame0 = int(start_frame_intervals[i])
                 frame1 = int(end_frame_intervals[i])
 
-                df = self.exp.get_df(name).loc[pd.IndexSlice[:, :, frame0:frame1], :]
-                # n_exp = len(set(df_food.index.get_level_values(id_exp_name)))
-                # if n_exp != 0:
-                #     y[i] = len(df) / float(n_exp)
-                df_food = self.exp.get_df('food_x').loc[pd.IndexSlice[:, frame0:frame1], :]
-                y[i] = len(df) / len(df_food)*1000
-            df = pd.DataFrame(y, index=x)
+                df = self.exp.get_df(name).loc[pd.IndexSlice[list_exp, :, frame0:frame1], :]
+                df_food = self.exp.get_df('food_x').loc[pd.IndexSlice[list_exp, frame0:frame1], :]
+
+                n = round(len(df_food)/100)
+                if n != 0:
+                    p = len(df) / n
+                    y[i, 0] = p
+                    y[i, 1] = 1.96*np.sqrt(p*(1-p)/n)
+                    y[i, 2] = 1.96*np.sqrt(p*(1-p)/n)
+
+            mask = np.where(~np.isnan(y[:, 0]))[0]
+
+            df = pd.DataFrame(y[mask, :], index=x[mask], columns=['p', 'err1', 'err2'])
             self.exp.add_new_dataset_from_df(df=df, name=result_name, category=self.category,
                                              label=label, description=description)
             self.exp.write(result_name)

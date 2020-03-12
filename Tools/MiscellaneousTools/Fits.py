@@ -1,5 +1,6 @@
 import scipy as sc
 import scipy.optimize as scopt
+import scipy.stats as scs
 import numpy as np
 
 
@@ -18,13 +19,13 @@ def linear_fit(x, y):
 
 
 def exp_fit(x, y, cst=False):
-    if cst is False:
+    if cst is False or cst is None:
 
-        log_y = np.log(y)
-        [af, bf] = sc.polyfit(x, log_y, 1)
-        log_y_fit = sc.polyval([af, bf], x)
+        fct = lambda t, a, b: b*np.exp(a*t)
+        res = scopt.curve_fit(fct,  x,  y, p0=(-1, 0))
+        af, bf = res[0]
         x_fit = x
-        y_fit = np.exp(log_y_fit)
+        y_fit = fct(x_fit, af, bf)
         return af, bf, x_fit, y_fit
     else:
         fct = lambda t, a, b, c: b*np.exp(a*t)+c
@@ -33,6 +34,10 @@ def exp_fit(x, y, cst=False):
         x_fit = x
         y_fit = fct(x_fit, af, bf, cf)
         return af, bf, cf, x_fit, y_fit
+
+
+def exp_fct(x, a, b, c=0):
+    return b*np.exp(a*x)+c
 
 
 def power_fit(x, y):
@@ -62,18 +67,93 @@ def inverse_fit(x, y):
     return af, bf, x_fit, y_fit
 
 
+def fct_gauss(x, c, x0, s):
+    return c*np.exp(-(x-x0)**2/(2*s**2))
+
+
+def fct_gauss_cst(x, c, x0, s, d):
+    return c*np.exp(-(x-x0)**2/(2*s**2))+d
+
+
+def centered_fct_gauss(x, c, s):
+    return c*np.exp(-x**2/(2*s**2))
+
+
+def centered_fct_gauss_cst(x, c, s, d):
+    return c*np.exp(-x**2/(2*s**2))+d
+
+
+def fct_von_mises(x, s):
+    return scs.vonmises.pdf(x, kappa=s)
+
+
+def fct_von_mises_cst(x, s, c):
+    return scs.vonmises.pdf(x, kappa=s)+c
+
+
 def gauss_fit(x, y):
-    x0 = x[np.nanargmax(y)]
-    x_squared = x-x0
-    mask = np.where(x_squared >= 0)[0]
-    x_squared = (x_squared[mask]-x0)**2
+    popt, _ = scopt.curve_fit(fct_gauss, x, y)
+    c, x0, s = popt
 
-    log_y = np.log(y)
-    log_y = log_y[mask]
+    x_fit = x
+    y_fit = fct_gauss(x, c, x0, s)
+    return c, x0, s, x_fit, y_fit
 
-    [af, bf] = sc.polyfit(x_squared, log_y, 1)
-    log_y_fit = sc.polyval([af, bf], x_squared)
 
-    x_fit = np.sqrt(x_squared)+x0
-    y_fit = np.exp(log_y_fit)
-    return af, bf, x_fit, y_fit
+def gauss_cst_fit(x, y):
+    popt, _ = scopt.curve_fit(fct_gauss_cst, x, y)
+    c, x0, s, d = popt
+
+    x_fit = x
+    y_fit = fct_gauss_cst(x, c, x0, s, d)
+    return c, x0, s, d, x_fit, y_fit
+
+
+def centered_gauss_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(centered_fct_gauss, x, y, p0=p0)
+    c, s = popt
+
+    x_fit = x
+    y_fit = centered_fct_gauss(x, c, s)
+    return c, s, x_fit, y_fit
+
+
+def vonmises_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(fct_von_mises, x, y, p0=p0)
+    s = popt
+
+    x_fit = x
+    y_fit = fct_von_mises(x, s)
+    return s, x_fit, y_fit
+
+
+def vonmises_cst_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(fct_von_mises_cst, x, y, p0=p0)
+    s, c = popt
+
+    x_fit = x
+    y_fit = fct_von_mises_cst(x, s, c)
+    return s, c, x_fit, y_fit
+
+
+def centered_gauss_cst_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(centered_fct_gauss_cst, x, y, p0=p0)
+    c, s, d = popt
+
+    x_fit = x
+    y_fit = centered_fct_gauss_cst(x, c, s, d)
+    return c, s, d, x_fit, y_fit
+
+
+def laplace_fct(x, a, b):
+    return b*np.exp(-a*np.abs(x))
+
+
+def laplace_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(laplace_fct, x, y, p0=p0)
+    a, b = popt
+
+    x_fit = x
+    y_fit = laplace_fct(x, a, b)
+    return a, b, x_fit, y_fit
+
