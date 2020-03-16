@@ -9,7 +9,7 @@ from AnalyseClasses.Models.UOModels import UOSimpleModel, PlotUOModel, UOConfide
 group = 'UO'
 PlotUOModel = PlotUOModel(group)
 
-
+#
 # SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
 # #
 # p_attach = 0.051
@@ -47,29 +47,25 @@ PlotUOModel = PlotUOModel(group)
 # PlotUOModel.plot_indiv_hist_evol('UOSimpleModel', 0)
 # # PlotUOModel.plot_simple_model_evol()
 
-WrappedSimpleModel = UOWrappedSimpleModel(root, group, new=True, n_replica=10000)
-
-p_attach = 0.051
-var_orientation = 0.07
-
-var_info = 0.5
-c = 1-2*np.pi*0.15/2.
-WrappedSimpleModel.run(
-    {'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-
-# var_info = 0.5
-# c = 1-2*np.pi*0.2/2.
-# WrappedSimpleModel.run(
-#     {'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-# var_info = 0.8
+# WrappedSimpleModel = UOWrappedSimpleModel(root, group, new=True, n_replica=10000)
+#
+# p_attach = 0.051
+# kappa_orientation = 15
+#
+# kappa_info = 2.38
 # c = 1-2*np.pi*0.15/2.
 # WrappedSimpleModel.run(
-#     {'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-
-WrappedSimpleModel.write()
-PlotUOModel.exp = WrappedSimpleModel.exp
-PlotUOModel.plot_hist_model_pretty('UOWrappedSimpleModel', display_title=False)
-PlotUOModel.plot_var_model_pretty('UOWrappedSimpleModel', display_title=False)
+#     {'c': c, 'p_attachment': p_attach, 'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
+#
+# kappa_info = 4
+# c = 1-2*np.pi*0.15/2.
+# WrappedSimpleModel.run(
+#     {'c': c, 'p_attachment': p_attach, 'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
+#
+# WrappedSimpleModel.write()
+# PlotUOModel.exp = WrappedSimpleModel.exp
+# PlotUOModel.plot_hist_model_pretty('UOWrappedSimpleModel', display_title=False)
+# PlotUOModel.plot_var_model_pretty('UOWrappedSimpleModel', display_title=False)
 
 # RandomcModel = UORandomcSimpleModel(root, group, new=True, n_replica=10000)
 # p_attach = 0.052
@@ -176,13 +172,11 @@ PlotUOModel.plot_var_model_pretty('UOWrappedSimpleModel', display_title=False)
 # PlotUOModel.plot_persistence()
 
 # WrappedPersistenceModel = WrappedPersistenceModel(root, group, new=True, duration=120, n_replica=10000)
-# WrappedPersistenceModel.run({'var_orientation': 0.09})
-# WrappedPersistenceModel.run({'var_orientation': 0.07})
-# WrappedPersistenceModel.run({'var_orientation': 0.0474})
-# # WrappedPersistenceModel.run({'var_orientation': 0.04})
-# WrappedPersistenceModel.run({'var_orientation': 0.03})
+# WrappedPersistenceModel.run({'kappa_orientation': 10})
+# WrappedPersistenceModel.run({'kappa_orientation': 15})
+# WrappedPersistenceModel.run({'kappa_orientation': 20})
+# WrappedPersistenceModel.run({'kappa_orientation': 30})
 # WrappedPersistenceModel.write()
-#
 # PlotUOModel.exp = WrappedPersistenceModel.exp
 # PlotUOModel.plot_persistence(name='WrappedPersistenceModel')
 

@@ -198,7 +198,7 @@ class UOWrappedSimpleModel(BaseModels):
         self.exp = ExperimentGroups(root, group)
         self.name_orient = 'UOWrappedSimpleModel'
         self.name_attachments = 'UOWrappedSimpleModelAttachments'
-        parameter_names = ['c', 'p_attachment', 'var_orientation', 'var_information']
+        parameter_names = ['c', 'p_attachment', 'kappa_orientation', 'kappa_information']
 
         BaseModels.__init__(self, parameter_names)
 
@@ -221,16 +221,16 @@ class UOWrappedSimpleModel(BaseModels):
                                            label='UO simple model',
                                            description='UO simple model with parameter c, '
                                                        'attachment probability = p_attachment,'
-                                                       'orientation variance = var_orientation, '
-                                                       'orientation information = var_information')
+                                                       'orientation variance = 1/kappa_orientation, '
+                                                       'orientation information = 1/kappa_information')
 
             self.exp.add_new_empty_dataset(name=self.name_attachments, index_names=[id_exp_name, self.time_name],
                                            column_names=[], index_values=index, category='Models',
                                            label='UO simple model',
                                            description='Attachment instants of UO simple model with parameter c, '
                                                        'attachment probability = p_attachment,'
-                                                       'orientation variance = var_orientation, '
-                                                       'orientation information = var_information')
+                                                       'orientation variance = 1/kappa_orientation, '
+                                                       'orientation information = 1/kappa_information')
         else:
 
             self.exp.load(self.name_orient)
@@ -244,9 +244,9 @@ class UOWrappedSimpleModel(BaseModels):
         self.name_column = str(self.para.get_parameter_tuple())
 
         self.rd_orientation = np.random.vonmises(
-            mu=0, kappa=1/self.para.var_orientation, size=(self.duration+1)*self.n_replica)
+            mu=0, kappa=self.para.kappa_orientation, size=(self.duration+1)*self.n_replica)
         self.rd_info = np.random.vonmises(
-            mu=0, kappa=1/self.para.var_information, size=(self.duration+1)*self.n_replica)
+            mu=0, kappa=self.para.kappa_information, size=(self.duration+1)*self.n_replica)
 
         self.res_orient = []
         self.res_attachments = []
@@ -925,7 +925,7 @@ class WrappedPersistenceModel(BaseModels):
 
         self.exp = ExperimentGroups(root, group)
         self.name = 'WrappedPersistenceModel'
-        parameter_names = ['var_orientation']
+        parameter_names = ['kappa_orientation']
 
         BaseModels.__init__(self, parameter_names)
 
@@ -945,7 +945,7 @@ class WrappedPersistenceModel(BaseModels):
                                            column_names=[], index_values=index, category='Models',
                                            label='Wrapped Persistence model',
                                            description='Wrapped Persistence model with parameter'
-                                                       ' orientation variance = var_orientation')
+                                                       ' orientation variance = 1/kappa_orientation')
         else:
 
             self.exp.load(self.name)
@@ -958,7 +958,7 @@ class WrappedPersistenceModel(BaseModels):
         self.name_column = str(self.para.get_parameter_tuple())
 
         self.res = []
-        self.rd = np.random.vonmises(mu=0, kappa=1/self.para.var_orientation, size=(self.duration+1)*self.n_replica)
+        self.rd = np.random.vonmises(mu=0, kappa=self.para.kappa_orientation, size=(self.duration+1)*self.n_replica)
         print(self.name_column)
 
         for id_exp in range(1, self.n_replica + 1):
