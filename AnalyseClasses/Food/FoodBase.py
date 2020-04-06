@@ -59,7 +59,7 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
         self.exp.write(result_name)
 
-        bins = range(-30, 500, 60)
+        bins = range(0, 500, 10)
         hist_name = self.exp.hist1d(name_to_hist=result_name, bins=bins)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
@@ -282,8 +282,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
         if redo:
             self.exp.load(name)
             self.exp.operation(name, lambda x: np.abs(x))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food speed distribution over time (rad)',
                                       description='Histogram of the instantaneous speed of the food trajectory over '
@@ -487,8 +487,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
 
         if redo:
             self.exp.load(name)
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category)
             self.exp.write(result_name)
         else:
@@ -826,8 +826,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, func)
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
 
@@ -863,8 +863,8 @@ class AnalyseFoodBase(AnalyseClassDecorator):
             self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, func)
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
 

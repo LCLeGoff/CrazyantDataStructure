@@ -105,8 +105,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, lambda a: np.abs(a))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food velocity phi distribution over time (rad)',
                                       description='Histogram of the absolute value of the angular coordinate'
@@ -137,8 +137,8 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, lambda a: np.abs(a))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label='Food velocity phi distribution over time (rad)',
                                       description='Histogram of the absolute value of the angular coordinate'
@@ -381,6 +381,21 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         self.exp.write('mm10_' + name_x)
         self.exp.write('mm10_' + name_y)
 
+    def compute_mm20_food_velocity_vector(self):
+        name = 'food_velocity'
+        name_x = name+'_x'
+        name_y = name+'_y'
+        time_window = 20
+
+        self.exp.load([name_x, name_y])
+        self.exp.rolling_mean(name_to_average=name_x, window=time_window,
+                              result_name='mm20_' + name_x, category=self.category, is_angle=False)
+        self.exp.rolling_mean(name_to_average=name_y, window=time_window,
+                              result_name='mm20_' + name_y, category=self.category, is_angle=False)
+
+        self.exp.write('mm20_' + name_x)
+        self.exp.write('mm20_' + name_y)
+
     def compute_mm1s_food_velocity_vector(self):
         name = 'food_velocity'
         name_x = name+'_x'
@@ -571,7 +586,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
                 dx[0] = Geo.angle_distance(dx[0], dx1)
                 dx[-1] = Geo.angle_distance(dx2, dx[-1])
 
-                self.exp.get_df(result_name).loc[id_exp, :] = np.around(dx*fps, 6)
+                self.exp.get_df(result_name).loc[id_exp, :] = np.c_[np.around(dx*fps, 6)]
 
             self.exp.groupby(velocity_phi_name, id_exp_name, get_velocity4each_group)
 
@@ -825,3 +840,51 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
 
         pb.plot(np.arange(0, len(res2)*dx, dx), res2)
         pb.show()
+
+    def compute_food_orientation_diff(self, redo=False, redo_hist=False):
+
+        velocity_phi_name = 'mm1s_food_velocity_phi'
+        result_name = 'food_orientation_diff'
+
+        hist_name = result_name+'_hist'
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        label = 'Food orientation speed (rad/s)'
+        hist_label = 'Histogram of the %s' % label
+        description = 'Speed of the angular coordinate of the food velocity' \
+                      ' (rad, in the food system)'
+        hist_description = 'Histogram of the %s' % description
+        if redo:
+            self.exp.load([velocity_phi_name, 'fps'])
+
+            self.exp.add_copy1d(
+                name_to_copy=velocity_phi_name, copy_name=result_name, category=self.category,
+                label=label, description=description)
+
+            dt = 2
+
+            def get_velocity4each_group(df: pd.DataFrame):
+                id_exp = df.index.get_level_values(id_exp_name)[0]
+                fps = self.exp.get_value('fps', id_exp)
+                dframe = dt*fps
+                dframe2 = int(dframe/2)
+
+                dx = np.array(df.loc[id_exp, :]).ravel()
+                dx2 = dx.copy()
+                dx[:] = np.nan
+                dx[dframe2:-dframe2] = Geo.angle_distance(dx2[:-dframe], dx2[dframe:])
+
+                self.exp.get_df(result_name).loc[id_exp, :] = np.c_[np.abs(np.around(dx, 6))]
+
+            self.exp.groupby(velocity_phi_name, id_exp_name, get_velocity4each_group)
+
+            self.exp.write(result_name)
+
+        self.compute_hist(hist_name=hist_name, name=result_name, bins=bins,
+                          hist_label=hist_label, hist_description=hist_description, redo=redo, redo_hist=redo_hist)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel=r'$\dot\varphi$', ylabel='PDF', normed=True)
+        # ax.set_ylim(0, 0.7)
+        plotter.save(fig)

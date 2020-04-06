@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import Tools.MiscellaneousTools.Geometry as Geo
 import scipy.stats as scs
+import scipy.optimize as scopt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
+from Tools.Plotter.BasePlotters import BasePlotters
 from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Tools.MiscellaneousTools import Fits
 from Tools.Plotter.Plotter import Plotter
@@ -70,8 +72,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.change_first_frame(name, init_frame_name)
 
             self.exp.operation(name, lambda a: np.abs(a))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
             self.exp.remove_object(name)
@@ -172,8 +174,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         self.exp.operation(name, lambda a: np.abs(a))
         if redo:
 
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=result_label, description=result_description)
 
@@ -183,14 +185,14 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix=' s', title='')
+        fig, ax = plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=2, label_suffix=' s', title='')
         plotter.draw_legend(ax=ax, ncol=2)
-        ax.set_ylim((0, 1))
+        ax.set_ylim((0, 0.5))
         plotter.save(fig)
-        temp_name = 'temp'
 
-        self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=[45*100],
-                                  end_index_intervals=[150*100], bins=bins,
+        temp_name = 'temp'
+        self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[45 * 100],
+                                  end_frame_intervals=[150 * 100], bins=bins,
                                   result_name=temp_name, category=self.category,
                                   label=result_label, description=result_description)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
@@ -217,6 +219,97 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         fig, ax = plotter.plot(yscale='log', xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True, label_suffix='s')
         plotter.save(fig, suffix='gauss')
 
+    def compute_food_direction_error_hist_evol_around_first_attachment_steady_state_fit(self):
+        name = 'food_direction_error'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = name+'_hist_evol_around_first_attachment'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        result_label = 'Food direction error steady-state distribution'
+        result_description = 'Histogram of food error direction after 45s, time 0 is the first outside attachment time'
+
+        self.exp.load(name)
+        self.change_first_frame(name, first_attachment_name)
+        self.exp.operation(name, lambda a: np.abs(a))
+
+        steady_state_name = 'food_direction_error_hist_steady_state'
+        self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[45 * 100],
+                                  end_frame_intervals=[150 * 100], bins=bins,
+                                  result_name=steady_state_name, category=self.category,
+                                  label=result_label, description=result_description)
+        self.exp.write(steady_state_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(steady_state_name))
+        fig, ax = plotter.plot(
+            xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+            normed=2, label_suffix=' s', title='', label='Experimental steady-state')
+
+        plotter.plot_fit(preplot=(fig, ax), typ='uniform vonmises', normed=2, label_suff='fit')
+        ax.set_ylim(0, 0.4)
+
+        plotter.draw_legend(ax)
+        plotter.save(fig, name=result_name+'_steady_state_fit')
+
+    def compute_food_direction_error_hist_evol_around_first_attachment_evol_fit(self):
+        name = 'food_direction_error'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        result_name = name+'_hist_evol_around_first_attachment'
+
+        dx = 0.25
+        start_frame_intervals = np.arange(-.25, 2., dx)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        x = (bins[1:]+bins[:-1])/2.
+
+        self.exp.load(name)
+        self.change_first_frame(name, first_attachment_name)
+        self.exp.operation(name, lambda a: np.abs(a))
+
+        temp_name = 'temp'
+
+        # ts = np.array([0, 200, 1500, 3000, 4500])
+        # dt = 500
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_frame_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3,  left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+        for ii in range(len(start_frame_intervals)):
+            j0 = int(ii/3)
+            j1 = ii-j0*3
+            t0 = start_frame_intervals[ii]
+            t1 = end_frame_intervals[ii]
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[t0],
+                                      end_frame_intervals=[t1], bins=bins,
+                                      result_name=temp_name, category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                label_suffix=' s', title=r't$\in$[%i, %i]s' % (t0/100, t1/100), c=cols[str(ii)],
+                label='Experimental steady-state', normed=2)
+
+            y = self.exp.get_df(temp_name).values.ravel()
+            s = np.sum(y)
+            y = y/s / dtheta/2.
+            popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x, y, p0=0.2)
+            q = round(popt[0], 3)
+            y_fit = self._uniform_vonmises_dist(x, q)
+
+            ax[j0, j1].plot(x, y_fit, c=cols[str(ii)], label='q='+str(q))
+            ax[j0, j1].set_ylim(0, 0.5)
+            plotter.draw_legend(ax[j0, j1])
+        plotter.save(fig, name=result_name+'_evol_fit')
+
+    @staticmethod
+    def _uniform_vonmises_dist(x, q):
+        kappa = 1.9
+        y = q*scs.vonmises.pdf(x, kappa)+(1-q)/(2*np.pi)
+        return y
+
     def compute_food_direction_error_hist_evol_around_first_attachment_fit(self):
         name = 'food_direction_error'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
@@ -235,9 +328,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         # self.exp.get_data_object(name).df = pd.concat([self.exp.get_df(name), -self.exp.get_df(name)])
         # self.exp.get_df(name).sort_index(inplace=True)
 
-        result_name = self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                                end_index_intervals=end_frame_intervals, bins=bins,
-                                                category=self.category, normed=True)
+        result_name = self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                                end_frame_intervals=end_frame_intervals, bins=bins,
+                                                category=self.category)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.create_plot()
@@ -246,26 +339,28 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         for column in columns:
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
             plotter.plot(
-                preplot=(fig, ax), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                preplot=(fig, ax), xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=True,
                 c=cols[column], marker='.', ls='', label=r'$t\in$'+column+' s', display_legend=False)
-            plotter.plot_fit(preplot=(fig, ax), typ='cst center gauss', c=cols[column], display_legend=False)
+            plotter.plot_fit(
+                preplot=(fig, ax), typ='cst center gauss', c=cols[column], normed=True, display_legend=False)
         plotter.save(fig, name=result_name+'_fit')
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.create_plot(figsize=(8, 8), nrows=3, ncols=3, bottom=0.06, top=0.96, hspace=0.4)
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3, left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
         columns = self.exp.get_columns(result_name)
         cols = plotter.color_object.create_cmap('hot', columns)
-        n = int(5e5)
+        # n = int(5e5)
         for k, column in enumerate(columns):
             i = int(k/3)
             j = k-i*3
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
             plotter.plot(
-                preplot=(fig, ax[i, j]), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                preplot=(fig, ax[i, j]), xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=2,
                 c=cols[column], marker='.', ls='', title=r'$t\in$'+column+' s', display_legend=False)
             b, a, c, _, _ = plotter.plot_fit(
-                preplot=(fig, ax[i, j]), typ='cst center gauss', c=cols[column], display_legend=False)
+                preplot=(fig, ax[i, j]), normed=2, typ='cst center gauss', c=cols[column], display_legend=False)
 
             # print(column, c, 1-np.pi*c)
             # if c < 1/np.pi:
@@ -275,29 +370,31 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             # u = list(np.angle(np.exp(-1j*np.random.normal(scale=np.sqrt(0.8), size=q))))
             # v = list(np.pi-2*np.pi*np.random.uniform(size=n-q))
             # y, x = np.histogram(np.abs(u+v), np.arange(0, np.pi, 0.1), density=True)
-            # ax[i, j].plot(x[:-1], y)
-
-            ax[i, j].set_ylim(0, .8)
+            # ax[i, j].plot(x[:-1], y/2.)
+            #
+            ax[i, j].set_ylim(0, .5)
 
         plotter.save(fig, name=result_name+'_fit2')
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.create_plot(figsize=(8, 8), nrows=3, ncols=3, bottom=0.06, top=0.96, hspace=0.4)
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3, left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
         columns = self.exp.get_columns(result_name)
         cols = plotter.color_object.create_cmap('hot', columns)
         for k, column in enumerate(columns):
             i = int(k/3)
             j = k-i*3
-            print(column)
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
             plotter.plot(
-                preplot=(fig, ax[i, j]), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                preplot=(fig, ax[i, j]), xlabel=r'$\theta$ (rad)', ylabel='PDF', normed=2,
                 c=cols[column], marker='.', ls='', title=r'$t\in$'+column+' s', display_legend=False)
-            plotter.plot_fit(
-                preplot=(fig, ax[i, j]), typ='cst vonmises', c=cols[column], display_legend=False)
+            kappa, b, k, _, _ = plotter.plot_fit(
+                preplot=(fig, ax[i, j]),  normed=2,
+                typ='cst vonmises', c=cols[column], display_legend=False, p0=[1, 0.01, 0.1])
+            print(column, kappa, b, k)
 
-            ax[i, j].set_ylim(0, .8)
+            ax[i, j].set_ylim(0, .5)
 
         plotter.save(fig, name=result_name+'_fit3')
 
@@ -317,7 +414,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         self.change_first_frame(name, first_attachment_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name))
-        fig, ax = plotter.create_plot(figsize=(8, 8), nrows=3, ncols=3, bottom=0.06, top=0.96, hspace=0.4)
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3,  left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
         cols = plotter.color_object.create_cmap('hot', start_frame_intervals)
 
         # res = []
@@ -336,10 +434,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                 # res.append((frame0/100., kappa))
 
                 y, _ = np.histogram(vals, bins, density=True)
-                ax[j0, j1].plot(x, y, 'o', c=cols[str(frame0)], mec='k')
+                ax[j0, j1].plot(x, y/2., 'o', c=cols[str(frame0)], mec='k')
 
                 kappa, _, _ = scs.vonmises.fit(vals)
-                ax[j0, j1].plot(x, scs.vonmises.pdf(x, kappa=kappa), c=cols[str(frame0)])
+                ax[j0, j1].plot(x, scs.vonmises.pdf(x, kappa=kappa)/2., c=cols[str(frame0)])
                 # _, scale = scs.norm.fit(vals, floc=0)
                 # ax[j0, j1].plot(x, scs.norm.pdf(x, scale=scale), c=cols[str(frame0)])
 
@@ -452,7 +550,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         x = np.array(list(self.exp.get_index(result_name)))
         a_s, b_s, c_s, _, _ = self.exp.fit(
             name_to_fit=result_name, column='variance', typ='exp', window=[10, 100], cst=(-0.01, .1, .1))
-        a = Fits.exp_fct(x, a_s, b_s, c_s)
+        # a = Fits.exp_fct(x, a_s, b_s, c_s)
         c = Fits.exp_fct(x, a_c, b_c, c_c)
         self.exp.load(name2)
         a_var, b_var, c_var, _, _ = self.exp.fit(
@@ -479,6 +577,95 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter.draw_vertical_line(ax)
         ax.set_ylim(0, 1.2)
         plotter.save(fig)
+
+    def compute_food_direction_error_variance_evol_around_first_attachment2_vonmises(self, redo=False):
+        name = 'food_direction_error'
+        name2 = name + '_var_evol_around_first_attachment'
+        result_name = name2 + '2_vonmises'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 0.25
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-.1, 3., dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100
+
+        dtheta = 0.1
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        label = 'Variance of the food direction error distribution over time'
+        description = 'Variance of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction,' \
+                      '(based on a von Mises fit)'
+
+        if redo:
+
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            res = []
+            for i in range(len(start_frame_intervals)):
+                frame0 = start_frame_intervals[i]
+                frame1 = end_frame_intervals[i]
+
+                vals = self.exp.get_df(name).loc[pd.IndexSlice[:, frame0:frame1], :].values.ravel()
+
+                if len(vals) != 0:
+
+                    y, _ = np.histogram(list(vals)+list(-vals), bins, density=True)
+                    x = (bins[:-1]+bins[1:])/2.
+
+                    try:
+                        kappa, b, k, _, _ = Fits.vonmises_cst_fit(x, y, p0=(1, 0.01, 0.1))
+                        popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x, y, p0=0.2)
+                        q = popt[0]
+                        res.append((frame0/100., kappa, b, k, q))
+                    except RuntimeError:
+                        pass
+
+            res = np.array(res)
+            self.exp.add_new_dataset_from_array(array=res, name=result_name, index_names='t',
+                                                column_names=['kappa', 'd', 'k', 'q'],
+                                                category=self.category, label=label,
+                                                description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='k')
+        fig, ax = plotter.plot(
+            xlabel='t (s)', ylabel='k(t)', label='k(t)', title='', marker='')
+        plotter.draw_vertical_line(ax)
+        ax.set_ylim(0, .15)
+        plotter.save(fig, result_name+'_k')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='d')
+        fig, ax = plotter.plot(
+            xlabel='t (s)', ylabel='d(t)', label='d(t)', title='', marker='')
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig, result_name+'_d')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='kappa')
+        fig, ax = plotter.plot(
+            xlabel='t (s)', ylabel=r'$\kappa(t)$',
+            label_suffix='s', label=r'$\kappa(t)$', title='', marker='')
+        ax.set_ylim(0, 5)
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='q')
+        fig, ax = plotter.plot(
+            xlabel='t (s)', ylabel='q(t)', label='q(t)', title='', marker='')
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1))
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig, result_name+'_q')
+
+        fig, ax = plotter.plot(
+            xlabel='t (s)', fct_y=lambda z: (1-z)/z, ylabel='(1-q)/q(t)', label='(1-q)/q(t)', title='', marker='')
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1))
+        ax.set_ylim(0, 3)
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig, result_name+'_q2')
 
     def compute_food_direction_error_variance_evol_around_first_attachment3(self, redo=False):
         name = 'food_direction_error'
@@ -542,6 +729,68 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         ax.set_ylim(0, 1.2)
         plotter.save(fig)
 
+    def compute_food_direction_error_variance_evol_around_first_attachment3_vonmises(self, redo=False):
+        name = 'food_direction_error'
+        name2 = name + '_var_evol_around_first_attachment'
+        result_name = name2 + '3_vonmises'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+
+        dx = 1
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-.1, 3., dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100
+
+        dtheta = 0.1
+        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+
+        label = 'Variance of the food direction error distribution over time'
+        description = 'Variance of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction,' \
+                      '(based on a von Mises fit)'
+
+        if redo:
+
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            res = []
+            for i in range(len(start_frame_intervals)):
+                frame0 = start_frame_intervals[i]
+                frame1 = end_frame_intervals[i]
+
+                vals = self.exp.get_df(name).loc[pd.IndexSlice[:, frame0:frame1], :].values.ravel()
+
+                if len(vals) != 0:
+
+                    y, _ = np.histogram(list(vals)+list(-vals), bins, density=True)
+                    x = (bins[:-1]+bins[1:])/2.
+
+                    try:
+                        kappa, d, k, _, _ = Fits.vonmises_cst_fit(x, y, p0=(1, 0.01, 0.1))
+                        res.append((frame0/100., kappa, d, k))
+                        print(res)
+                    except RuntimeError:
+                        pass
+
+            res = np.array(res)
+            self.exp.add_new_dataset_from_array(array=res, name=result_name, index_names='t',
+                                                column_names=['kappa', 'd', 'k'],
+                                                category=self.category, label=label,
+                                                description=description)
+
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='kappa')
+        fig, ax = plotter.plot(
+            xlabel='t (s)', ylabel=r'$\kappa(t)$',
+            label_suffix='kappa', label=r'$\kappa(t)$', title='', marker='')
+        # plotter.plot_fit(typ='cst', preplot=(fig, ax), window=[10, 100], cst=(-0.01, .1, .1))
+        plotter.draw_vertical_line(ax)
+        ax.set_ylim(0, 5)
+        plotter.save(fig)
+
     def compute_fisher_info_evol_around_first_attachment(self, redo=False):
         name = 'food_direction_error_var_evol_around_first_attachment'
         result_name = 'fisher_info_evol_around_first_attachment'
@@ -572,6 +821,16 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         food_exit_angle_name = 'mm10_food_exit_angle'
         vel_name = 'mm10_food_velocity'
         time_window = 10
+        self.__compute_food_direction_error(result_name, self.category, food_exit_angle_name, vel_name,
+                                            time_window, redo, redo_hist, redo_plot_indiv)
+
+    def compute_mm20_food_direction_error(self, redo=False, redo_plot_indiv=False, redo_hist=False):
+
+        name = 'food_direction_error'
+        result_name = 'mm20_' + name
+        food_exit_angle_name = 'mm10_food_exit_angle'
+        vel_name = 'mm20_food_velocity'
+        time_window = 20
         self.__compute_food_direction_error(result_name, self.category, food_exit_angle_name, vel_name,
                                             time_window, redo, redo_hist, redo_plot_indiv)
 
@@ -779,3 +1038,126 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         y, x = np.histogram(u+v+w, np.arange(-np.pi-0.005, np.pi, 0.01), density=True)
         ax.plot(x[:-1]+0.005, y)
         plotter.save(fig)
+
+    @staticmethod
+    def temp():
+        t = np.array([0, 10, 60, 80])
+        a = np.exp(-0.062)
+        b = 3.066
+        c = 0.645
+        y = Fits.exp_fct(t, a, b, c)
+
+        def equations(p):
+            a_out, b_out, a_in, b_in = p
+            res = b_out*np.exp(-a_out*t)+0.05-(b_in*np.exp(-a_in*t)+0.03)*y
+            return res
+
+        p0 = np.array([0.9, -0.04, 0.9, 0.074])
+        print(scopt.fsolve(equations, p0))
+
+    def compute_mm1s_food_direction_error_variation(self, redo, redo_hist=False):
+        dtheta = .25
+        bins = np.arange(0, np.pi + dtheta / 2., dtheta)
+        # bins = np.array(list(-bins[::-1]) + list(bins))
+
+        name_error = 'mm1s_food_direction_error'
+        result_name = name_error+'_variation'
+        label = 'Food directional error variation'
+        description = 'Food directional error difference between 0s and 2s'
+        self._get_directional_error_variation(result_name, name_error, label, description, redo)
+
+        hist_name = self.compute_hist(result_name, bins=bins, redo=redo, redo_hist=redo_hist, error=True)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(xlabel='(rad)', ylabel='PDF', title='')
+        plotter.save(fig)
+
+    def _get_directional_error_variation(self, result_name, name_error, label, description, redo):
+        if redo:
+            self.exp.load(name_error)
+
+            self.exp.add_copy(old_name=name_error, new_name=result_name, category=self.category,
+                              label=label, description=description)
+            index = self.exp.get_index(name_error)
+
+            df_error0 = self.exp.get_df(name_error).copy()
+            df_error0.reset_index(inplace=True)
+            df_error0[id_frame_name] += 100
+            df_error0.set_index([id_exp_name, id_frame_name], inplace=True)
+
+            df_error1 = self.exp.get_df(name_error).copy()
+            df_error1.reset_index(inplace=True)
+            df_error1[id_frame_name] -= 100
+            df_error1.set_index([id_exp_name, id_frame_name], inplace=True)
+
+            df_error0 = df_error0.reindex(index)
+            df_error1 = df_error1.reindex(index)
+            df_error_diff0 = Geo.angle_distance_df(df_error0, df_error1)
+            self.exp.get_df(result_name)[:] = np.abs(np.around(np.c_[df_error_diff0[:]], 3))
+
+            self.exp.write(result_name)
+
+    def compute_food_direction_error_variation_hist_evol(self, redo=False):
+        name = 'mm1s_food_direction_error_variation'
+        result_name = name+'_hist_evol'
+        init_frame_name = 'food_first_frame'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        dx = 0.25
+        start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
+        end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
+
+        hist_label = 'Food direction error distribution over time (rad)'
+        hist_description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                           'which gives in radian how much the food is not going in the good direction (rad)'
+
+        if redo:
+            self.exp.load(name)
+            self.change_first_frame(name, init_frame_name)
+
+            self.exp.operation(name, lambda a: np.abs(a))
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
+                                      result_name=result_name, category=self.category,
+                                      label=hist_label, description=hist_description)
+            self.exp.remove_object(name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
+                               title='')
+        ax.set_ylim((0, 1))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xscale='log',
+                               xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s', normed=True,
+                               title='')
+        plotter.save(fig, suffix='power')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(
+            yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s', normed=True, title='')
+        x = self.exp.get_index(result_name)
+        lamb = 0.77
+
+        ax.plot(x, lamb*np.exp(-lamb*x), ls='--', c='k', label=str(lamb)+' exp(-'+str(lamb)+r'$\varphi$)')
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig, suffix='exp')
+
+        column = self.exp.get_columns(result_name)[-2]
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s',
+                               normed=True, label=r'Variance at times t$\in$' + str(column) + ' s')
+        plotter.plot_fit(preplot=(fig, ax), normed=True)
+        plotter.save(fig, suffix='steady_state')
+
+        self.exp.get_df(result_name).index = self.exp.get_df(result_name).index**2
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF',
+                               label_suffix='s', normed=True)
+        plotter.save(fig, suffix='gauss')

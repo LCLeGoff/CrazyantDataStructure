@@ -110,7 +110,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
         name_x = 'w' + str(time) + 's_food_path_efficiency'
         name_y = 'mm' + str(time) + 's_food_direction_error'
-        name_attachments = 'outside_ant_attachment_frames'
+        name_attachments = 'outside_attachment_frames'
         name_last_frame = 'food_exit_frames'
 
         label = '2D histogram of food path efficiency vs food direction error'
@@ -245,7 +245,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
             name_x = 'w' + str(time) + 's_food_path_efficiency'
             name_y = 'mm' + str(time) + 's_food_direction_error'
-            name_attachments = 'outside_ant_attachment_frames'
+            name_attachments = 'outside_attachment_frames'
             name_last_frame = 'food_exit_frames'
 
             self.exp.load([name_x, name_y, name_attachments, name_last_frame, 'fps'])
@@ -350,7 +350,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
             name_x = 'w' + str(time) + 's_food_path_efficiency'
             name_y = 'mm' + str(time) + 's_food_direction_error'
-            name_attachments = 'outside_ant_attachment_frames'
+            name_attachments = 'outside_attachment_frames'
             name_last_frame = 'food_exit_frames'
 
             self.exp.load([name_x, name_y, name_attachments, name_last_frame])
@@ -425,7 +425,7 @@ class AnalyseFoodInformationTrajectory(AnalyseClassDecorator):
 
         name_x = 'w' + str(time) + 's_food_path_efficiency'
         name_y = 'mm' + str(time) + 's_food_direction_error'
-        name_attachments = 'outside_ant_attachment_frames'
+        name_attachments = 'outside_attachment_frames'
         name_last_frame = 'food_exit_frames'
 
         if redo:

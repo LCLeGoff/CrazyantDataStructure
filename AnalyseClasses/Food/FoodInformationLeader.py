@@ -69,6 +69,23 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         self.__gather_exp_frame_indexed_around_leader_attachments(
             variable_name, attachment_name, result_name, result_label, result_description)
 
+    def compute_mm1s_food_direction_error_around_isolated_leading_attachments(self):
+        attachment_name = 'isolated_%s_leading_attachment_intervals'
+        variable_name = 'mm1s_food_direction_error'
+
+        result_name = variable_name + '_around_isolated_%s_leader_attachments'
+
+        result_label = 'Food direction error around isolated %s leader attachments'
+        result_description = 'Food direction error smoothed with a moving mean of window 1s for times' \
+                             ' before and after an ant coming from %s ant attached to the food and has' \
+                             ' an influence on it and that no other leading attachment occurred 2s after and before'
+
+        for suff in ['outside', 'inside']:
+            self.exp.load(attachment_name % suff)
+            self.__gather_exp_frame_indexed_around_leader_attachments(
+                variable_name, attachment_name % suff,
+                result_name % suff, result_label % suff, result_description % suff)
+
     def compute_mm1s_food_direction_error_around_inside_leader_attachments(self):
         attachment_name = 'inside_attachment_intervals'
         self.exp.load(attachment_name)
@@ -542,6 +559,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         ax.set_xlim(-2, 8)
         ax.set_ylim(0, .8)
         plotter.draw_vertical_line(ax, label='attachment')
+        m = []
+        m += list(self.exp.get_df(outside_name).loc[-2:0, 'info'])
+        m += list(self.exp.get_df(inside_name).loc[-2:0, 'info'])
+        y0 = np.around(np.mean(m), 2)
         plotter.draw_legend(ax)
 
         plotter.save(fig, name=result_name)
@@ -686,7 +707,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         last_frame_name = 'food_exit_frames'
         first_frame_name = 'first_attachment_time_of_outside_ant'
         leader_name = 'is_leader'
-        self.exp.load([variable_name, first_frame_name, last_frame_name, leader_name, 'fps'])
+        self.exp.load([variable_name, attachment_name, first_frame_name, last_frame_name, leader_name, 'fps'])
 
         t0, t1, dt = -60, 60, 0.1
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
@@ -705,7 +726,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             last_frame = self.exp.get_value(last_frame_name, id_exp)
             first_frame = self.exp.get_value(first_frame_name, id_exp)
 
-            if id_exp in self.exp.get_index(attachment_name).get_level_values(id_exp_name):
+            if id_exp in set(self.exp.get_index(attachment_name).get_level_values(id_exp_name)):
                 attachment_frames = self.exp.get_df(attachment_name).loc[id_exp, :, :]
                 attachment_frames = list(set(attachment_frames.index.get_level_values(id_frame_name)))
                 attachment_frames.sort()
@@ -800,8 +821,10 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             info_label, info_description, ylim_zoom, redo)
 
     def __compute_information_around_leader_ordered_random_attachments(
-            self, dpi, outside_variable_name, inside_variable_name, hists_result_name, info_result_name,
+            self, dpi, typ, variable_name, hists_result_name, info_result_name,
             info_label, info_description, ylim_zoom, redo):
+
+        self.exp.load(variable_name)
 
         t0, t1, dt = -60, 60, 1.
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
@@ -816,19 +839,19 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             first_frame_name = 'first_attachment_time_of_outside_ant'
             self.exp.load(first_frame_name)
 
-            self._add_order_index(outside_variable_name)
+            self._add_order_index(variable_name)
 
             self.exp.add_new_empty_dataset(name=hists_result_name, index_names='food_direction_error',
                                            column_names=time_intervals, index_values=hists_index_values, replace=True)
             for t in time_intervals:
-                values = self.exp.get_df(outside_variable_name).loc[2, str(t)].abs().dropna()
+                values = self.exp.get_df(variable_name).loc[2, str(t)].abs().dropna()
                 hist = np.histogram(values, bins=bins, normed=False)[0]
                 self.exp.get_df(hists_result_name)[t] = hist
 
             time_intervals = list(np.array(self.exp.get_df(hists_result_name).columns, dtype=float))
             lg = len(time_intervals)
-            order_idx = [i for i in [1, 2, 'in'] for _ in range(lg)]
-            index = list(zip(order_idx, time_intervals*3))
+            order_idx = [i for i in [1, 2] for _ in range(lg)]
+            index = list(zip(order_idx, time_intervals*2))
 
             self.exp.add_new_empty_dataset(name=info_result_name, index_names=['order', 'time'],
                                            column_names=['info', 'err1', 'err2'],
@@ -844,15 +867,15 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 self.exp.get_df(info_result_name).loc[(2, t), 'err1'] = 1.95 * np.sqrt(v)
                 self.exp.get_df(info_result_name).loc[(2, t), 'err2'] = 1.95 * np.sqrt(v)
 
-            lg1 = len(self.exp.get_df(outside_variable_name).loc[1, '0.0'])
-            lg2 = len(self.exp.get_df(outside_variable_name).loc[2, '0.0'])
+            lg1 = len(self.exp.get_df(variable_name).loc[1, '0.0'])
+            lg2 = len(self.exp.get_df(variable_name).loc[2, '0.0'])
 
             hist_list = np.zeros((n, len(time_intervals)))
             for i in range(n):
                 print(i)
                 sample = rd.sample(range(lg1), k=lg2)
                 for j, t in enumerate(time_intervals):
-                    values = self.exp.get_df(outside_variable_name).loc[1, str(t)].abs()
+                    values = self.exp.get_df(variable_name).loc[1, str(t)].abs()
                     values = list(values.iloc[sample].dropna())
                     hist = np.histogram(values, bins=bins, normed=False)[0]
 
@@ -869,30 +892,6 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 self.exp.get_df(info_result_name).loc[(1, t), 'err1'] = m-np.percentile(vals, 2.5)
                 self.exp.get_df(info_result_name).loc[(1, t), 'err2'] = np.percentile(vals, 97.5)-m
 
-            lg1 = len(self.exp.get_df(inside_variable_name)['0.0'])
-
-            hist_list = np.zeros((n, len(time_intervals)))
-            for i in range(n):
-                print(i)
-                sample = rd.sample(range(lg1), k=lg2)
-                for j, t in enumerate(time_intervals):
-                    values = self.exp.get_df(inside_variable_name)[str(t)].abs()
-                    values = list(values.iloc[sample].dropna())
-                    hist = np.histogram(values, bins=bins, normed=False)[0]
-
-                    entropy, v = get_entropy2(hist, get_variance=True)
-                    max_entropy = get_max_entropy(hist)
-                    info = np.around(max_entropy - entropy, 6)
-
-                    hist_list[i, j] = info
-
-            for i, t in enumerate(time_intervals):
-                vals = hist_list[:, i]
-                m = np.mean(vals)
-                self.exp.get_df(info_result_name).loc[('in', t), 'info'] = m
-                self.exp.get_df(info_result_name).loc[('in', t), 'err1'] = m-np.percentile(vals, 2.5)
-                self.exp.get_df(info_result_name).loc[('in', t), 'err2'] = np.percentile(vals, 97.5)-m
-
             self.exp.write(info_result_name)
 
         else:
@@ -900,25 +899,27 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         self.exp.get_df(info_result_name).dropna(inplace=True)
         ylabel = 'Information (bit)'
 
-        for i in [1, 2, 'in']:
+        if typ == 'outside':
+            c1 = 'red'
+            c2 = 'orange'
+        else:
+            c1 = 'navy'
+            c2 = 'blue'
+
+        for i in [1, 2]:
             self.exp.add_new_dataset_from_df(self.exp.get_df(info_result_name).loc[i, :], 'temp%s' % str(i),
                                              category=self.category, replace=True)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object('temp1'))
         fig, ax = plotter.create_plot()
         plotter.plot_with_error(
-            preplot=(fig, ax), xlabel='time (s)', ylabel=ylabel,
-            title='', label='first outside attach.', draw_lims=True)
+            preplot=(fig, ax), xlabel='time (s)', ylabel=ylabel, c=c1,
+            title='', label='first %s attach.' % typ, draw_lims=True)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object('temp2'))
         plotter.plot_with_error(
             preplot=(fig, ax), xlabel='time (s)',
-            ylabel=ylabel, title='', label='non-first outside attach.', c='g', draw_lims=True)
-
-        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object('tempin'))
-        plotter.plot_with_error(
-            preplot=(fig, ax), xlabel='time (s)',
-            ylabel=ylabel, title='', label='inside attach.', c='b', draw_lims=True)
+            ylabel=ylabel, title='', label='non-first %s attach.' % typ, c=c2, draw_lims=True)
 
         plotter.draw_legend(ax)
 
@@ -1014,7 +1015,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         ylim = (0, 0.25)
 
         self.__plot_info('', info_result_name, time_intervals, ylabel, ylim, ylim_zoom,
-                         redo, False)
+                         False, False)
 
     def plot_inside_and_outside_leader_fisher_information(self):
         outside_name = 'fisher_information_mm1s_food_direction_error_around_outside_leader_attachments'
@@ -1036,6 +1037,11 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         ax.set_xlim(-2, 8)
         ax.set_ylim(0.3, .8)
         plotter.draw_vertical_line(ax, label='attachment')
+        m = []
+        m += list(self.exp.get_df(outside_name).loc[-2:0, 'info'])[:-1]
+        m += list(self.exp.get_df(inside_name).loc[-2:0, 'info'])[:-1]
+        y0 = np.around(np.mean(m), 2)
+        plotter.draw_horizontal_line(ax, val=y0, c='w', label='y= %.2f' % y0)
         plotter.draw_legend(ax)
 
         plotter.save(fig, name=result_name)
@@ -1303,3 +1309,74 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         ax.set_ylim(ylim)
         plotter.draw_legend(ax)
         plotter.save(fig)
+
+    def compute_fisher_information_mm1s_food_direction_error_around_isolated_leader_attachments(
+            self, redo=False):
+
+        variable_name = 'mm1s_food_direction_error_around_isolated_%s_leader_attachments'
+        info_label = 'Fisher information of the food around isolated %s leader attachments'
+        info_description = 'Fisher information of the food  (max entropy - entropy of the food direction error)' \
+                           ' for each time t in time_intervals, which are times' \
+                           ' around isolated %s leader ant attachments'
+        info_result_name = 'fisher_information_' + variable_name
+
+        for suff in ['inside', 'outside']:
+            self.exp.load(variable_name % suff)
+
+            ylim_zoom = (0., 1)
+            self.__compute_fisher_information_around_leader_attachments(
+                self.__compute_fisher_info, variable_name % suff, info_result_name % suff, info_label % suff,
+                info_description % suff, ylim_zoom, redo)
+
+    def plot_isolated_inside_and_outside_leader_fisher_information(self):
+        outside_name = 'fisher_information_mm1s_food_direction_error_around_isolated_outside_leader_attachments'
+        inside_name = 'fisher_information_mm1s_food_direction_error_around_isolated_inside_leader_attachments'
+        self.exp.load([outside_name, inside_name])
+        result_name = 'fisher_information_isolated_outside_inside_leader_attachment'
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
+        fig, ax = plotter.create_plot()
+        plotter.plot_with_error(
+            preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
+            title='', label='outside', c='red')
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
+        plotter.plot_with_error(
+            preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
+            title='', label='inside', c='navy')
+
+        ax.set_xlim(-2, 8)
+        ax.set_ylim(0.3, .8)
+        plotter.draw_vertical_line(ax, label='attachment')
+
+        m = []
+        m += list(self.exp.get_df(outside_name).loc[-2:0, 'info'][:-1])
+        m += list(self.exp.get_df(inside_name).loc[-2:0, 'info'][:-1])
+        y0 = np.around(np.mean(m), 2)
+
+        plotter.draw_horizontal_line(ax, val=y0, c='w', label='y= %.2f' % y0)
+        plotter.draw_legend(ax)
+
+        plotter.save(fig, name=result_name)
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
+        plotter.column_name = 'info'
+        fig, ax = plotter.create_plot()
+
+        plotter.plot(
+            fct_y=lambda x: 1 / x,
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance', title='', label='outside', c='red')
+
+        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
+        plotter.column_name = 'info'
+        plotter.plot(
+            fct_y=lambda x: 1 / x,
+            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance',
+            title='', label='inside', c='navy')
+
+        ax.set_xlim(-2, 8)
+        # ax.set_ylim(0.3, .8)
+        plotter.draw_vertical_line(ax, label='attachment')
+        plotter.draw_legend(ax)
+
+        plotter.save(fig, name=result_name+'_var')

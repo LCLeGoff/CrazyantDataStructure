@@ -15,12 +15,33 @@ class AnalyseClassDecorator:
             self.exp = exp
         pass
 
-    def compute_hist(self, name, bins, hist_name=None,
+    def compute_hist(self, name, bins, hist_name=None, error=False,
                      hist_label=None, hist_description=None, redo=False, redo_hist=False, write=True):
         if redo is True or redo_hist is True:
             self.exp.load(name)
-            hist_name = self.exp.hist1d(name_to_hist=name, result_name=hist_name,
-                                        bins=bins, label=hist_label, description=hist_description)
+
+            columns = self.exp.get_columns(name)
+            if len(columns) == 1:
+                hist_name = self.exp.hist1d(name_to_hist=name, result_name=hist_name, error=error,
+                                            bins=bins, label=hist_label, description=hist_description)
+            else:
+                if hist_name is None:
+                    hist_name = name + '_hist'
+                for column in columns:
+                    self.exp.hist1d(name_to_hist=name, result_name=column, error=False,
+                                    column_to_hist=column, bins=bins,
+                                    label=hist_label, description=hist_description)
+
+                index = self.exp.get_index(columns[0])
+                self.exp.add_new_empty_dataset(
+                    name=hist_name, index_names=['bins'], column_names=columns,
+                    index_values=index, category=self.exp.get_category(name),
+                    label=self.exp.get_label(columns[0]), description=self.exp.get_description(columns[0]))
+
+                for column in columns:
+                    self.exp.get_df(hist_name)[column] = self.exp.get_df(column).values
+                    self.exp.remove_object(column)
+
             if write:
                 self.exp.write(hist_name)
 

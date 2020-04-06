@@ -7,7 +7,8 @@ from matplotlib import colors
 
 import Tools.MiscellaneousTools.ArrayManipulation as ArrayManip
 from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit, log_fit, inverse_fit, gauss_fit, cst_fit, \
-    centered_gauss_cst_fit, laplace_fit, centered_gauss_fit, vonmises_fit, vonmises_cst_fit
+    centered_gauss_cst_fit, laplace_fit, centered_gauss_fit, vonmises_fit, vonmises_cst_fit, inverse_cst_fit, \
+    uniform_vonmises_fit
 
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.FeatureArguments import ArgumentsTools, LineFeatureArguments, AxisFeatureArguments
@@ -219,6 +220,10 @@ class Plotter(BasePlotters):
             dx = float(np.mean(x[1:] - x[:-1]))
             s = float(sum(y0))
             y0 = y0.copy() / dx / s
+        elif normed == 2:
+            dx = float(np.mean(x[1:] - x[:-1]))
+            s = float(sum(y0))
+            y0 = y0.copy() / dx / s / 2.
         return y0
 
     def save(self, fig, name=None, suffix=None, sub_folder=None):
@@ -244,7 +249,8 @@ class Plotter(BasePlotters):
             fig.clf()
             plt.close()
 
-    def plot_fit(self, preplot, label=None, label_suff=None, typ='exp', window=None, sqrt_x=False, sqrt_y=False,
+    def plot_fit(self, preplot, label=None, label_suff=None, typ='exp', p0=None,
+                 window=None, sqrt_x=False, sqrt_y=False,
                  normed=False, ls='-', marker='', c='w', fct=lambda x: x, cst=False, display_legend=True):
         # ToDo: add the constant option to all fit
 
@@ -283,18 +289,22 @@ class Plotter(BasePlotters):
                 res_fit = log_fit(x_fit[mask], y_fit[mask])
             elif typ == 'inverse':
                 res_fit = inverse_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'cst inverse':
+                res_fit = inverse_cst_fit(x_fit[mask], y_fit[mask], p0=p0)
             elif typ == 'laplace':
-                res_fit = laplace_fit(x_fit[mask], y_fit[mask])
+                res_fit = laplace_fit(x_fit[mask], y_fit[mask], p0=p0)
             elif typ == 'gauss':
                 res_fit = gauss_fit(x_fit[mask], y_fit[mask])
             elif typ == 'cst center gauss':
-                res_fit = centered_gauss_cst_fit(x_fit[mask], y_fit[mask])
+                res_fit = centered_gauss_cst_fit(x_fit[mask], y_fit[mask], p0=p0)
             elif typ == 'center gauss':
-                res_fit = centered_gauss_fit(x_fit[mask], y_fit[mask])
+                res_fit = centered_gauss_fit(x_fit[mask], y_fit[mask], p0=p0)
             elif typ == 'vonmises':
-                res_fit = vonmises_fit(x_fit[mask], y_fit[mask])
+                res_fit = vonmises_fit(x_fit[mask], y_fit[mask], p0=p0)
             elif typ == 'cst vonmises':
-                res_fit = vonmises_cst_fit(x_fit[mask], y_fit[mask])
+                res_fit = vonmises_cst_fit(x_fit[mask], y_fit[mask], p0=p0)
+            elif typ == 'uniform vonmises':
+                res_fit = uniform_vonmises_fit(x_fit[mask], y_fit[mask], p0=p0)
             else:
                 raise NameError('Type of fit unknown')
 
@@ -311,13 +321,19 @@ class Plotter(BasePlotters):
             elif typ == 'center gauss':
                 label2 = '(c, s)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
+            elif typ == 'cst inverse':
+                label2 = '(a, b)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
             elif typ == 'vonmises':
                 label2 = 'kappa'
                 label3 = str(res_fit[0])
             elif typ == 'cst vonmises':
-                label2 = '(kappa, c)'
+                label2 = '(kappa, b, k)'
+                label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+', '+str(res_fit[2])+')'
+            elif typ == 'uniform vonmises':
+                label2 = '(q, kappa)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
-            elif cst is False:
+            elif cst is False or typ == 'inverse':
                 label2 = '(a, b)'
                 label3 = '('+str(res_fit[0])+', '+str(res_fit[1])+')'
             else:

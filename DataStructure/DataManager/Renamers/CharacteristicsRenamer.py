@@ -6,6 +6,7 @@ class Characteristics1dRenamer:
         self.root = root + group + '/'
 
     def rename(self, chara1d, name, category=None, label=None, description=None):
+        # ToDo : does not work for just change of category
         chara1d.rename(name=name, category=category, label=label, description=description)
 
         address = self.root + chara1d.definition.category + '/Characteristics.json'

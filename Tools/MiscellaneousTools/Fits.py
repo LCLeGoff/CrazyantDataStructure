@@ -67,6 +67,19 @@ def inverse_fit(x, y):
     return af, bf, x_fit, y_fit
 
 
+def fct_inverse_cst(x, a, b):
+    return a/x+b
+
+
+def inverse_cst_fit(x, y, p0):
+    popt, _ = scopt.curve_fit(fct_inverse_cst, x, y, p0=p0)
+    a, b = popt
+
+    x_fit = x
+    y_fit = fct_inverse_cst(x, a, b)
+    return a, b, x_fit, y_fit
+
+
 def fct_gauss(x, c, x0, s):
     return c*np.exp(-(x-x0)**2/(2*s**2))
 
@@ -83,12 +96,12 @@ def centered_fct_gauss_cst(x, c, s, d):
     return c*np.exp(-x**2/(2*s**2))+d
 
 
-def fct_von_mises(x, s):
-    return scs.vonmises.pdf(x, kappa=s)
+def fct_von_mises(x, kappa):
+    return scs.vonmises.pdf(x, kappa=kappa)
 
 
-def fct_von_mises_cst(x, s, c):
-    return scs.vonmises.pdf(x, kappa=s)+c
+def fct_von_mises_cst(x, kappa, b, k):
+    return b*np.exp(kappa*np.cos(x))+k
 
 
 def gauss_fit(x, y):
@@ -120,20 +133,20 @@ def centered_gauss_fit(x, y, p0=None):
 
 def vonmises_fit(x, y, p0=None):
     popt, _ = scopt.curve_fit(fct_von_mises, x, y, p0=p0)
-    s = popt
+    kappa = popt
 
     x_fit = x
-    y_fit = fct_von_mises(x, s)
-    return s, x_fit, y_fit
+    y_fit = fct_von_mises(x, kappa)
+    return kappa, x_fit, y_fit
 
 
 def vonmises_cst_fit(x, y, p0=None):
     popt, _ = scopt.curve_fit(fct_von_mises_cst, x, y, p0=p0)
-    s, c = popt
+    kappa, b, k = popt
 
     x_fit = x
-    y_fit = fct_von_mises_cst(x, s, c)
-    return s, c, x_fit, y_fit
+    y_fit = fct_von_mises_cst(x, kappa, b, k)
+    return kappa, b, k, x_fit, y_fit
 
 
 def centered_gauss_cst_fit(x, y, p0=None):
@@ -157,3 +170,15 @@ def laplace_fit(x, y, p0=None):
     y_fit = laplace_fct(x, a, b)
     return a, b, x_fit, y_fit
 
+
+def uniform_vonmises_fct(x, q, kappa):
+    return q*scs.vonmises.pdf(x, kappa)+(1-q)/2/np.pi
+
+
+def uniform_vonmises_fit(x, y, p0=None):
+    popt, _ = scopt.curve_fit(uniform_vonmises_fct, x, y, p0=p0)
+    q, kappa = popt
+
+    x_fit = x
+    y_fit = uniform_vonmises_fct(x, q, kappa)
+    return q, kappa, x_fit, y_fit

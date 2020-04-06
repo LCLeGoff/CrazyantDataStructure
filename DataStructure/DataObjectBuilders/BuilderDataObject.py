@@ -146,15 +146,29 @@ class BuilderDataObject:
             self.pandas_index_manager.rename_index_level(df, filter_idx, new_level_as)
         return df
 
-    def hist1d(self, column_name=None, bins='fd'):
+    def hist1d(self, column_name=None, bins='fd', error=False):
         column_name = self.get_column_name(column_name, self.df)
 
-        y, x = np.histogram(self.df[column_name].dropna(), bins)
+        vals = self.df[column_name].dropna()
+        y, x = np.histogram(vals, bins)
         x = (x[1:] + x[:-1]) / 2.
-        h = np.array(list(zip(x, y)))
 
-        df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
-        return df.astype(int)
+        if error is True:
+            n = len(vals)
+            h = np.zeros((len(x), 4))
+            h[:, 0] = x
+            h[:, 1] = y/n
+            std = np.sqrt(h[:, 1]*(1-h[:, 1])/n)
+            h[:, 2] = 1.95*std
+            h[:, 3] = 1.95*std
+
+            df = PandasIndexManager().convert_array_to_df(
+                array=h, index_names=column_name, column_names=['PDF', 'err1', 'err2'])
+            return df
+        else:
+            h = np.array(list(zip(x, y)))
+            df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
+            return df.astype(int)
 
     def hist2d(self, df2, column_name=None, column_name2=None, bins=10):
         column_name = self.get_column_name(column_name, self.df)
@@ -170,6 +184,19 @@ class BuilderDataObject:
         y = (y[1:]+y[:-1])/2.
         df = pd.DataFrame(h, index=y, columns=x)
         return df.astype(int)
+
+    def survival_curve(self, start, column_name=None):
+        column_name = self.get_column_name(column_name, self.df)
+
+        vals = self.df[column_name].dropna().values
+        x = np.sort(vals)
+        if x[0] > start:
+            x[0] = start
+        y = 1-np.arange(len(vals)) / (len(vals) - 1)
+        tab = np.array(list(zip(x, y)))
+
+        df = PandasIndexManager().convert_array_to_df(array=tab, index_names=column_name, column_names='Survival')
+        return df
 
     @staticmethod
     def get_column_name(column_name2, df2):

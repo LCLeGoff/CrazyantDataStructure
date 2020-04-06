@@ -195,8 +195,8 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
             self.change_first_frame(ant_food_phi_name, init_frame_name)
 
-            self.exp.hist1d_evolution(name_to_hist=ant_food_phi_name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=ant_food_phi_name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
 
@@ -340,8 +340,8 @@ class AnalyseAntFoodRelation(AnalyseClassDecorator):
 
             self.change_first_frame(mean_pos_name, init_frame_name)
 
-            self.exp.hist1d_evolution(name_to_hist=mean_pos_name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=mean_pos_name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=hist_label, description=hist_description)
 

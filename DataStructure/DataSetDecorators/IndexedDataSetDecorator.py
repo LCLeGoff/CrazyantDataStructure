@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from DataStructure.VariableNames import id_frame_name
-from Tools.MiscellaneousTools.Fits import linear_fit, exp_fit, power_fit
+from Tools.MiscellaneousTools import Fits
 from Tools.PandasIndexManager.PandasIndexManager import PandasIndexManager
 
 
@@ -117,19 +117,33 @@ class IndexedDataSetDecorator:
         index_names.remove(index_name)
         return self.df.groupby(index_names).apply(self.__time_delta4each_group)
 
-    def hist1d(self, column_name=None, bins='fd'):
+    def hist1d(self, column_name=None, bins='fd', error=False):
         if column_name is None:
             if self.get_dimension() == 1:
                 column_name = self.df.columns[0]
             else:
                 raise IndexError('Data not 1d, precise on which column apply hist1d')
 
-        y, x = np.histogram(self.df[column_name].dropna(), bins)
-        x = (x[1:] + x[:-1]) / 2.
-        h = np.array(list(zip(x, y)))
+        vals = self.df[column_name].dropna()
 
-        df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
-        return df.astype(int)
+        y, x = np.histogram(vals, bins)
+        x = (x[1:] + x[:-1]) / 2.
+
+        if error is True:
+            n = len(vals)
+            h = np.zeros((len(x), 4))
+            h[:, 0] = x
+            h[:, 1] = y/n
+            std = np.sqrt(h[:, 1]*(1-h[:, 1])/n)
+            h[:, 2] = 1.95*std
+            h[:, 3] = 1.95*std
+            df = PandasIndexManager().convert_array_to_df(
+                array=h, index_names=column_name, column_names=['PDF', 'err1', 'err2'])
+            return df
+        else:
+            h = np.array(list(zip(x, y)))
+            df = PandasIndexManager().convert_array_to_df(array=h, index_names=column_name, column_names='Occurrences')
+            return df.astype(int)
 
     def hist2d(self, df2, column_name=None, column_name2=None, bins=10):
         column_name = self.get_column_name(column_name, self.df)
@@ -143,6 +157,23 @@ class IndexedDataSetDecorator:
 
         df = pd.DataFrame(h, index=y, columns=x)
         return df.astype(int)
+
+    def survival_curve(self, start, column_name=None):
+        if column_name is None:
+            if self.get_dimension() == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+
+        vals = self.df[column_name].dropna().values
+        x = np.sort(vals)
+        if x[0] > start:
+            x[0] = start
+        y = 1-np.arange(len(vals)) / (len(vals) - 1)
+        tab = np.array(list(zip(x, y)))
+
+        df = PandasIndexManager().convert_array_to_df(array=tab, index_names=column_name, column_names='Survival')
+        return df
 
     @staticmethod
     def get_column_name(column_name, df):
@@ -197,19 +228,19 @@ class IndexedDataSetDecorator:
         return res_df
 
     def hist1d_evolution(
-            self, column_name, index_name, start_index_intervals, end_index_intervals, bins, fps=100., normed=False):
+            self, column_name, index_name, start_frame_intervals, end_frame_intervals, bins, fps=100., normed=False):
 
         column_name = self.get_column_name(column_name, self.df)
 
         if index_name is None:
-            index_name = self.get_column_names()[-1]
+            index_name = self.df.index.names[-1]
 
-        h = np.zeros((len(bins)-1, len(start_index_intervals)+1))
+        h = np.zeros((len(bins) - 1, len(start_frame_intervals) + 1))
         h[:, 0] = (bins[1:] + bins[:-1]) / 2.
 
-        for i in range(len(start_index_intervals)):
-            index0 = start_index_intervals[i]
-            index1 = end_index_intervals[i]
+        for i in range(len(start_frame_intervals)):
+            index0 = start_frame_intervals[i]
+            index1 = end_frame_intervals[i]
 
             index_location = (self.df[column_name].index.get_level_values(index_name) >= index0)\
                 & (self.df[column_name].index.get_level_values(index_name) < index1)
@@ -219,8 +250,8 @@ class IndexedDataSetDecorator:
             h[:, i+1] = y
 
         column_names = [
-            str([start_index_intervals[i]/fps, end_index_intervals[i]/fps])
-            for i in range(len(start_index_intervals))]
+            str([start_frame_intervals[i] / fps, end_frame_intervals[i] / fps])
+            for i in range(len(start_frame_intervals))]
         df = PandasIndexManager().convert_array_to_df(array=h, index_names='bins', column_names=column_names)
         if normed:
             return df
@@ -305,21 +336,11 @@ class IndexedDataSetDecorator:
         else:
             y = self.df[column].values.ravel()
 
-        if cst is None:
-            a, b, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed)
-            return a, b, x_fit, y_fit
-        else:
-            a, b, c, x_fit, y_fit = self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed, cst=cst)
-            return a, b, c, x_fit, y_fit
+        return self._compute_result_fit(x, y, typ, window, sqrt_x, sqrt_y, normed, cst=cst)
 
     def _compute_result_fit(self, x, y, typ, window, sqrt_x, sqrt_y, normed, cst=None):
         x_fit, y_fit = self._set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed)
-        if cst is None:
-            a, b, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ)
-            return a, b, x_fit, y_fit
-        else:
-            a, b, c, x_fit, y_fit = self._compute_fit_a_and_b(x_fit, y_fit, typ, cst=cst)
-            return a, b, c, x_fit, y_fit
+        return self._compute_fit_a_and_b(x_fit, y_fit, typ, cst=cst)
 
     @staticmethod
     def _set_x_fit_and_y_fit(x, y, window, sqrt_x, sqrt_y, normed):
@@ -350,11 +371,13 @@ class IndexedDataSetDecorator:
         mask = np.where(y_fit != 0)[0]
         if len(mask) != 0:
             if typ == 'linear':
-                return linear_fit(x_fit[mask], y_fit[mask])
+                return Fits.linear_fit(x_fit[mask], y_fit[mask])
             elif typ == 'exp':
-                return exp_fit(x_fit[mask], y_fit[mask], cst=cst)
+                return Fits.exp_fit(x_fit[mask], y_fit[mask], cst=cst)
             elif typ == 'power':
-                return power_fit(x_fit[mask], y_fit[mask])
+                return Fits.power_fit(x_fit[mask], y_fit[mask])
+            elif typ == 'cst center gauss':
+                return Fits.centered_gauss_cst_fit(x_fit[mask], y_fit[mask], p0=cst)
             else:
                 raise TypeError(typ + ' is not a type of fit known')
         else:

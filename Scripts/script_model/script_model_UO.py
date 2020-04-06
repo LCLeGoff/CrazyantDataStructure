@@ -2,70 +2,14 @@ import numpy as np
 
 from AnalyseClasses.Models.UOModelAnalysis import UOModelAnalysis
 from Scripts.root import root
-from AnalyseClasses.Models.UOModels import UOSimpleModel, PlotUOModel, UOConfidenceModel, PersistenceModel, \
-    UORWModel, UOOutsideModel, UORandomcSimpleModel, UOCSimpleModel, UniformPersistenceModel, UOUniformSimpleModel, \
-    UOWrappedSimpleModel, WrappedPersistenceModel
+from AnalyseClasses.Models.UOModels import UOSimpleModel, UOConfidenceModel, UORWModel, UOOutsideModel, UORandomcSimpleModel, UOCSimpleModel, \
+    UOUniformSimpleModel
+from AnalyseClasses.Models.UOWrappedModels import UOWrappedSimpleModel
+from AnalyseClasses.Models.UOPersistenceModels import PersistenceModel, WrappedPersistenceModel, UniformPersistenceModel
+from AnalyseClasses.Models.PlotUOModel import PlotUOModel
 
 group = 'UO'
 PlotUOModel = PlotUOModel(group)
-
-#
-# SimpleModel = UOSimpleModel(root, group, new=True, n_replica=10000)
-# #
-# p_attach = 0.051
-# a = np.exp(-0.0283)
-# r = 1.7
-# var_orientation = 0.04
-#
-# c = round(1-np.sqrt(1-(1-a)/p_attach), 3)
-# var_info = (r*p_attach*c*(2-c)-(1-p_attach)*var_orientation)/(p_attach*c**2)
-# SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-#
-# # c = 1.
-# # SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-#
-# c = 0.5
-# SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-# #
-# # var_orientation = 0.09
-# # # var_info = r*(r*p_attach/((1-p_attach)*var_orientation)-1)
-# # # c = r/(r+var_info)
-# # # SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-# # # #
-# # # # var_orientation = 0.09
-# # # # c = 0.9
-# # # # var_info = (r*p_attach*c*(2-c)-(1-p_attach)*var_orientation)/(p_attach*c**2)
-# # # # SimpleModel.run({'c': c, 'p_attachment': p_attach, 'var_orientation': var_orientation, 'var_information': var_info})
-# # #
-# SimpleModel.write()
-# #
-# PlotUOModel.plot_hist_model_pretty('UOSimpleModel', display_title=False)
-# PlotUOModel.plot_var_model_pretty('UOSimpleModel', display_title=False)
-
-
-# PlotUOModel.plot_simple_model_evol()
-# PlotUOModel.plot_indiv_hist_evol('UOSimpleModel', 0)
-# # PlotUOModel.plot_simple_model_evol()
-
-# WrappedSimpleModel = UOWrappedSimpleModel(root, group, new=True, n_replica=10000)
-#
-# p_attach = 0.051
-# kappa_orientation = 15
-#
-# kappa_info = 2.38
-# c = 1-2*np.pi*0.15/2.
-# WrappedSimpleModel.run(
-#     {'c': c, 'p_attachment': p_attach, 'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
-#
-# kappa_info = 4
-# c = 1-2*np.pi*0.15/2.
-# WrappedSimpleModel.run(
-#     {'c': c, 'p_attachment': p_attach, 'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
-#
-# WrappedSimpleModel.write()
-# PlotUOModel.exp = WrappedSimpleModel.exp
-# PlotUOModel.plot_hist_model_pretty('UOWrappedSimpleModel', display_title=False)
-# PlotUOModel.plot_var_model_pretty('UOWrappedSimpleModel', display_title=False)
 
 # RandomcModel = UORandomcSimpleModel(root, group, new=True, n_replica=10000)
 # p_attach = 0.052
@@ -198,4 +142,4 @@ PlotUOModel = PlotUOModel(group)
 #     start_frame_intervals=start_frame_intervals, end_frame_intervals=end_frame_intervals, fps=1)
 # PlotUOModel.plot_var_model_pretty('UniformPersistenceModel')
 
-# PlotUOModel.compare_norm_vonmises()
+PlotUOModel.compare_norm_vonmises()

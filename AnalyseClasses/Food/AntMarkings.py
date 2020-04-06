@@ -261,8 +261,8 @@ class AnalyseAntMarkings(AnalyseClassDecorator):
 
             self.change_first_frame(name, init_frame_name)
             self.exp.operation(name, lambda x: np.abs(x))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=label % label_detail, description=description % label_detail)
             self.exp.write(result_name)
@@ -297,8 +297,8 @@ class AnalyseAntMarkings(AnalyseClassDecorator):
 
             self.change_first_frame(name, init_frame_name)
             self.exp.operation(name, lambda x: np.abs(x))
-            self.exp.hist1d_evolution(name_to_hist=name, start_index_intervals=start_frame_intervals,
-                                      end_index_intervals=end_frame_intervals, bins=bins,
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
+                                      end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
                                       label=label % label_detail, description=description % label_detail)
             self.exp.write(result_name)

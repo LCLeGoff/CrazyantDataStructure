@@ -46,7 +46,7 @@ class BuilderExpAntFrameIndexedDataObject:
     def compute_time_delta(self):
         return self.df.groupby([id_exp_name, id_ant_name]).apply(self.__time_delta4each_group)
 
-    def hist1d_time_evolution(self, column_name, start_frame_intervals, end_frame_intervals, bins, normed=False):
+    def hist1d_evolution(self, column_name, start_frame_intervals, end_frame_intervals, bins, normed=False):
         if column_name is None:
             if len(self.df.columns) == 1:
                 column_name = self.df.columns[0]

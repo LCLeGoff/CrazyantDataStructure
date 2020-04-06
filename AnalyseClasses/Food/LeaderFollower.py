@@ -966,7 +966,7 @@ class AnalyseLeaderFollower(AnalyseClassDecorator):
         self.exp.add_copy(old_name=name_attachment, new_name=result_name,
                           category=self.category, label=label, description=description)
         self.exp.get_df(result_name)[:] = 0
-        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int, inplace=True))
+        self.exp.change_df(result_name, self.exp.get_df(result_name).astype(int))
 
         influence_angle = 1.1
         window = 20

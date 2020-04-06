@@ -920,7 +920,7 @@ class ExperimentGroups:
                     xname=xname, yname=yname, category=category,
                     label=label, xlabel=xlabel, ylabel=ylabel, description=description, replace=replace)
 
-    def hist1d(self, name_to_hist, result_name=None, column_to_hist=None, bins='fd',
+    def hist1d(self, name_to_hist, result_name=None, column_to_hist=None, bins='fd', error=False,
                category=None, label=None, description=None, replace=False):
 
         if result_name is None:
@@ -935,7 +935,7 @@ class ExperimentGroups:
         if description is None and not self.get_description(name_to_hist) is None:
             description = 'Histogram of '+self.get_description(name_to_hist).lower()
 
-        df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins)
+        df = self.get_data_object(name_to_hist).hist1d(column_name=column_to_hist, bins=bins, error=error)
 
         self.add_new_dataset_from_df(df=df, name=result_name, category=category,
                                      label=label, description=description, replace=replace)
@@ -961,6 +961,28 @@ class ExperimentGroups:
 
         df = self.get_data_object(yname_to_hist).hist2d(self.get_df(xname_to_hist), bins=bins,
                                                         column_name=ycolumn_to_hist, column_name2=xcolumn_to_hist)
+
+        self.add_new_dataset_from_df(df=df, name=result_name, category=category,
+                                     label=label, description=description, replace=replace)
+
+        return result_name
+
+    def survival_curve(self, name, start=0, result_name=None, column_to_hist=None,
+                       category=None, label=None, description=None, replace=False):
+
+        if result_name is None:
+            result_name = name + '_surv'
+
+        if category is None:
+            category = self.get_category(name)
+
+        if label is None and not self.get_label(name) is None:
+            label = self.get_label(name) + ' histogram'
+
+        if description is None and not self.get_description(name) is None:
+            description = 'Survival curve of '+self.get_description(name).lower()
+
+        df = self.get_data_object(name).survival_curve(start=start, column_name=column_to_hist)
 
         self.add_new_dataset_from_df(df=df, name=result_name, category=category,
                                      label=label, description=description, replace=replace)
@@ -993,7 +1015,7 @@ class ExperimentGroups:
         return result_name
 
     def hist1d_evolution(
-            self, name_to_hist, start_index_intervals, end_index_intervals, bins, index_name=None, normed=False,
+            self, name_to_hist, start_frame_intervals, end_frame_intervals, bins, index_name=None, normed=False,
             result_name=None, column_to_hist=None, category=None, label=None, description=None, replace=False,
             fps=100.):
 
@@ -1011,17 +1033,17 @@ class ExperimentGroups:
             if self.get_description(name_to_hist) is not None:
                 description = 'Evolution of histogram of ' + self.get_description(name_to_hist).lower()
 
-        if self.__is_indexed_by_exp_ant_frame(name_to_hist) or self.__is_indexed_by_exp_frame(name_to_hist):
-
-            df = self.get_data_object(name_to_hist).hist1d_time_evolution(
-                column_name=column_to_hist, start_frame_intervals=start_index_intervals,
-                end_frame_intervals=end_index_intervals, bins=bins, normed=normed)
-
-        elif self.get_object_type(name_to_hist) == dataset_name:
+        if self.get_object_type(name_to_hist) == dataset_name:
 
             df = self.get_data_object(name_to_hist).hist1d_evolution(
-                column_name=column_to_hist, index_name=index_name, start_index_intervals=start_index_intervals,
-                end_index_intervals=end_index_intervals, bins=bins, normed=normed, fps=fps)
+                column_name=column_to_hist, index_name=index_name, start_frame_intervals=start_frame_intervals,
+                end_frame_intervals=end_frame_intervals, bins=bins, normed=normed, fps=fps)
+
+        elif self.__is_indexed_by_exp_ant_frame(name_to_hist) or self.__is_indexed_by_exp_frame(name_to_hist):
+
+            df = self.get_data_object(name_to_hist).hist1d_evolution(
+                column_name=column_to_hist, start_frame_intervals=start_frame_intervals,
+                end_frame_intervals=end_frame_intervals, bins=bins, normed=normed)
 
         else:
             raise TypeError(name_to_hist+' is not frame indexed or not Dataset')
@@ -1211,7 +1233,8 @@ class ExperimentGroups:
                     frame_list = frame_list[1:]
                     inters = inters[1:]
 
-                    df.loc[pd.IndexSlice[:, list(frame_list.astype(int))], :] = inters
+                    list_idx = list(frame_list.astype(int))
+                    df.loc[pd.IndexSlice[:, list_idx], :] = np.c_[inters]
 
                 return df
             df_intervals = self.get_df(name_to_intervals).groupby(id_exp_name).apply(interval4each_group)
