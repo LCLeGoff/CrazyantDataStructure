@@ -230,7 +230,7 @@ AntFoodRelation = AnalyseAntFoodRelation(group)
 # AntFoodRelation.compute_slowing_ant_density_around_food_evol_first_outside_attachment(True)
 # AntFoodRelation.compute_slowing_outside_ant_density_around_food_evol_first_outside_attachment(True)
 # AntFoodRelation.compute_slowing_non_outside_ant_density_around_food_evol_first_outside_attachment(True)
-# #
+#
 # AntFoodRelation.loop_density_around_food_evol(True)
 # AntFoodRelation.loop_density_around_food_evol_first_outside_attachment(True)
 #
@@ -293,6 +293,16 @@ FoodVeracity = AnalyseFoodVeracity(group)
 
 # FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc(True)
 # FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc_fit()
+
+# FoodVeracity.compute_food_direction_error_hist_evol_attachment_rate(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_outside_attachment_rate(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_inside_attachment_rate(True)
+FoodVeracity.compute_food_direction_error_hist_evol_attachment_prop(True)
+
+# FoodVeracity.compute_food_direction_error_hist_evol_outside_attachment_rate_fit()
+# FoodVeracity.compute_food_direction_error_hist_evol_inside_attachment_rate_fit()
+# FoodVeracity.compute_food_direction_error_hist_evol_attachment_prop_fit()
+
 
 FoodInfo = AnalyseFoodInformation(group)
 # FoodInfo.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)

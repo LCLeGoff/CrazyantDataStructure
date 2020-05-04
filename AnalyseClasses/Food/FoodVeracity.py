@@ -8,7 +8,7 @@ import scipy.optimize as scopt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from Tools.Plotter.BasePlotters import BasePlotters
-from DataStructure.VariableNames import id_exp_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools import Fits
 from Tools.Plotter.Plotter import Plotter
 
@@ -1414,6 +1414,301 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             y_fit = self._uniform_vonmises_dist2(x, q, kappa)
 
             ax[j0, j1].plot(x, y_fit, c=cols[str(ii)], label=r'q=%.3f, $\kappa$=%.3f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 1)
+            plotter.draw_legend(ax[j0, j1])
+        plotter.save(fig, name=name + '_fit')
+
+    def compute_food_direction_error_hist_evol_attachment_rate(self, redo=False):
+        w = 10
+        discrim_name = 'attachments'
+        discrim_name2 = 'attachment_rate'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_rate = 0.1
+        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
+        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+
+        result_name = self._get_food_direction_error_over_attachment_rate(
+            bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_food_direction_error_hist_evol_outside_attachment_rate(self, redo=False):
+        w = 10
+        discrim_name = 'outside_attachments'
+        discrim_name2 = 'outside_attachment_rate'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_rate = 0.1
+        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
+        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+
+        result_name = self._get_food_direction_error_over_attachment_rate(
+            bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_food_direction_error_hist_evol_inside_attachment_rate(self, redo=False):
+        w = 10
+        discrim_name = 'inside_attachments'
+        discrim_name2 = 'inside_attachment_rate'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_rate = 0.1
+        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
+        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+
+        result_name = self._get_food_direction_error_over_attachment_rate(
+            bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_food_direction_error_hist_evol_attachment_prop(self, redo=False):
+        w = 10
+        discrim_name = 'attachments'
+        discrim_name2 = 'attachment_prop_rate'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_rate = 0.1
+        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
+        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+
+        result_name = self._get_food_direction_error_over_attachment_prop_rate(
+            bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def _get_food_direction_error_over_attachment_rate(self, bins, discrim_name, discrim_name2, end_eff_intervals, redo,
+                                                       start_eff_intervals, w=10):
+        name = 'food_direction_error'
+        temp_name = '%s_%s' % (name, discrim_name)
+        result_name = '%s_hist_evol_%s' % (name, discrim_name2)
+        label = 'Food direction error distribution over attachment rate (rad)'
+        description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction (rad)'
+        if redo:
+            self.exp.load([name, discrim_name])
+
+            self._get_rolling_rate(discrim_name, w)
+            self._add_attachment_rate_index(name, discrim_name, temp_name)
+
+            self.exp.operation(temp_name, np.abs)
+            self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
+                                      end_frame_intervals=end_eff_intervals, bins=bins, index_name=discrim_name,
+                                      result_name=result_name, category=self.category,
+                                      label=label, description=description)
+
+            self.exp.remove_object(name)
+            self.exp.remove_object(discrim_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        return result_name
+
+    def _add_attachment_rate_index(self, name, discrim_name, temp_name):
+
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values(id_frame_name)
+
+        index_discrim = np.around(self.exp.get_df(discrim_name).loc[index_error].values.ravel(), 6)
+
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, id_frame_name])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, id_frame_name, discrim_name])
+
+        df = self.exp.get_df(name).copy()
+        df = df.reindex(index1)
+        df.index = index2
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def _get_rolling_prop(self, discrim_name, w):
+        self.exp.load(['outside_' + discrim_name, 'inside_' + discrim_name])
+        df_out = self.exp.get_df('outside_' + discrim_name).copy()
+        df_out.reset_index(inplace=True)
+        df_out.drop(columns=id_ant_name, inplace=True)
+        df_out.set_index([id_exp_name, id_frame_name], inplace=True)
+        df_out = df_out.rolling(window=w * 100, min_periods=100).mean() * 100
+        df_in = self.exp.get_df('inside_' + discrim_name).copy()
+        df_in.reset_index(inplace=True)
+        df_in.drop(columns=id_ant_name, inplace=True)
+        df_in.set_index([id_exp_name, id_frame_name], inplace=True)
+        df_in = df_in.rolling(window=w * 100, min_periods=100).mean() * 100
+        df_in.columns = ['outside_' + discrim_name]
+        df = df_out / (df_in + df_out)
+        self.exp.change_df('outside_' + discrim_name, df)
+
+    def _get_rolling_rate(self, discrim_name, w):
+        df = self.exp.get_df(discrim_name).copy()
+        df.reset_index(inplace=True)
+        df.drop(columns=id_ant_name, inplace=True)
+        df.set_index([id_exp_name, id_frame_name], inplace=True)
+        df = df.rolling(window=w * 100, min_periods=100).mean() * 100
+        self.exp.change_df(discrim_name, df)
+
+    def _get_food_direction_error_over_attachment_prop_rate(
+            self, bins, discrim_name, discrim_name2, end_eff_intervals, redo, start_eff_intervals, w):
+
+        name = 'food_direction_error'
+
+        temp_name = '%s_%s' % (name, discrim_name)
+        result_name = '%s_hist_evol_%s' % (name, discrim_name2)
+        label = 'Food direction error distribution over attachment rate (rad)'
+        description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction (rad)'
+        if redo:
+            self.exp.load([name, 'outside_'+discrim_name, 'inside_'+discrim_name])
+
+            self._get_rolling_prop(discrim_name, w)
+            self._add_attachment_rate_index(name, 'outside_'+discrim_name, temp_name)
+
+            self.exp.operation(temp_name, np.abs)
+            self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
+                                      end_frame_intervals=end_eff_intervals, bins=bins,
+                                      index_name='outside_'+discrim_name,
+                                      result_name=result_name, category=self.category,
+                                      label=label, description=description)
+
+            self.exp.remove_object(name)
+            self.exp.remove_object('outside_'+discrim_name)
+            self.exp.remove_object('inside_'+discrim_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        return result_name
+
+    def compute_food_direction_error_hist_evol_outside_attachment_rate_fit(self):
+        discrim_name = 'outside_attachments'
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 1)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        variable_name = 'food_direction_error'
+        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name)
+        self.exp.load([variable_name, discrim_name])
+        self._get_rolling_rate(discrim_name, 10)
+        self._add_attachment_rate_index(variable_name, discrim_name, result_name)
+
+        self._get_food_direction_error_over_attachment_rate_fit(
+            result_name, bins, discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+
+    def compute_food_direction_error_hist_evol_inside_attachment_rate_fit(self):
+        discrim_name = 'inside_attachments'
+
+        start_eff_intervals = np.around([0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 1)
+        end_eff_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1], 1)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        variable_name = 'food_direction_error'
+        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name)
+        self.exp.load([variable_name, discrim_name])
+        self._get_rolling_rate(discrim_name, 10)
+        self._add_attachment_rate_index(variable_name, discrim_name, result_name)
+
+        self._get_food_direction_error_over_attachment_rate_fit(
+            result_name, bins, discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+
+    def compute_food_direction_error_hist_evol_attachment_prop_fit(self):
+        discrim_name = 'attachments'
+        discrim_name2 = 'attachment_prop_rate'
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 1)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        variable_name = 'food_direction_error'
+        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name2)
+        self.exp.load(variable_name)
+        self._get_rolling_prop(discrim_name, 10)
+        self._add_attachment_rate_index(variable_name, 'outside_'+discrim_name, result_name)
+
+        self._get_food_direction_error_over_attachment_rate_fit(
+            result_name, bins, 'outside_'+discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+
+    def _get_food_direction_error_over_attachment_rate_fit(self, name, bins, discrim_name, dtheta,
+                                                           end_eff_intervals, start_eff_intervals):
+
+        x = (bins[1:] + bins[:-1]) / 2.
+        self.exp.operation(name, np.abs)
+        temp_name = 'temp'
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3, left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+        for ii in range(len(start_eff_intervals)):
+            j0 = int(ii / 3)
+            j1 = ii - j0 * 3
+            eff0 = start_eff_intervals[ii]
+            eff1 = end_eff_intervals[ii]
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[eff0],
+                                      end_frame_intervals=[eff1], bins=bins, index_name=discrim_name,
+                                      result_name=temp_name, category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                label_suffix=' s', title=r'Rate $\in$[%.2f, %.2f]' % (eff0, eff1), c=cols[str(ii)],
+                label='Experiment', normed=2)
+
+            y = self.exp.get_df(temp_name).values.ravel()
+            s = np.nansum(y)
+            y = y / s / dtheta / 2.
+
+            mask = np.where(x > 2.)
+            y2 = y[mask]
+            x2 = x[mask]
+            popt, _ = scopt.curve_fit(lambda z, c: (1-c)/(2*np.pi), x2, y2, p0=0.5, bounds=(0, 1))
+            q = popt[0]
+
+            mask = np.where(~np.isnan(y))
+            y = y[mask]
+            x2 = x[mask]
+            popt, _ = scopt.curve_fit(
+                lambda z, k: q*scs.vonmises.pdf(x, k)+(1-q)/(2*np.pi),
+                x2, y, p0=2., bounds=(0, np.inf))
+            kappa = round(popt[0], 3)
+
+            y_fit = self._uniform_vonmises_dist2(x, q, kappa)
+
+            ax[j0, j1].plot(x2, y_fit, c=cols[str(ii)], label=r'q=%.3f, $\kappa$=%.3f' % (q, kappa))
             ax[j0, j1].set_ylim(0, 1)
             plotter.draw_legend(ax[j0, j1])
         plotter.save(fig, name=name + '_fit')
