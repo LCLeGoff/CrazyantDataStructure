@@ -156,3 +156,26 @@ def show_new_results2():
 # show_new_results()
 # show_new_results2()
 
+
+suff = 'test'
+model = UOWrappedOutInModel3(root, group, new=True, n_replica=100, duration=100, suff=suff, fps=100)
+c = 1.
+p_l = 0.1
+for kappa_orient in [1500]:
+    for k_i in [1000]:
+        model.run(
+            {'c_outside': c, 'c_inside': c, 'kappa_orientation': kappa_orient,
+             'kappa_information': k_i, 'prop_leading': p_l})
+
+model.write()
+PlotUOModel.exp = model.exp
+
+dx = 0.2
+start_frame_intervals = np.array(np.arange(0, 2., dx) * 60 * 100, dtype=int)
+end_frame_intervals = np.array(start_frame_intervals + 1000, dtype=int)
+
+PlotUOModel.plot_hist_model_pretty(
+    name_model, suff=suff,
+    start_frame_intervals=start_frame_intervals, end_frame_intervals=end_frame_intervals)
+
+PlotUOModel.plot_var_model_pretty(name_model, suff=suff)

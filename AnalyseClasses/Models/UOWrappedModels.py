@@ -408,8 +408,8 @@ class UOWrappedOutInModel3(BaseModels):
         self.rd_inside = np.random.uniform(low=-np.pi, high=np.pi, size=(self.duration+1)*self.n_replica)
         self.rd_attachment = np.random.uniform(size=(self.duration+1)*self.n_replica)
 
-        self.rd_orientation /= self.fps
-        self.rd_info /= self.fps
+        # self.rd_orientation /= self.fps
+        # self.rd_info /= self.fps
 
         self.res_orient = []
         self.res_attachments = []
