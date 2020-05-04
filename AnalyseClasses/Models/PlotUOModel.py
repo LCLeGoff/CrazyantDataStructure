@@ -1,19 +1,20 @@
 import numpy as np
 import pandas as pd
 from scipy import stats as scs
+from scipy import optimize as scopt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from AnalyseClasses.Models.UOWrappedModels import UOWrappedSimpleModel
-from DataStructure.VariableNames import id_exp_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Scripts.root import root
-from Tools.MiscellaneousTools import Geometry as Geo, Fits
+from Tools.MiscellaneousTools import Geometry as Geo
 from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
 from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.Plotter import Plotter
 
 import matplotlib as mlt
-mlt.rcParams['axes.titlesize'] = 19
-mlt.rcParams['axes.labelsize'] = 15
+mlt.rcParams['axes.titlesize'] = 15
+mlt.rcParams['axes.labelsize'] = 13
 
 
 class PlotUOModel(AnalyseClassDecorator):
@@ -532,7 +533,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
         plotter_steadystate = Plotter(root=self.exp.root, obj=self.exp.get_data_object(steady_state_name))
         for k, column_name in enumerate(column_names):
-            title = self.get_title(column_name, title_option)
+            title = self.get_label(column_name, title_option)
 
             hist_name = self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
                                                   end_frame_intervals=end_frame_intervals, bins=bins, fps=fps,
@@ -563,6 +564,107 @@ class PlotUOModel(AnalyseClassDecorator):
         plotter.save(fig, name=fig_name)
 
         self.exp.remove_object(name)
+
+    def plot_hist_fit_model_pretty(
+            self, name, para, n=None, m=None,
+            start_frame_intervals=None, end_frame_intervals=None, suff=None, adjust=None, title_option=None):
+
+        if suff is not None:
+            name += '_'+suff
+
+        exp_name = 'food_direction_error'
+        first_attachment_name = 'first_attachment_time_of_outside_ant'
+        self.exp.load([name, exp_name, first_attachment_name], reload=False)
+
+        self.change_first_frame(exp_name, first_attachment_name)
+        self.exp.operation(name, np.abs)
+        self.exp.operation(exp_name, np.abs)
+
+        if start_frame_intervals is None or end_frame_intervals is None:
+            dx = 0.25
+            start_frame_intervals = np.array(np.arange(0, 2, dx)*60*100, dtype=int)
+            end_frame_intervals = np.array(start_frame_intervals + 1500, dtype=int)
+
+        dtheta = np.pi / 25.
+        bins = np.arange(0, np.pi, dtheta)
+        x = (bins[1:]+bins[:-1])/2.
+
+        lg = len(start_frame_intervals)
+        if n is None:
+            n = int(np.floor(np.sqrt(lg)))
+            m = int(np.ceil(lg / n))
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name))
+        top, bottom, left, right, wspace, hspace = self.get_adjust(adjust)
+        fig, ax = plotter.create_plot(
+            figsize=(4 * m, 4 * n), nrows=n, ncols=m,
+            top=top, bottom=bottom, left=left, right=right, wspace=wspace, hspace=hspace)
+        title = self.get_label(para, option=title_option)
+        fig.suptitle(title, fontsize=20)
+
+        temp_name = 'temp'
+        temp_name_exp = 'temp_exp'
+        cols = plotter.color_object.create_cmap('hot', range(len(start_frame_intervals)))
+        for k in range(lg):
+
+            j0 = int(np.floor(k / m))
+            j1 = k % m
+            t0 = start_frame_intervals[k]
+            t1 = end_frame_intervals[k]
+
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[t0], end_frame_intervals=[t1],
+                                      bins=bins, fps=100., index_name='t', column_to_hist=para,
+                                      result_name=temp_name, category=self.category, replace=True)
+
+            self.exp.hist1d_evolution(name_to_hist=exp_name, start_frame_intervals=[t0],
+                                      end_frame_intervals=[t1], bins=bins,
+                                      result_name=temp_name_exp, category=self.category, replace=True)
+
+            if isinstance(ax, np.ndarray):
+                if len(ax.shape) == 1:
+                    ax0 = ax[k]
+                else:
+                    ax0 = ax[j0, j1]
+            else:
+                ax0 = ax
+            ax0.set_ylim(0, 0.5)
+
+            c = cols[str(k)]
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name_exp))
+            plotter.plot(preplot=(fig, ax[j0, j1]), marker=None, c='grey',
+                         display_legend=False, label='Experimental', normed=2)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
+            plotter.plot(xlabel=r'$\theta$ (rad)', ylabel='PDF', title=r't$\in$[%i, %i]s' % (t0/100, t1/100),
+                         normed=2, preplot=(fig, ax0), label='model',
+                         display_legend=False, c=c, ls='')
+
+            y = self.exp.get_df(temp_name).values.ravel()
+            s = np.sum(y)
+            y = y/s / dtheta/2.
+            popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x, y, p0=[0.2, 2], bounds=[(0, 0), (1, np.inf)])
+            q = round(popt[0], 3)
+            kappa = round(popt[1], 3)
+            y_fit = self._uniform_vonmises_dist(x, q, kappa)
+
+            ax[j0, j1].plot(x, y_fit, c=cols[str(k)], label=r'q=%.3f, $\kappa$=%.3f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 0.5)
+            plotter.draw_legend(ax[j0, j1])
+
+            if k == 0:
+                plotter.draw_legend(ax0, ncol=2)
+
+        fig_name = name + '_hist_fit_pretty_'+para
+        plotter.save(fig, name=fig_name)
+
+        self.exp.remove_object(name)
+        self.exp.remove_object(exp_name)
+
+    @staticmethod
+    def _uniform_vonmises_dist(x, q, kappa):
+        y = q*scs.vonmises.pdf(x, kappa)+(1-q)/(2*np.pi)
+        return y
 
     @staticmethod
     def get_adjust(adjust):
@@ -602,7 +704,7 @@ class PlotUOModel(AnalyseClassDecorator):
         return top, bottom, left, right, wspace, hspace
 
     @staticmethod
-    def get_title(column_name, display_title):
+    def get_label(column_name, option=None):
         list_para = list(column_name.split(','))
         list_para[0] = list_para[0][1:]
         list_para[-1] = list_para[-1][:-1]
@@ -610,13 +712,13 @@ class PlotUOModel(AnalyseClassDecorator):
             list_para.pop()
         list_para = np.array(list_para, dtype=float)
 
-        if display_title is None:
-            title = ''
-        elif isinstance(display_title[1], int):
-            title = display_title[0] + ' = ' + str(list_para[display_title[1]])
+        if option is None:
+            title = str(column_name)
+        elif isinstance(option[1], int):
+            title = option[0] + ' = ' + str(list_para[option[1]])
         else:
-            paras = tuple(list_para[display_title[1]])
-            title = display_title[0] + ' = ' + str(paras)
+            paras = tuple(list_para[option[1]])
+            title = option[0] + ' = ' + str(paras)
         return title
 
     def plot_var_model_pretty(
@@ -684,7 +786,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(var_name))
 
-            title = self.get_title(column_name, title_option)
+            title = self.get_label(column_name, title_option)
 
             c = 'darkorange'
             plotter_exp_variance.plot(
@@ -732,3 +834,219 @@ class PlotUOModel(AnalyseClassDecorator):
 
         address = '%s%s/Plots/%s.png' % (self.exp.root, self.category, 'gaussian_vs_vonmises')
         fig.savefig(address)
+
+    def compute_path_efficiency(self, name_model, suff=None, redo=False, redo_hist=False, label_option=None):
+
+        window = 10
+
+        if suff is not None:
+            name_model += '_'+suff
+
+        result_name = 'path_efficiency_%s' % name_model
+
+        if redo:
+            self.exp.load(name_model, reload=False)
+
+            df = self.exp.get_df(name_model).copy()
+
+            df_cos = np.cos(df).groupby(id_exp_name).rolling(window=window, center=True).sum()
+            df_sin = np.sin(df).groupby(id_exp_name).rolling(window=window, center=True).sum()
+            df_cos.index = df.index
+            df_sin.index = df.index
+            df_dist = np.sqrt(df_cos**2+df_sin**2)
+
+            df_efficiency = np.around(df_dist/window, 3)
+
+            self.exp.add_new_dataset_from_df(df=df_efficiency, name=result_name, category=self.category,
+                                             label='', description='')
+
+            self.exp.write(result_name)
+
+        labels = []
+        for column_name in self.exp.get_columns(result_name):
+            labels.append(self.get_label(column_name=column_name, option=label_option))
+
+        bins = np.arange(0, 1, 0.01)
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot(normed=True, label=labels)
+        plotter.save(fig)
+
+    def compute_plot_path_efficiency(self, name_model, para, suff=None, redo=False, label_option=None):
+
+        if suff is not None:
+            name_model += '_' + suff
+
+        name_eff = 'path_efficiency_%s' % name_model
+
+        self.exp.load([name_model, name_eff])
+
+        temp_name = '%s_%s' % (name_model, name_eff)
+        result_name = '%s_hist_evol_%s_%s' % (name_model, name_eff, para)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_eff = 0.1
+        start_eff_intervals = np.around(np.arange(0, 1, d_eff), 1)
+        end_eff_intervals = np.around(start_eff_intervals+d_eff, 1)
+
+        label = 'Object orientation distribution over the path efficiency (rad)'
+        description = 'Object orientation distribution over the path efficiency (rad)' \
+                      ' of the model %s of parameter %s' % (name_model, para)
+
+        if redo:
+            self.exp.load([name_model, name_eff])
+
+            self._add_path_efficiency_index(name_model, para, name_eff, temp_name, w=16)
+            self.exp.operation(temp_name, lambda a: np.abs(a))
+
+            self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
+                                      end_frame_intervals=end_eff_intervals, bins=bins, index_name=name_eff,
+                                      result_name=result_name, category=self.category,
+                                      label=label, description=description)
+
+            self.exp.remove_object(name_model)
+            self.exp.remove_object(name_eff)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        labels = []
+        for column_name in self.exp.get_columns(result_name):
+            labels.append(self.get_label(column_name=column_name, option=label_option))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='', label=labels)
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def _add_path_efficiency_index(self, name, para, name_eff, temp_name, w):
+
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values('t')
+        df_eff = pd.DataFrame(self.exp.get_df(name_eff)[para], columns=[para])
+        df_eff.reset_index(inplace=True)
+        df_eff['t'] += 50*w
+        df_eff.set_index([id_exp_name, 't'], inplace=True)
+        df_eff = df_eff.reindex(index_error)
+        index_discrim = np.around(df_eff.loc[index_error].values.ravel(), 3)
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, 't'])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, 't', name_eff])
+        df = pd.DataFrame(self.exp.get_df(name)[para], columns=[para])
+        df = df.reindex(index1)
+        df.index = index2
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def _add_path_efficiency_index_for_exp(self, name, discrim_name, temp_name, w):
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values(id_frame_name)
+
+        self.exp.get_df(discrim_name).reset_index(inplace=True)
+        self.exp.get_df(discrim_name)[id_frame_name] += 50*w
+        self.exp.get_df(discrim_name).set_index([id_exp_name, id_frame_name], inplace=True)
+        self.exp.change_df(discrim_name, self.exp.get_df(discrim_name).reindex(index_error))
+
+        index_discrim = np.around(self.exp.get_df(discrim_name).loc[index_error].values.ravel(), 3)
+
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, id_frame_name])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, id_frame_name, discrim_name])
+
+        df = self.exp.get_df(name).copy()
+        df = df.reindex(index1)
+        df.index = index2
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def compute_plot_path_efficiency_fit(self, name_model, para, suff=None, title_option=None):
+        if suff is not None:
+            name_model += '_' + suff
+
+        name_eff = 'path_efficiency_%s' % name_model
+        name_exp = 'food_direction_error'
+        name_eff_exp = 'w16s_food_path_efficiency_resolution1pc'
+
+        self.exp.load([name_model, name_eff, name_exp, name_eff_exp])
+
+        temp_name = 'temp'
+        temp_exp_name = 'temp_exp'
+        result_name = '%s_hist_evol_%s_%s_fit' % (name_model, name_eff, para)
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        x = (bins[1:]+bins[:-1])/2.
+
+        self._add_path_efficiency_index(name_model, para, name_eff, temp_name, w=16)
+        self._add_path_efficiency_index_for_exp(name_exp, name_eff_exp, temp_exp_name, w=16)
+
+        self.exp.operation(temp_name, np.abs)
+        self.exp.operation(temp_exp_name, np.abs)
+
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3,  left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+
+        title = self.get_label(para, option=title_option)
+        fig.suptitle(title)
+
+        for ii in range(len(start_eff_intervals)):
+            j0 = int(ii/3)
+            j1 = ii-j0*3
+
+            c = cols[str(ii)]
+            eff0 = start_eff_intervals[ii]
+            eff1 = end_eff_intervals[ii]
+
+            hist_name = self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=[eff0],
+                                                  end_frame_intervals=[eff1], bins=bins, index_name=name_eff,
+                                                  category=self.category, replace=True)
+
+            hist_exp_name = self.exp.hist1d_evolution(name_to_hist=temp_exp_name, start_frame_intervals=[eff0],
+                                                      end_frame_intervals=[eff1], bins=bins,
+                                                      category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_exp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), label='Experiment', normed=2,
+                marker=None, c='navy', display_legend=False
+                )
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), c=c,
+                display_legend=False, label='model', normed=2)
+
+            y = self.exp.get_df(hist_name).values.ravel()
+            mask = np.where(~np.isnan(y))[0]
+            if len(mask) > 0:
+                y = y[mask]
+                x2 = x[mask]
+                s = np.sum(y)
+                y = y/s / dtheta/2.
+                popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x2, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
+                q = round(popt[0], 2)
+                kappa = round(popt[1], 2)
+
+                y_fit = self._uniform_vonmises_dist(x2, q, kappa)
+
+                ax[j0, j1].plot(x, y_fit, c=c, label=r'q=%.2f, $\kappa$=%.2f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 1)
+            plotter.draw_legend(ax[j0, j1])
+
+        plotter.save(fig, name=result_name)
+        self.exp.remove_object(name_exp)

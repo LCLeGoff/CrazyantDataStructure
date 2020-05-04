@@ -185,7 +185,7 @@ Attachments = AnalyseAttachments(group)
 # Attachments.compute_inside_attachment_frames()
 
 # Attachments.compute_nb_attachments_evol(True)
-Attachments.compute_nb_attachments_evol_around_first_outside_attachment()
+# Attachments.compute_nb_attachments_evol_around_first_outside_attachment(True)
 # Attachments.compute_ratio_inside_outside_attachments_evol_around_first_outside_attachment(True)
 
 FoodVelocity = AnalyseFoodVelocity(group)
@@ -249,22 +249,6 @@ AntFoodRelation = AnalyseAntFoodRelation(group)
 
 # AntFoodRelation.compute_angle_body_food_orientation()
 
-FoodConfidence = AnalyseFoodConfidence(group)
-# FoodConfidence.compute_w1s_food_crossed_distance(True)
-# FoodConfidence.compute_w2s_food_crossed_distance(True)
-# FoodConfidence.compute_w10s_food_crossed_distance(True)
-# FoodConfidence.compute_w30s_food_crossed_distance(True)
-#
-# FoodConfidence.compute_w1s_food_total_crossed_distance(True)
-# FoodConfidence.compute_w2s_food_total_crossed_distance(True)
-# FoodConfidence.compute_w10s_food_total_crossed_distance(True)
-# FoodConfidence.compute_w30s_food_total_crossed_distance(True)
-#
-# FoodConfidence.compute_w1s_food_path_efficiency(True)
-# FoodConfidence.compute_w2s_food_path_efficiency(True)
-# FoodConfidence.compute_w10s_food_path_efficiency(True)
-# FoodConfidence.compute_w30s_food_path_efficiency(True)
-
 FoodVeracity = AnalyseFoodVeracity(group)
 # FoodVeracity.compute_food_direction_error(True)
 #
@@ -295,7 +279,20 @@ FoodVeracity = AnalyseFoodVeracity(group)
 
 # FoodVeracity.temp()
 
-FoodVeracity.compute_mm1s_food_direction_error_variation(True)
+# FoodVeracity.compute_mm1s_food_direction_error_variation(False)
+# FoodVeracity.compute_food_direction_error_variation_hist_evol_around_first_outside_attachment(True)
+
+# FoodVeracity.compute_food_direction_error_hist_evol_w10s_path_efficiency(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_w10s_path_efficiency_fit()
+
+# FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency_fit()
+
+# FoodVeracity.compute_food_direction_error_hist_evol_w10s_path_efficiency_resolution1pc(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_w10s_path_efficiency_resolution1pc_fit()
+
+# FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc(True)
+# FoodVeracity.compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc_fit()
 
 FoodInfo = AnalyseFoodInformation(group)
 # FoodInfo.compute_w30s_entropy_mm1s_food_velocity_phi_indiv_evol(True)
@@ -450,15 +447,21 @@ LeadingAttachment = AnalyseLeadingAttachments(group)
 # LeadingAttachment.compute_nb_leading_attachments_evol(True)
 # LeadingAttachment.compute_nb_leading_outside_attachments_evol(True)
 # LeadingAttachment.compute_nb_leading_attachments_evol_around_first_outside_attachment(True)
+
 # LeadingAttachment.compute_nb_leading_outside_attachments_evol_around_first_outside_attachment(True)
 # LeadingAttachment.compute_nb_leading_inside_attachments_evol_around_first_outside_attachment(True)
 # LeadingAttachment.compute_ratio_leading_inside_outside_attachments_evol_around_first_outside_attachment(True)
 # LeadingAttachment.compute_prop_leading_attachments_evol()
 
+# LeadingAttachment.compute_nb_attachments_evol_w10s_path_efficiency(True)
+# LeadingAttachment.compute_nb_leading_attachments_evol_w10s_path_efficiency(True)
+
 # LeadingAttachment.compute_first_leading_attachment_time_of_outside_ant()
 # LeadingAttachment.compute_first_leading_attachment_time()
 
 # LeadingAttachment.compute_isolated_attachments()
+# LeadingAttachment.compute_nb_isolated_leading_attachments_evol_around_first_outside_attachment(True)
+
 # LeadingAttachment.compute_pulling_direction_after_leading_attachments(True)
 # LeadingAttachment.compute_pulling_direction_after_isolated_leading_attachments(True)
 # LeadingAttachment.compute_pulling_direction_after_isolated_leading_attachments2(True)
@@ -508,6 +511,75 @@ FoodInfoLeader = AnalyseFoodInformationLeader(group)
 # FoodInfoLeader.compute_mm1s_food_direction_error_around_isolated_leading_attachments()
 # FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_isolated_leader_attachments(True)
 # FoodInfoLeader.plot_isolated_inside_and_outside_leader_fisher_information()
+
+# FoodInfoLeader.compute_mm1s_food_direction_error_around_isolated_leading_attachments_around30s()
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_isolated_leader_attachments_around30s(True)
+
+# FoodInfoLeader.compute_w10s_fisher_information_mm1s_food_direction_error()
+#
+# FoodInfoLeader.compute_mm1s_food_direction_error_around_leading_attachments2()
+# FoodInfoLeader.compute_fisher_information_mm1s_food_direction_error_around_leading_attachments2(True)
+
+# FoodInfoLeader.compute_mm1s_food_direction_error_discrim_w10s_food_path_efficiency_around_leading_attachments()
+# FoodInfoLeader.\
+#     compute_fisher_info_mm1s_food_direction_error_discrim_w10s_food_path_efficiency_around_leading_attachments(False)
+
+# FoodInfoLeader.\
+#     compute_mm1s_food_direction_error_discrim_mm1s_food_direction_error_variation_around_leading_attachments()
+# FoodInfoLeader.\
+#     compute_fisher_info_mm1s_food_direction_error_discrim_mm1s_food_error_variation_around_leading_attachments(True)
+
+FoodConfidence = AnalyseFoodConfidence(group)
+# FoodConfidence.compute_w1s_food_crossed_distance(True)
+# FoodConfidence.compute_w2s_food_crossed_distance(True)
+# FoodConfidence.compute_w10s_food_crossed_distance(True)
+# FoodConfidence.compute_w16s_food_crossed_distance(True)
+# FoodConfidence.compute_w30s_food_crossed_distance(True)
+#
+# FoodConfidence.compute_w1s_food_total_crossed_distance(True)
+# FoodConfidence.compute_w2s_food_total_crossed_distance(True)
+# FoodConfidence.compute_w10s_food_total_crossed_distance(True)
+# FoodConfidence.compute_w16s_food_total_crossed_distance(True)
+# FoodConfidence.compute_w30s_food_total_crossed_distance(True)
+#
+# FoodConfidence.compute_w1s_food_path_efficiency(True)
+# FoodConfidence.compute_w2s_food_path_efficiency(True)
+# FoodConfidence.compute_w10s_food_path_efficiency(True)
+# FoodConfidence.compute_w16s_food_path_efficiency(True)
+# FoodConfidence.compute_w30s_food_path_efficiency(True)
+
+# FoodConfidence.compute_w10s_food_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w10s_food_total_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w10s_food_path_efficiency_resolution1pc(True)
+# FoodConfidence.compute_w16s_food_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w16s_food_total_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w16s_food_path_efficiency_resolution1pc(True)
+# FoodConfidence.compute_w30s_food_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w30s_food_total_crossed_distance_resolution1pc(True)
+# FoodConfidence.compute_w30s_food_path_efficiency_resolution1pc(True)
+
+# FoodConfidence.compute_w1s_food_path_efficiency_around_attachments()
+# FoodConfidence.compute_w1s_food_path_efficiency_around_leading_attachments()
+# FoodConfidence.compute_w2s_food_path_efficiency_around_leading_attachments()
+# FoodConfidence.compute_w10s_food_path_efficiency_around_leading_attachments()
+# FoodConfidence.compute_w10s_food_path_efficiency_around_attachments()
+#
+# FoodConfidence.compute_mean_w1s_food_path_efficiency_around_leading_attachments(True)
+# FoodConfidence.compute_mean_w1s_food_path_efficiency_around_attachments(True)
+# FoodConfidence.compute_mean_w2s_food_path_efficiency_around_leading_attachments(True)
+# FoodConfidence.compute_mean_w10s_food_path_efficiency_around_leading_attachments(True)
+# FoodConfidence.compute_mean_w10s_food_path_efficiency_around_attachments(True)
+
+# FoodConfidence.compute_w1s_food_path_efficiency_around_attachments2()
+# FoodConfidence.compute_w1s_food_path_efficiency_around_leading_attachments2()
+# FoodConfidence.compute_w10s_food_path_efficiency_around_attachments2()
+# FoodConfidence.compute_w10s_food_path_efficiency_around_leading_attachments2()
+#
+# FoodConfidence.compute_mean_w1s_food_path_efficiency_around_leading_attachments2(False)
+# FoodConfidence.compute_mean_w10s_food_path_efficiency_around_attachments2(False)
+# FoodConfidence.compute_mean_w10s_food_path_efficiency_around_leading_attachments2(False)
+
+# FoodConfidence.compute_w10s_food_path_efficiency_mean_evol_around_first_outside_attachment(True)
 
 AntMarkings = AnalyseAntMarkings(group)
 # AntMarkings.compute_potential_markings(True)

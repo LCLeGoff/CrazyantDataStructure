@@ -142,4 +142,4 @@ PlotUOModel = PlotUOModel(group)
 #     start_frame_intervals=start_frame_intervals, end_frame_intervals=end_frame_intervals, fps=1)
 # PlotUOModel.plot_var_model_pretty('UniformPersistenceModel')
 
-PlotUOModel.compare_norm_vonmises()
+# PlotUOModel.compare_norm_vonmises()

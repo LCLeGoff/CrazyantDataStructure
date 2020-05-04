@@ -8,17 +8,18 @@ group = 'UO'
 PlotUOModel = PlotUOModel(group)
 
 name_model = 'UOWrappedOutInModel2'
-suff = 'c1_2'
+# suff = 'c1_2'
+suff = 'test'
 # suff = 'c1'
-WrappedOutInModel = UOWrappedOutInModel2(root, group, new=True, n_replica=10000, suff=suff)
+WrappedOutInModel = UOWrappedOutInModel2(root, group, new=True, n_replica=1000, suff=suff)
 
-# kappa_orientation = 15
-# c = 1
-# for kappa_info in [5]:
-#     WrappedOutInModel.run({'c_outside': c, 'c_inside': c,
-#                            'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
-# WrappedOutInModel.write()
-# PlotUOModel.exp = WrappedOutInModel.exp
+kappa_orientation = 15
+c = 1
+for kappa_info in [4, 5, 6]:
+    WrappedOutInModel.run({'c_outside': c, 'c_inside': c,
+                           'kappa_orientation': kappa_orientation, 'kappa_information': kappa_info})
+WrappedOutInModel.write()
+PlotUOModel.exp = WrappedOutInModel.exp
 
 # adjust = {'top': 0.92, 'right': 0.99}
 adjust = {'top': 0.98, 'right': 0.99, 'left': 0.15, 'bottom': 0.14}

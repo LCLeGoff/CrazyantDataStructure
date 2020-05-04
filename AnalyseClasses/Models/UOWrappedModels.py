@@ -240,6 +240,10 @@ class UOWrappedOutInModel2(BaseModels):
     def get_p_outside(self):
         return self.p_outside[self.t]
 
+    # @staticmethod
+    # def get_c_outside():
+    #     return max(0, 1-np.abs(np.random.laplace(scale=0.1)))
+
     def init(self, new):
         if new is True or not self.exp.is_name_existing(self.name_orient):
             index = [(id_exp, t*100) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
@@ -296,6 +300,8 @@ class UOWrappedOutInModel2(BaseModels):
         p_outside = self.get_p_outside()
         p_inside = self.get_p_inside()
 
+        # c = self.get_c_outside()
+
         if u < p_outside:
             theta_ant = self.rd_info[idx]
             dtheta = Geo.angle_distance(self.para.c_outside*theta_ant, self.para.c_outside*self.orientation)
@@ -313,6 +319,120 @@ class UOWrappedOutInModel2(BaseModels):
             self.orientation = Geo.angle_sum(self.orientation, rho)
 
         self.res_orient.append(np.around(self.orientation, 3))
+
+    def write(self):
+        self.exp.write(self.name_orient)
+
+
+class UOWrappedOutInModel3(BaseModels):
+    def __init__(self, root, group, duration=300, n_replica=500, new=False, suff=None, fps=1):
+
+        self.exp = ExperimentGroups(root, group)
+        self.name_orient = 'UOWrappedOutInModel3'
+        if suff is not None:
+            self.name_orient += '_'+suff
+        parameter_names = ['c_outside', 'c_inside', 'kappa_orientation', 'kappa_information', 'prop_leading']
+
+        BaseModels.__init__(self, parameter_names)
+
+        self.duration = int(duration*fps)
+        self.n_replica = int(n_replica)
+        self.fps = int(fps)
+
+        self.res_orient = None
+        self.rd_orientation = None
+        self.rd_info = None
+        self.rd_attachment = None
+        self.rd_inside = None
+
+        self.init(new)
+
+        x = np.arange(self.duration*fps + 1)
+        self.q2 = Fits.exp_fct(x, -0.062, 3.1, 0.64)
+
+        self.p_outside = Fits.exp_fct(x, -.034, -.403, 0.498)/self.fps
+        self.p_inside = Fits.exp_fct(x, -.025, .386, 0.135)/self.fps
+
+    def get_p_inside(self):
+        return self.p_inside[self.t]*self.para.prop_leading
+
+    def get_p_outside(self):
+        return self.p_outside[self.t]*self.para.prop_leading
+
+    def init(self, new):
+        if new is True or not self.exp.is_name_existing(self.name_orient):
+            index = \
+                [(id_exp, int(t*100/self.fps)) for id_exp in range(1, self.n_replica+1) for t in range(self.duration+1)]
+
+            self.exp.add_new_empty_dataset(name=self.name_orient, index_names=[id_exp_name, self.time_name],
+                                           column_names=[], index_values=index, category='Models',
+                                           label='UO simple model',
+                                           description='UO simple model with parameter c_inside, c_outside, '
+                                                       'outside attachment probability = p_outside,'
+                                                       'inside attachment probability = p_inside,'
+                                                       'orientation variance = 1/kappa_orientation, '
+                                                       'orientation information = 1/kappa_information')
+        else:
+
+            self.exp.load(self.name_orient)
+            self.n_replica = max(self.exp.get_index(self.name_orient).get_level_values(id_exp_name))
+            self.duration = max(self.exp.get_index(self.name_orient).get_level_values(self.time_name))
+
+    def run(self, para_value):
+
+        self.para.change_parameter_values(para_value)
+        self.name_column = str(self.para.get_parameter_tuple())
+
+        if self.para.kappa_orientation == np.inf:
+            self.rd_orientation = np.zeros((self.duration+1)*self.n_replica)
+        else:
+            self.rd_orientation = np.random.vonmises(
+                mu=0, kappa=self.para.kappa_orientation, size=(self.duration+1)*self.n_replica)
+        self.rd_info = np.random.vonmises(
+            mu=0, kappa=self.para.kappa_information, size=(self.duration+1)*self.n_replica)
+        self.rd_inside = np.random.uniform(low=-np.pi, high=np.pi, size=(self.duration+1)*self.n_replica)
+        self.rd_attachment = np.random.uniform(size=(self.duration+1)*self.n_replica)
+
+        self.rd_orientation /= self.fps
+        self.rd_info /= self.fps
+
+        self.res_orient = []
+        print(self.name_column)
+
+        for id_exp in range(1, self.n_replica + 1):
+            self.id_exp = id_exp
+            self.orientation = np.around(rd.uniform(-np.pi, np.pi), 6)
+            self.res_orient.append(self.orientation)
+            self.t = 0
+
+            for t in range(1, self.duration + 1):
+                self.step()
+
+        self.exp.get_df(self.name_orient)[self.name_column] = self.res_orient
+
+    def step(self):
+        self.t += 1
+        idx = (self.id_exp-1)*(self.duration+1) + self.t
+
+        u = self.rd_attachment[idx]
+        p_outside = self.get_p_outside()
+        p_inside = self.get_p_inside()
+
+        if u < p_outside:
+            theta_ant = self.rd_info[idx]
+            dtheta = Geo.angle_distance(self.para.c_outside*theta_ant, self.para.c_outside*self.orientation)
+            self.orientation = Geo.angle_sum(self.orientation, dtheta)
+
+        elif p_outside < u < p_outside+p_inside:
+            theta_ant = self.rd_inside[idx]
+            dtheta = Geo.angle_distance(self.para.c_inside*theta_ant, self.para.c_inside*self.orientation)
+            self.orientation = Geo.angle_sum(self.orientation, dtheta)
+
+        else:
+            rho = self.rd_orientation[idx]
+            self.orientation = Geo.angle_sum(self.orientation, rho)
+
+        self.res_orient.append(np.around(self.orientation, 6))
 
     def write(self):
         self.exp.write(self.name_orient)

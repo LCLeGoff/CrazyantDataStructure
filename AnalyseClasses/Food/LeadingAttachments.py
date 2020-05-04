@@ -5,6 +5,7 @@ from rdp import rdp
 
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
+from Tools.Plotter.BasePlotters import BasePlotters
 from Tools.Plotter.Plotter import Plotter
 from Tools.MiscellaneousTools import Geometry as Geo, Fits
 
@@ -220,7 +221,7 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
 
         dx = 0.05
         dx2 = 1/6.
-        start_frame_intervals = np.arange(0, 4, dx) * 60 * 100
+        start_frame_intervals = np.arange(-1, 4, dx) * 60 * 100
         end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
         label = 'Number of leading %s attachments in a 1s period over time'
@@ -508,6 +509,115 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         else:
             self.exp.load(result_name)
 
+    def compute_nb_attachments_evol_w10s_path_efficiency(self, redo=False):
+
+        discrim_name = 'w10s_food_path_efficiency'
+        name = '%s_attachment_intervals'
+        result_name = 'nb_%s_attachments_evol_%s'
+        d_eff = 0.05
+        start_eff_intervals = np.around(np.arange(0, 1, d_eff), 2)
+        end_eff_intervals = np.around(start_eff_intervals+d_eff, 2)
+
+        label = 'Number of %s attachments in a 1s period over time'
+        description = 'Number of %s attaching to the food in a 1s period over time'
+
+        for typ in ['outside', 'inside']:
+            self._get_nb_attachments_evol_path_efficiency(
+                name % typ, discrim_name, result_name % (typ, discrim_name), start_eff_intervals,
+                end_eff_intervals, label % typ, description % typ, redo)
+
+        suff = 'outside'
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % (suff, discrim_name)))
+        fig, ax = plotter.plot_with_error(xlabel='Path efficiency', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='', c='r')
+        plotter.save(fig)
+        suff = 'inside'
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % (suff, discrim_name)))
+        fig, ax = plotter.plot_with_error(xlabel='Path efficiency', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='', c='navy')
+        plotter.save(fig)
+
+    def compute_nb_leading_attachments_evol_w10s_path_efficiency(self, redo=False):
+
+        discrim_name = 'w10s_food_path_efficiency'
+        name = '%s_leading_attachment_intervals'
+        result_name = 'nb_%s_leading_attachments_evol_%s'
+        d_eff = 0.05
+        start_eff_intervals = np.around(np.arange(0, 1, d_eff), 2)
+        end_eff_intervals = np.around(start_eff_intervals+d_eff, 2)
+
+        label = 'Number of leading %s attachments in a 1s period over time'
+        description = 'Number of leading %s attaching to the food in a 1s period over time'
+
+        for typ in ['outside', 'inside']:
+            self._get_nb_attachments_evol_path_efficiency(
+                name % typ, discrim_name, result_name % (typ, discrim_name), start_eff_intervals,
+                end_eff_intervals, label % typ, description % typ, redo)
+
+        suff = 'outside'
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % (suff, discrim_name)))
+        fig, ax = plotter.plot_with_error(xlabel='Path efficiency', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='', c='r')
+        plotter.save(fig)
+        suff = 'inside'
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % (suff, discrim_name)))
+        fig, ax = plotter.plot_with_error(xlabel='Path efficiency', ylabel='Attachment probability (for 1s)',
+                                          label='probability', marker='', title='', c='navy')
+        plotter.save(fig)
+
+    def _get_nb_attachments_evol_path_efficiency(self, name, discrim_name, result_name, start_eff_intervals,
+                                                 end_eff_intervals, label, description, redo):
+        if redo:
+
+            self.exp.load([name, discrim_name])
+
+            df_discrim = self.exp.get_df(discrim_name).copy()
+            df_discrim.reset_index(inplace=True)
+            df_discrim[id_frame_name] += 500
+            df_discrim.set_index([id_exp_name, id_frame_name], inplace=True)
+            df_discrim = df_discrim.dropna()
+            index = df_discrim.index
+
+            df_res = self.exp.get_df(name).copy()
+            df_res.reset_index(inplace=True)
+            df_res.pop(id_ant_name)
+            df_res.set_index([id_exp_name, id_frame_name], inplace=True)
+            df_res[:] = 1
+            df_res = df_res.reindex(index, fill_value=0)
+
+            df_res[discrim_name] = np.c_[np.around(df_discrim.values.ravel(), 3)]
+            df_res.reset_index(inplace=True)
+            df_res.pop(id_frame_name)
+            df_res.set_index([id_exp_name, discrim_name], inplace=True)
+            df_res.sort_index(inplace=True)
+
+            x = np.around(start_eff_intervals, 2)
+            y = np.full((len(start_eff_intervals), 3), np.nan)
+
+            for i in range(len(start_eff_intervals)):
+                eff0 = start_eff_intervals[i]
+                eff1 = end_eff_intervals[i]
+
+                df = df_res.loc[pd.IndexSlice[:, eff0:eff1], :]
+                n = len(df) / 100.
+                if n > 0:
+                    p = np.around(np.mean(df), 10) * 100
+                    y[i, 0] = p
+                    y[i, 1] = np.around(1.96 * np.sqrt(p * (1 - p) / n), 10)
+                    y[i, 2] = np.around(1.96 * np.sqrt(p * (1 - p) / n), 10)
+
+            mask = np.where(~np.isnan(y[:, 0]))[0]
+
+            df_res = pd.DataFrame(y[mask, :], index=x[mask], columns=['p', 'err1', 'err2'])
+            self.exp.add_new_dataset_from_df(df=df_res, name=result_name, category=self.category,
+                                             label=label, description=description)
+            self.exp.write(result_name)
+            self.exp.remove_object(name)
+            self.exp.remove_object(discrim_name)
+
+        else:
+            self.exp.load(result_name)
+
     def compute_first_leading_attachment_time_of_outside_ant(self):
         result_name = 'first_leading_attachment_time_of_outside_ant'
         carrying_name = 'outside_leading_attachment_intervals'
@@ -594,6 +704,31 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         print(name_inoutside, len(df_res))
         self.exp.change_df(result_name, df_res)
         self.exp.write(result_name)
+
+    def compute_nb_isolated_leading_attachments_evol_around_first_outside_attachment(self, redo=False):
+
+        name = 'isolated_%s_leading_attachment_intervals'
+
+        result_name = 'nb_isolated_%s_leading_attachments_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
+        dx = 0.05
+        dx2 = 1/6.
+        start_frame_intervals = np.arange(-1, 2.5, dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
+
+        label = 'Number of leading %s attachments in a 1s period over time'
+        description = 'Number of leading %s attaching to the food in a 1s period over time'
+
+        for typ in ['outside', 'inside']:
+
+            self._get_nb_attachments_evol(
+                name % typ, result_name % typ, init_frame_name,
+                start_frame_intervals, end_frame_intervals, label % typ, description % typ, redo)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ))
+            fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
+                                              label='probability', marker='', title='')
+            plotter.save(fig)
 
     def compute_pulling_direction_after_leading_attachments(self, redo, redo_hist=False):
         dtheta = .4
@@ -842,9 +977,8 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
             self.exp.get_df(result_name)['after'] = np.abs(np.around(np.c_[df_error_diff1[:]], 3))
 
             self.change_first_frame(result_name, init_frame_name)
-            df_res = self.exp.get_df(result_name).loc[pd.IndexSlice[:, 0:], :]
-            # df_res = self.exp.get_df(result_name)
-            self.exp.change_df(result_name, df_res)
+            # df_res = self.exp.get_df(result_name).loc[pd.IndexSlice[:, 0:], :]
+            # self.exp.change_df(result_name, df_res)
 
             self.exp.write(result_name)
 
@@ -867,6 +1001,8 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
             plotter.save(fig)
 
     def compute_pulling_direction_variation_after_leading_attachments_evol(self, redo):
+
+        name_error = 'mm1s_food_direction_error_variation_hist'
         for suff in ['outside', 'inside']:
             name = 'pulling_direction_variation_after_%s_leading_attachment' % suff
             result_name = name+'_hist_evol'
@@ -897,15 +1033,30 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                 self.exp.write(result_name+'_after')
                 self.exp.write(result_name+'_before')
             else:
-                self.exp.load(result_name)
+                self.exp.load(result_name+'_before')
+                self.exp.load(result_name+'_after')
 
-            for suff2 in ['before', 'after']:
-                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_'+suff2))
-                fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
-                                       title=suff+' '+suff2)
-                ax.set_xlim(0, np.pi)
-                ax.set_ylim(0, 1.)
-                plotter.save(fig)
+            self.exp.load(name_error)
+            plotter_error = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name_error))
+            columns = self.exp.get_columns(result_name+'_after')
+            fig, ax = BasePlotters().create_plot(figsize=(10, 15), nrows=3, ncols=2)
+            cs = {'before': 'k', 'after': 'w'}
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_after'))
+            for k, column in enumerate(columns):
+                i = int(k/2)
+                j = k-i*2
+
+                plotter_error.plot(preplot=(fig, ax[i, j]), normed=True, label='all', c='grey')
+                for suff2 in ['before', 'after']:
+                    plotter = Plotter(
+                        root=self.exp.root, obj=self.exp.get_data_object(result_name+'_'+suff2), column_name=column)
+                    plotter.plot(
+                        preplot=(fig, ax[i, j]), normed=True, xlabel=r'$d\theta$ (rad)', ylabel='PDF',
+                        label_suffix='s', title=column, label=suff2, c=cs[suff2])
+
+                ax[i, j].set_xlim(0, np.pi)
+                ax[i, j].set_ylim(0, 1.)
+            plotter.save(fig, name=result_name)
 
     def compute_food_direction_error_high_variation(self, redo, redo_hist=False):
         name_result = 'time_distance_food_direction_error_high_variation_leading_attachment'

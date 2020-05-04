@@ -242,7 +242,7 @@ class Plotter(BasePlotters):
             if suffix is None:
                 suffix = ''
             else:
-                suffix = '_'+suffix
+                suffix = '_%s' % suffix
 
             address = self.root + sub_folder + str(name) + suffix + '.png'
             fig.savefig(address)

@@ -249,9 +249,14 @@ class IndexedDataSetDecorator:
             y, x = np.histogram(df.dropna(), bins, normed=normed)
             h[:, i+1] = y
 
-        column_names = [
-            str([start_frame_intervals[i] / fps, end_frame_intervals[i] / fps])
-            for i in range(len(start_frame_intervals))]
+        if column_name is None:
+            column_names = [
+                str([start_frame_intervals[i] / fps, end_frame_intervals[i] / fps])
+                for i in range(len(start_frame_intervals))]
+        else:
+            column_names = [
+                str([start_frame_intervals[i], end_frame_intervals[i]]) for i in range(len(start_frame_intervals))]
+
         df = PandasIndexManager().convert_array_to_df(array=h, index_names='bins', column_names=column_names)
         if normed:
             return df
@@ -264,11 +269,63 @@ class IndexedDataSetDecorator:
         df = self._apply_function_on_evolution(index_name, column_name, fct, start_index_intervals, end_index_intervals)
 
         return df
-    
-    def mean_evolution(self, column_name, index_name, start_index_intervals, end_index_intervals):
-        
-        fct = np.nanmean
-        df = self._apply_function_on_evolution(index_name, column_name, fct, start_index_intervals, end_index_intervals)
+
+    def mean_evolution(self, index_name, column_name, start_index_intervals, end_index_intervals, error=None):
+        if error is None:
+            fct = np.nanmean
+            df = self._apply_function_on_evolution(
+                index_name, column_name, fct, start_index_intervals, end_index_intervals)
+        elif error is True:
+            df = self._get_errors(
+                self._get_percentiles, index_name, column_name, start_index_intervals, end_index_intervals)
+
+        elif error == 'binomial':
+            df = self._get_errors(
+                self._get_binomial, index_name, column_name, start_index_intervals, end_index_intervals)
+        else:
+            raise NameError(str(error) + ' not known as error type')
+
+        return df
+
+    @staticmethod
+    def _get_percentiles(i, y, df):
+        y[i, 1] = y[i, 0] - np.nanpercentile(df, 2.5)
+        y[i, 2] = np.nanpercentile(df, 97.5) - y[i, 0]
+        return y
+
+    @staticmethod
+    def _get_binomial(i, y):
+        n = len(y)
+        std = np.sqrt(y[:, 0] * (1 - y[:, 0]) / n)
+        y[i, 1] = 1.95 * std
+        y[i, 2] = 1.95 * std
+        return y
+
+    def _get_errors(self, fct, index_name, column_name, start_index_intervals, end_index_intervals):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply mean_evolution')
+
+        if index_name is None:
+            index_name = self.get_column_names()[-1]
+
+        x = (end_index_intervals + start_index_intervals) / 2.
+        y = np.zeros((len(start_index_intervals), 3))
+
+        for i in range(len(start_index_intervals)):
+            index0 = start_index_intervals[i]
+            index1 = end_index_intervals[i]
+
+            index_location = (self.df[column_name].index.get_level_values(index_name) >= index0) \
+                & (self.df[column_name].index.get_level_values(index_name) < index1)
+
+            df = self.df[column_name].loc[index_location]
+            y[i, 0] = np.nanmean(df)
+            y = fct(i, y, df)
+
+        df = pd.DataFrame(y, index=x)
 
         return df
 

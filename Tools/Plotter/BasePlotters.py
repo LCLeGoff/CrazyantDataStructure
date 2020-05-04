@@ -61,13 +61,9 @@ class BasePlotters:
 
     @staticmethod
     def set_axis_scales_and_labels(ax, axis_dict):
-        if axis_dict['xscale'] is None:
-            ax.set_xscale('linear')
-        else:
+        if axis_dict['xscale'] is not None:
             ax.set_xscale(axis_dict['xscale'])
-        if axis_dict['yscale'] is None:
-            ax.set_yscale('linear')
-        else:
+        if axis_dict['yscale'] is not None:
             ax.set_yscale(axis_dict['yscale'])
 
         if axis_dict['xlabel'] is not None:
@@ -98,4 +94,3 @@ class BasePlotters:
     @staticmethod
     def draw_vertical_line(ax, val=0, c='k', ls='--', label=None):
         ax.axvline(val, ls=ls, c=c, label=label)
-

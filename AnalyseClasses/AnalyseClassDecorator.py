@@ -52,6 +52,45 @@ class AnalyseClassDecorator:
 
         return hist_name
 
+    def compute_surv(
+            self, name, surv_name=None, hist_label=None, hist_description=None,
+            redo=False, redo_hist=False, write=True):
+
+        if redo is True or redo_hist is True:
+            self.exp.load(name)
+
+            columns = self.exp.get_columns(name)
+            if len(columns) == 1:
+                surv_name = self.exp.survival_curve(
+                    name=name, result_name=surv_name, label=hist_label, description=hist_description)
+            else:
+                if surv_name is None:
+                    surv_name = name + '_surv'
+                for column in columns:
+                    self.exp.survival_curve(
+                        name=name, result_name=column, column_to_hist=column,
+                        label=hist_label, description=hist_description)
+
+                index = self.exp.get_index(columns[0])
+                self.exp.add_new_empty_dataset(
+                    name=surv_name, index_names=['bins'], column_names=columns,
+                    index_values=index, category=self.exp.get_category(name),
+                    label=self.exp.get_label(columns[0]), description=self.exp.get_description(columns[0]))
+
+                for column in columns:
+                    self.exp.get_df(surv_name)[column] = self.exp.get_df(column).values
+                    self.exp.remove_object(column)
+
+            if write:
+                self.exp.write(surv_name)
+
+        else:
+            if surv_name is None:
+                surv_name = name + '_surv'
+            self.exp.load(surv_name)
+
+        return surv_name
+
     def change_first_frame(self, name, frame_name):
 
         index_names = self.exp.get_index(name).names

@@ -1094,7 +1094,7 @@ class ExperimentGroups:
         return result_name
 
     def mean_evolution(
-            self, name_to_var, start_index_intervals, end_index_intervals, index_name=None,
+            self, name_to_var, start_index_intervals, end_index_intervals, error=None, index_name=None,
             result_name=None, column_to_var=None, category=None, label=None, description=None, replace=False):
 
         if result_name is None:
@@ -1114,19 +1114,24 @@ class ExperimentGroups:
         if self.__is_indexed_by_exp_ant_frame(name_to_var) or self.__is_indexed_by_exp_frame(name_to_var):
 
             df = self.get_data_object(name_to_var).mean_evolution(
-                column_name=column_to_var, start_frame_intervals=start_index_intervals,
+                column_name=column_to_var, error=error, start_frame_intervals=start_index_intervals,
                 end_frame_intervals=end_index_intervals)
 
         elif self.get_object_type(name_to_var) == dataset_name:
 
             df = self.get_data_object(name_to_var).mean_evolution(
-                column_name=column_to_var, index_name=index_name, start_index_intervals=start_index_intervals,
-                end_index_intervals=end_index_intervals)
+                column_name=column_to_var, index_name=index_name, error=error,
+                start_index_intervals=start_index_intervals, end_index_intervals=end_index_intervals)
 
         else:
             raise TypeError(name_to_var+' is not dataset')
 
-        df.columns = ['mean']
+        if error is None:
+            df.columns = ['mean']
+        elif error is True:
+            df.columns = ['mean', 'IC95_1', 'IC95_2']
+        elif error == 'binomial':
+            df.columns = ['mean', 'err1', 'err2']
 
         self.add_new_dataset_from_df(df=df, name=result_name, category=category,
                                      label=label, description=description, replace=replace)

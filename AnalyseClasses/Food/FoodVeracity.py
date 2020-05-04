@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import MultipleLocator
+
 import Tools.MiscellaneousTools.Geometry as Geo
 import scipy.stats as scs
 import scipy.optimize as scopt
@@ -71,7 +73,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(name)
             self.change_first_frame(name, init_frame_name)
 
-            self.exp.operation(name, lambda a: np.abs(a))
+            self.exp.operation(name, np.abs)
             self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
                                       end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
@@ -171,7 +173,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         self.exp.load(name)
         self.change_first_frame(name, first_attachment_name)
-        self.exp.operation(name, lambda a: np.abs(a))
+        self.exp.operation(name, np.abs)
         if redo:
 
             self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
@@ -232,7 +234,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         self.exp.load(name)
         self.change_first_frame(name, first_attachment_name)
-        self.exp.operation(name, lambda a: np.abs(a))
+        self.exp.operation(name, np.abs)
 
         steady_state_name = 'food_direction_error_hist_steady_state'
         self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[45 * 100],
@@ -267,7 +269,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         self.exp.load(name)
         self.change_first_frame(name, first_attachment_name)
-        self.exp.operation(name, lambda a: np.abs(a))
+        self.exp.operation(name, np.abs)
 
         temp_name = 'temp'
 
@@ -308,6 +310,16 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
     def _uniform_vonmises_dist(x, q):
         kappa = 1.9
         y = q*scs.vonmises.pdf(x, kappa)+(1-q)/(2*np.pi)
+        return y
+
+    @staticmethod
+    def _uniform_vonmises_dist2(x, q, kappa):
+        y = q*scs.vonmises.pdf(x, kappa)+(1-q)/(2*np.pi)
+        return y
+
+    @staticmethod
+    def _vonmises_dist(x, kappa):
+        y = scs.vonmises.pdf(x, kappa)
         return y
 
     def compute_food_direction_error_hist_evol_around_first_attachment_fit(self):
@@ -1066,9 +1078,20 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         description = 'Food directional error difference between 0s and 2s'
         self._get_directional_error_variation(result_name, name_error, label, description, redo)
 
-        hist_name = self.compute_hist(result_name, bins=bins, redo=redo, redo_hist=redo_hist, error=True)
+        hist_name = self.compute_hist(result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(xlabel='(rad)', ylabel='PDF', title='')
+        fig, ax = plotter.plot(xlabel='(rad)', ylabel='PDF', title='', normed=True)
+        ax.set_ylim(0, 1.)
+        plotter.save(fig)
+
+        surv_name = self.compute_surv(result_name, redo=redo, redo_hist=redo_hist)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(surv_name))
+        fig, ax = plotter.plot(xlabel='(rad)', ylabel='PDF', title='', marker=None)
+        ax.set_ylim(0, 1.)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_minor_locator(MultipleLocator(0.1))
+        ax.yaxis.set_major_locator(MultipleLocator(.05))
+        ax.grid(which='both')
         plotter.save(fig)
 
     def _get_directional_error_variation(self, result_name, name_error, label, description, redo):
@@ -1096,10 +1119,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-    def compute_food_direction_error_variation_hist_evol(self, redo=False):
+    def compute_food_direction_error_variation_hist_evol_around_first_outside_attachment(self, redo=False):
         name = 'mm1s_food_direction_error_variation'
-        result_name = name+'_hist_evol'
-        init_frame_name = 'food_first_frame'
+        result_name = name+'_hist_evol_around_first_outside_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -1108,15 +1131,14 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         start_frame_intervals = np.array(np.arange(0, 3.5, dx)*60*100, dtype=int)
         end_frame_intervals = np.array(start_frame_intervals + dx*60*100*2, dtype=int)
 
-        hist_label = 'Food direction error distribution over time (rad)'
-        hist_description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
-                           'which gives in radian how much the food is not going in the good direction (rad)'
+        hist_label = 'Food direction error variation distribution over time (rad)'
+        hist_description = 'Histogram over time of the food direction error variation (rad)'
 
         if redo:
             self.exp.load(name)
             self.change_first_frame(name, init_frame_name)
 
-            self.exp.operation(name, lambda a: np.abs(a))
+            self.exp.operation(name, np.abs)
             self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=start_frame_intervals,
                                       end_frame_intervals=end_frame_intervals, bins=bins,
                                       result_name=result_name, category=self.category,
@@ -1129,35 +1151,269 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=True, label_suffix='s',
                                title='')
-        ax.set_ylim((0, 1))
+        # ax.set_ylim((0, 1))
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
 
+    def compute_food_direction_error_hist_evol_w10s_path_efficiency(self, redo=False):
+        w = 10
+        discrim_name = 'w'+str(w)+'s_food_path_efficiency'
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_eff = 0.1
+        start_eff_intervals = np.around(np.arange(0, 1, d_eff), 1)
+        end_eff_intervals = np.around(start_eff_intervals+d_eff, 1)
+
+        result_name = self._get_food_direction_error_over_path_efficiency(
+            bins, discrim_name, end_eff_intervals, redo, start_eff_intervals, w)
+
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xscale='log',
-                               xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s', normed=True,
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
                                title='')
-        plotter.save(fig, suffix='power')
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(
-            yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s', normed=True, title='')
-        x = self.exp.get_index(result_name)
-        lamb = 0.77
-
-        ax.plot(x, lamb*np.exp(-lamb*x), ls='--', c='k', label=str(lamb)+' exp(-'+str(lamb)+r'$\varphi$)')
+        ax.set_ylim((0, 0.6))
         plotter.draw_legend(ax=ax, ncol=2)
-        plotter.save(fig, suffix='exp')
+        plotter.save(fig)
 
-        column = self.exp.get_columns(result_name)[-2]
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name=column)
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', label_suffix='s',
-                               normed=True, label=r'Variance at times t$\in$' + str(column) + ' s')
-        plotter.plot_fit(preplot=(fig, ax), normed=True)
-        plotter.save(fig, suffix='steady_state')
+    def compute_food_direction_error_hist_evol_w16s_path_efficiency(self, redo=False):
+        w = 16
+        discrim_name = 'w'+str(w)+'s_food_path_efficiency'
 
-        self.exp.get_df(result_name).index = self.exp.get_df(result_name).index**2
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        d_eff = 0.1
+        start_eff_intervals = np.around(np.arange(0, 1, d_eff), 1)
+        end_eff_intervals = np.around(start_eff_intervals+d_eff, 1)
+
+        result_name = self._get_food_direction_error_over_path_efficiency(
+            bins, discrim_name, end_eff_intervals, redo, start_eff_intervals, w)
+
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(yscale='log', xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF',
-                               label_suffix='s', normed=True)
-        plotter.save(fig, suffix='gauss')
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def _get_food_direction_error_over_path_efficiency(self, bins, discrim_name, end_eff_intervals, redo,
+                                                       start_eff_intervals, w):
+        name = 'food_direction_error'
+        temp_name = '%s_%s' % (name, discrim_name)
+        result_name = '%s_hist_evol_%s' % (name, discrim_name)
+        label = 'Food direction error distribution over path efficiency (rad)'
+        description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction (rad)'
+        if redo:
+            self.exp.load([name, discrim_name])
+
+            self._add_path_efficiency_index(name, discrim_name, temp_name, w=w)
+
+            self.exp.operation(temp_name, np.abs)
+            self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
+                                      end_frame_intervals=end_eff_intervals, bins=bins, index_name=discrim_name,
+                                      result_name=result_name, category=self.category,
+                                      label=label, description=description)
+
+            self.exp.remove_object(name)
+            self.exp.remove_object(discrim_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        return result_name
+
+    def _add_path_efficiency_index(self, name, discrim_name, temp_name, w=10):
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values(id_frame_name)
+
+        self.exp.get_df(discrim_name).reset_index(inplace=True)
+        self.exp.get_df(discrim_name)[id_frame_name] += 50*w
+        self.exp.get_df(discrim_name).set_index([id_exp_name, id_frame_name], inplace=True)
+        self.exp.change_df(discrim_name, self.exp.get_df(discrim_name).reindex(index_error))
+
+        index_discrim = np.around(self.exp.get_df(discrim_name).loc[index_error].values.ravel(), 3)
+
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, id_frame_name])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, id_frame_name, discrim_name])
+
+        df = self.exp.get_df(name).copy()
+        df = df.reindex(index1)
+        df.index = index2
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def compute_food_direction_error_hist_evol_w10s_path_efficiency_fit(self):
+        w = 10
+        discrim_name = 'w'+str(w)+'s_food_path_efficiency'
+
+        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
+        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        self._get_food_direction_error_over_path_efficiency_fit(
+            bins, discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+
+    def compute_food_direction_error_hist_evol_w16s_path_efficiency_fit(self):
+        w = 16
+        discrim_name = 'w'+str(w)+'s_food_path_efficiency'
+
+        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
+        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+
+        self._get_food_direction_error_over_path_efficiency_fit(
+            bins, discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+
+    def _get_food_direction_error_over_path_efficiency_fit(self, bins, discrim_name, dtheta, end_eff_intervals,
+                                                           start_eff_intervals):
+        variable_name = 'food_direction_error'
+        name = '%s_hist_evol_%s' % (variable_name, discrim_name)
+        x = (bins[1:] + bins[:-1]) / 2.
+        self.exp.load([variable_name, discrim_name])
+        self._add_path_efficiency_index(variable_name, discrim_name, name)
+        self.exp.operation(name, np.abs)
+        temp_name = 'temp'
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3, left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+        for ii in range(len(start_eff_intervals)):
+            j0 = int(ii / 3)
+            j1 = ii - j0 * 3
+            eff0 = start_eff_intervals[ii]
+            eff1 = end_eff_intervals[ii]
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[eff0],
+                                      end_frame_intervals=[eff1], bins=bins, index_name=discrim_name,
+                                      result_name=temp_name, category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                label_suffix=' s', title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), c=cols[str(ii)],
+                label='Experiment', normed=2)
+
+            y = self.exp.get_df(temp_name).values.ravel()
+            s = np.sum(y)
+            y = y / s / dtheta / 2.
+            popt, _ = scopt.curve_fit(self._uniform_vonmises_dist2, x, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
+            q = round(popt[0], 3)
+            kappa = round(popt[1], 3)
+            # kappa = 1.9
+
+            y_fit = self._uniform_vonmises_dist2(x, q, kappa)
+
+            ax[j0, j1].plot(x, y_fit, c=cols[str(ii)], label=r'q=%.3f, $\kappa$=%.3f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 1)
+            plotter.draw_legend(ax[j0, j1])
+        plotter.save(fig, name=name + '_fit')
+
+    def compute_food_direction_error_hist_evol_w10s_path_efficiency_resolution1pc(self, redo=False):
+        w = 10
+        self._get_direction_error_over_path_efficiency_resolution1pc(w, redo)
+
+    def compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc(self, redo=False):
+        w = 16
+        self._get_direction_error_over_path_efficiency_resolution1pc(w, redo)
+
+    def _get_direction_error_over_path_efficiency_resolution1pc(self, w, redo):
+        discrim_name = 'w' + str(w) + 's_food_path_efficiency_resolution1pc'
+        name = 'food_direction_error'
+        temp_name = '%s_%s' % (name, discrim_name)
+        result_name = '%s_hist_evol_%s' % (name, discrim_name)
+        dtheta = np.pi / 12.
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+        start_eff_intervals = [0, 0.3, 0.5, 0.75, 0.8, 0.85, 0.9, 0.925, 0.95, 0.975]
+        end_eff_intervals = [0.3, 0.5, 0.75, 0.8, 0.85, 0.9, 0.925, 0.95, 0.975, 1]
+        label = 'Food direction error distribution over path efficiency (rad)'
+        description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
+                      'which gives in radian how much the food is not going in the good direction (rad)'
+        if redo:
+            self.exp.load([name, discrim_name])
+            self.exp.change_df(name, self.exp.get_df(name).reindex(self.exp.get_index(discrim_name)))
+
+            self._add_path_efficiency_index(name, discrim_name, temp_name, w=w)
+
+            self.exp.operation(temp_name, np.abs)
+            self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
+                                      end_frame_intervals=end_eff_intervals, bins=bins, index_name=discrim_name,
+                                      result_name=result_name, category=self.category,
+                                      label=label, description=description)
+
+            self.exp.remove_object(name)
+            self.exp.remove_object(discrim_name)
+            self.exp.write(result_name)
+        else:
+            self.exp.load(result_name)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
+        fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
+                               title='')
+        ax.set_ylim((0, 0.6))
+        plotter.draw_legend(ax=ax, ncol=2)
+        plotter.save(fig)
+
+    def compute_food_direction_error_hist_evol_w10s_path_efficiency_resolution1pc_fit(self):
+        w = 10
+        self._get_direction_error_over_path_efficiency_resolution1pc_fit(w)
+
+    def compute_food_direction_error_hist_evol_w16s_path_efficiency_resolution1pc_fit(self):
+        w = 16
+        self._get_direction_error_over_path_efficiency_resolution1pc_fit(w)
+
+    def _get_direction_error_over_path_efficiency_resolution1pc_fit(self, w):
+        discrim_name = 'w' + str(w) + 's_food_path_efficiency_resolution1pc'
+        variable_name = 'food_direction_error'
+        name = '%s_hist_evol_%s' % (variable_name, discrim_name)
+        # start_eff_intervals = [0, 0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975]
+        # end_eff_intervals = [0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975, 1]
+        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
+        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+        dtheta = np.pi / 25.
+        bins = np.arange(0, np.pi + dtheta, dtheta)
+        x = (bins[1:] + bins[:-1]) / 2.
+        self.exp.load([variable_name, discrim_name])
+        self.exp.change_df(variable_name, self.exp.get_df(variable_name).reindex(self.exp.get_index(discrim_name)))
+        self._add_path_efficiency_index(variable_name, discrim_name, name)
+        self.exp.operation(name, np.abs)
+        temp_name = 'temp'
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3, left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+        for ii in range(len(start_eff_intervals)):
+            j0 = int(ii / 3)
+            j1 = ii - j0 * 3
+            eff0 = start_eff_intervals[ii]
+            eff1 = end_eff_intervals[ii]
+            self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[eff0],
+                                      end_frame_intervals=[eff1], bins=bins, index_name=discrim_name,
+                                      result_name=temp_name, category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                label_suffix=' s', title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), c=cols[str(ii)],
+                label='Experiment', normed=2)
+
+            y = self.exp.get_df(temp_name).values.ravel()
+            s = np.sum(y)
+            y = y / s / dtheta / 2.
+            popt, _ = scopt.curve_fit(self._uniform_vonmises_dist2, x, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
+            q = round(popt[0], 3)
+            kappa = round(popt[1], 3)
+            # kappa = 1.9
+
+            y_fit = self._uniform_vonmises_dist2(x, q, kappa)
+
+            ax[j0, j1].plot(x, y_fit, c=cols[str(ii)], label=r'q=%.3f, $\kappa$=%.3f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 1)
+            plotter.draw_legend(ax[j0, j1])
+        plotter.save(fig, name=name + '_fit')

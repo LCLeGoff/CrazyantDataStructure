@@ -80,10 +80,52 @@ class BuilderExpAntFrameIndexedDataObject:
 
         return df
 
-    def mean_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
-        fct = np.nanmean
-        df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)
+    def mean_evolution(self, column_name, start_frame_intervals, end_frame_intervals, error=None):
+        if error is None:
+            fct = np.nanmean
+            df = self._apply_function_on_evolution(column_name, start_frame_intervals, end_frame_intervals, fct)
+        elif error is True:
+            df = self._get_errors(self._get_percentiles, column_name, start_frame_intervals, end_frame_intervals)
 
+        elif error == 'binomial':
+            df = self._get_errors(self._get_binomial, column_name, start_frame_intervals, end_frame_intervals)
+        else:
+            raise NameError(str(error)+' not known as error type')
+
+        return df
+
+    @staticmethod
+    def _get_percentiles(i, y, df):
+        y[i, 1] = y[i, 0]-np.nanpercentile(df, 2.5)
+        y[i, 2] = np.nanpercentile(df, 97.5)-y[i, 0]
+        return y
+
+    @staticmethod
+    def _get_binomial(i, y):
+        n = len(y)
+        std = np.sqrt(y[:, 0]*(1-y[:, 0])/n)
+        y[i, 1] = 1.95*std
+        y[i, 2] = 1.95*std
+        return y
+
+    def _get_errors(self, fct, column_name, start_frame_intervals, end_frame_intervals):
+        if column_name is None:
+            if len(self.df.columns) == 1:
+                column_name = self.df.columns[0]
+            else:
+                raise IndexError('Data not 1d, precise on which column apply hist1d')
+        start_frame_intervals = np.array(start_frame_intervals, dtype=int)
+        end_frame_intervals = np.array(end_frame_intervals, dtype=int)
+        x = (end_frame_intervals + start_frame_intervals) / 2. / 100.
+        y = np.zeros((len(start_frame_intervals), 3))
+        for i in range(len(start_frame_intervals)):
+            frame0 = start_frame_intervals[i]
+            frame1 = end_frame_intervals[i]
+
+            df = self.df[column_name].loc[:, :, frame0:frame1].values
+            y[i, 0] = np.nanmean(df)
+            y = fct(i, y, df)
+        df = pd.DataFrame(y, index=x)
         return df
 
     def variance_evolution(self, column_name, start_frame_intervals, end_frame_intervals):
