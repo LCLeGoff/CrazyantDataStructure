@@ -5,7 +5,7 @@ from scipy import optimize as scopt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from AnalyseClasses.Models.UOWrappedModels import UOWrappedSimpleModel
-from DataStructure.VariableNames import id_exp_name, id_frame_name
+from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Scripts.root import root
 from Tools.MiscellaneousTools import Geometry as Geo
 from Tools.MiscellaneousTools.ArrayManipulation import get_index_interval_containing
@@ -927,11 +927,13 @@ class PlotUOModel(AnalyseClassDecorator):
         index_error = self.exp.get_index(name).copy()
         index_exp = index_error.get_level_values(id_exp_name)
         index_frame = index_error.get_level_values('t')
+
         df_eff = pd.DataFrame(self.exp.get_df(name_eff)[para], columns=[para])
         df_eff.reset_index(inplace=True)
         df_eff['t'] += 50*w
         df_eff.set_index([id_exp_name, 't'], inplace=True)
         df_eff = df_eff.reindex(index_error)
+
         index_discrim = np.around(df_eff.loc[index_error].values.ravel(), 3)
         mask = np.where(~np.isnan(index_discrim))[0]
         index1 = list(zip(index_exp[mask], index_frame[mask]))
@@ -1038,6 +1040,169 @@ class PlotUOModel(AnalyseClassDecorator):
                 x2 = x[mask]
                 s = np.sum(y)
                 y = y/s / dtheta/2.
+                popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x2, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
+                q = round(popt[0], 2)
+                kappa = round(popt[1], 2)
+
+                y_fit = self._uniform_vonmises_dist(x2, q, kappa)
+
+                ax[j0, j1].plot(x, y_fit, c=c, label=r'q=%.2f, $\kappa$=%.2f' % (q, kappa))
+            ax[j0, j1].set_ylim(0, 1)
+            plotter.draw_legend(ax[j0, j1])
+
+        plotter.save(fig, name=result_name)
+        self.exp.remove_object(name_exp)
+
+    def _get_rolling_prop(self, discrim_name, para, w, temp_name):
+
+        df_out = self.exp.get_df(discrim_name)[para].copy()
+        df_out[df_out == 2] = 0
+        df_out = df_out.rolling(window=w, min_periods=2).mean()
+
+        df_in = self.exp.get_df(discrim_name)[para].copy()
+        df_in[df_in == 1] = 0
+        df_in[df_in == 2] = 1
+        df_in = df_in.rolling(window=w, min_periods=2).mean()
+
+        df = df_out / (df_in + df_out)
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def _get_rolling_prop4exp(self, discrim_name, w):
+        self.exp.load(['outside_' + discrim_name, 'inside_' + discrim_name])
+
+        df_out = self.exp.get_df('outside_' + discrim_name).copy()
+        df_out.reset_index(inplace=True)
+        df_out.drop(columns=id_ant_name, inplace=True)
+        df_out.set_index([id_exp_name, id_frame_name], inplace=True)
+        df_out = df_out.rolling(window=w * 100, min_periods=100).mean() * 100
+
+        df_in = self.exp.get_df('inside_' + discrim_name).copy()
+        df_in.reset_index(inplace=True)
+        df_in.drop(columns=id_ant_name, inplace=True)
+        df_in.set_index([id_exp_name, id_frame_name], inplace=True)
+        df_in = df_in.rolling(window=w * 100, min_periods=100).mean() * 100
+        df_in.columns = ['outside_' + discrim_name]
+        df = df_out / (df_in + df_out)
+
+        self.exp.change_df('outside_' + discrim_name, df)
+
+    def _add_attachment_index(self, name, discrim_name, para, temp_name):
+
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values('t')
+
+        df_eff = pd.DataFrame(self.exp.get_df(discrim_name)[para], columns=[para])
+        index_discrim = np.around(df_eff.loc[index_error].values.ravel(), 6)
+
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, 't'])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, 't', discrim_name])
+
+        df = pd.DataFrame(self.exp.get_df(name)[para], columns=[para])
+        df = df.reindex(index1)
+        df.index = index2
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def _add_attachment_index_for_exp(self, name, discrim_name, temp_name):
+        index_error = self.exp.get_index(name).copy()
+        index_exp = index_error.get_level_values(id_exp_name)
+        index_frame = index_error.get_level_values(id_frame_name)
+
+        index_discrim = np.around(self.exp.get_df(discrim_name).loc[index_error].values.ravel(), 6)
+
+        mask = np.where(~np.isnan(index_discrim))[0]
+        index1 = list(zip(index_exp[mask], index_frame[mask]))
+        index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
+        index1 = pd.MultiIndex.from_tuples(index1, names=[id_exp_name, id_frame_name])
+        index2 = pd.MultiIndex.from_tuples(index2, names=[id_exp_name, id_frame_name, discrim_name])
+
+        df = self.exp.get_df(name).copy()
+        df = df.reindex(index1)
+        df.index = index2
+
+        self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def compute_plot_attachment_prop_fit(self, name_model, para, suff=None, title_option=None):
+        if suff is not None:
+            name_model += '_' + suff
+
+        name_attachments = name_model + '_attachments'
+
+        name_exp = 'food_direction_error'
+        name_eff_exp = 'attachments'
+
+        self.exp.load([name_model, name_attachments, name_exp, name_eff_exp])
+
+        temp_name = 'temp'
+        temp_exp_name = 'temp_exp'
+        result_name = '%s_hist_evol_%s_%s_fit' % (name_model, 'attachment_prop', para)
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        x = (bins[1:]+bins[:-1])/2.
+
+        self._get_rolling_prop(name_attachments, para, 10, temp_name)
+        self._add_attachment_index(name_model, temp_name, para, temp_name)
+
+        self._get_rolling_prop4exp(name_eff_exp, 10)
+        self._add_attachment_index_for_exp(name_exp, 'outside_'+name_eff_exp, temp_exp_name)
+
+        self.exp.operation(temp_name, np.abs)
+        self.exp.operation(temp_exp_name, np.abs)
+
+        plotter = BasePlotters()
+        cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+        fig, ax = plotter.create_plot(
+            figsize=(8, 8), nrows=3, ncols=3,  left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+
+        title = self.get_label(para, option=title_option)
+        fig.suptitle(title)
+
+        for ii in range(len(start_eff_intervals)):
+            j0 = int(ii/3)
+            j1 = ii-j0*3
+
+            c = cols[str(ii)]
+            eff0 = start_eff_intervals[ii]
+            eff1 = end_eff_intervals[ii]
+
+            hist_name = self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=[eff0],
+                                                  end_frame_intervals=[eff1], bins=bins,
+                                                  category=self.category, replace=True)
+
+            hist_exp_name = self.exp.hist1d_evolution(name_to_hist=temp_exp_name, start_frame_intervals=[eff0],
+                                                      end_frame_intervals=[eff1], bins=bins,
+                                                      category=self.category, replace=True)
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_exp_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), label='Experiment', normed=2,
+                marker=None, c='navy', display_legend=False
+                )
+
+            plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+            plotter.plot(
+                preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), c=c,
+                display_legend=False, label='model', normed=2)
+
+            y = self.exp.get_df(hist_name).values.ravel()
+            mask = np.where(~np.isnan(y))[0]
+            if len(mask) > 0:
+                y = y[mask]
+                x2 = x[mask]
+                s = np.sum(y)
+                if s > 0:
+                    y = y/s / dtheta/2.
                 popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x2, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
                 q = round(popt[0], 2)
                 kappa = round(popt[1], 2)

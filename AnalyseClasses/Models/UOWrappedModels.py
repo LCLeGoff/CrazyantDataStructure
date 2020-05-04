@@ -340,6 +340,8 @@ class UOWrappedOutInModel3(BaseModels):
         self.fps = int(fps)
 
         self.res_orient = None
+        self.res_attachments = None
+
         self.rd_orientation = None
         self.rd_info = None
         self.rd_attachment = None
@@ -348,7 +350,7 @@ class UOWrappedOutInModel3(BaseModels):
         self.init(new)
 
         x = np.arange(self.duration*fps + 1)
-        self.q2 = Fits.exp_fct(x, -0.062, 3.1, 0.64)
+        # self.q2 = Fits.exp_fct(x, -0.062, 3.1, 0.64)
 
         self.p_outside = Fits.exp_fct(x, -.034, -.403, 0.498)/self.fps
         self.p_inside = Fits.exp_fct(x, -.025, .386, 0.135)/self.fps
@@ -372,6 +374,18 @@ class UOWrappedOutInModel3(BaseModels):
                                                        'inside attachment probability = p_inside,'
                                                        'orientation variance = 1/kappa_orientation, '
                                                        'orientation information = 1/kappa_information')
+
+            self.exp.add_new_empty_dataset(
+                name=self.name_orient+'_attachments', index_names=[id_exp_name, self.time_name],
+                column_names=[], index_values=index, category='Models', label='UO simple model',
+                description='UO simple model with parameter c_inside, c_outside, '
+                            'outside attachment probability = p_outside,'
+                            'inside attachment probability = p_inside,'
+                            'orientation variance = 1/kappa_orientation, '
+                            'orientation information = 1/kappa_information')
+
+            self.exp.change_df(self.name_orient+'_attachments',
+                               self.exp.get_df(self.name_orient+'_attachments').astype(int))
         else:
 
             self.exp.load(self.name_orient)
@@ -388,6 +402,7 @@ class UOWrappedOutInModel3(BaseModels):
         else:
             self.rd_orientation = np.random.vonmises(
                 mu=0, kappa=self.para.kappa_orientation, size=(self.duration+1)*self.n_replica)
+
         self.rd_info = np.random.vonmises(
             mu=0, kappa=self.para.kappa_information, size=(self.duration+1)*self.n_replica)
         self.rd_inside = np.random.uniform(low=-np.pi, high=np.pi, size=(self.duration+1)*self.n_replica)
@@ -397,18 +412,21 @@ class UOWrappedOutInModel3(BaseModels):
         self.rd_info /= self.fps
 
         self.res_orient = []
+        self.res_attachments = []
         print(self.name_column)
 
         for id_exp in range(1, self.n_replica + 1):
             self.id_exp = id_exp
             self.orientation = np.around(rd.uniform(-np.pi, np.pi), 6)
             self.res_orient.append(self.orientation)
+            self.res_attachments.append(0)
             self.t = 0
 
             for t in range(1, self.duration + 1):
                 self.step()
 
         self.exp.get_df(self.name_orient)[self.name_column] = self.res_orient
+        self.exp.get_df(self.name_orient+'_attachments')[self.name_column] = self.res_attachments
 
     def step(self):
         self.t += 1
@@ -422,17 +440,21 @@ class UOWrappedOutInModel3(BaseModels):
             theta_ant = self.rd_info[idx]
             dtheta = Geo.angle_distance(self.para.c_outside*theta_ant, self.para.c_outside*self.orientation)
             self.orientation = Geo.angle_sum(self.orientation, dtheta)
+            self.res_attachments.append(1)
 
         elif p_outside < u < p_outside+p_inside:
             theta_ant = self.rd_inside[idx]
             dtheta = Geo.angle_distance(self.para.c_inside*theta_ant, self.para.c_inside*self.orientation)
             self.orientation = Geo.angle_sum(self.orientation, dtheta)
+            self.res_attachments.append(2)
 
         else:
             rho = self.rd_orientation[idx]
             self.orientation = Geo.angle_sum(self.orientation, rho)
+            self.res_attachments.append(0)
 
         self.res_orient.append(np.around(self.orientation, 6))
 
     def write(self):
         self.exp.write(self.name_orient)
+        self.exp.write(self.name_orient+'_attachments')

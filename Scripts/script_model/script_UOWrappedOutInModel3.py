@@ -14,9 +14,9 @@ class Fcts:
         pass
 
     @staticmethod
-    def run(suff, para_list, n_replica=1000):
+    def run(suff, para_list, n_replica=1000, duration=120):
         model = UOWrappedOutInModel3(
-            root, group, new=True, n_replica=n_replica, duration=120, suff=suff, fps=1)
+            root, group, new=True, n_replica=n_replica, duration=duration, suff=suff, fps=1)
 
         for kappa_orient, c, k_i, p_l in para_list:
             model.run(
@@ -79,16 +79,20 @@ def show_previous_results2():
     para_list = [(kappa_orientation, c, 4, 0.1) for c in c_list]
 
     Fcts.run(suff, para_list, n_replica=5000)
+    #
+    # title_option = ('c', 0)
+    #
+    # adjust = {'top': 0.95, 'right': 0.98, 'left': 0.06, 'bottom': 0.05, 'hspace': 0.3}
+    # Fcts.plot_pretty_hist_and_var(suff, adjust, title_option)
+    #
+    # adjust = {'top': 0.92, 'right': 0.99, 'hspace': 0.3, 'left': 0.05, 'bottom': 0.07}
+    # Fcts.draw_hist_fit(suff, para_list, adjust, title_option=title_option)
+    #
+    # PlotUOModel.compute_path_efficiency(name_model, suff=suff, redo=True, label_option=title_option)
 
-    title_option = ('c', 0)
-
-    adjust = {'top': 0.95, 'right': 0.98, 'left': 0.06, 'bottom': 0.05, 'hspace': 0.3}
-    Fcts.plot_pretty_hist_and_var(suff, adjust, title_option)
-
-    adjust = {'top': 0.92, 'right': 0.99, 'hspace': 0.3, 'left': 0.05, 'bottom': 0.07}
-    Fcts.draw_hist_fit(suff, para_list, adjust, title_option=title_option)
-
-    PlotUOModel.compute_path_efficiency(name_model, suff=suff, redo=True, label_option=title_option)
+    for kappa_orient, c, k_i, p_l in para_list:
+        para = "(%s, %s, %s, %s, %s)" % (str(c), str(c), str(kappa_orient), str(k_i), str(p_l))
+        PlotUOModel.compute_plot_attachment_prop_fit(name_model, para, suff)
 
 
 def show_path_efficiency():
@@ -141,9 +145,14 @@ def show_new_results2():
     PlotUOModel.compute_path_efficiency(name_model, suff=suff, redo=True, label_option=title_option)
     Fcts.plot_path_efficiency(suff, para_list, label_option=title_option)
 
+    for kappa_orient, c, k_i, p_l in para_list:
+        para = "(%s, %s, %s, %s, %s)" % (str(c), str(c), str(kappa_orient), str(k_i), str(p_l))
+        PlotUOModel.compute_plot_attachment_prop_fit(name_model, para, suff)
+
 
 # show_previous_results()
 # show_previous_results2()
 # show_path_efficiency()
 # show_new_results()
-show_new_results2()
+# show_new_results2()
+
