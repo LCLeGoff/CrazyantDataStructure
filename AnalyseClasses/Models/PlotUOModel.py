@@ -848,14 +848,15 @@ class PlotUOModel(AnalyseClassDecorator):
             self.exp.load(name_model, reload=False)
 
             df = self.exp.get_df(name_model).copy()
+            fps = int(100/float(df.index.get_level_values('t')[1]))
 
-            df_cos = np.cos(df).groupby(id_exp_name).rolling(window=window, center=True).sum()
-            df_sin = np.sin(df).groupby(id_exp_name).rolling(window=window, center=True).sum()
+            df_cos = np.cos(df).groupby(id_exp_name).rolling(window=window*fps, center=True).sum()
+            df_sin = np.sin(df).groupby(id_exp_name).rolling(window=window*fps, center=True).sum()
             df_cos.index = df.index
             df_sin.index = df.index
             df_dist = np.sqrt(df_cos**2+df_sin**2)
 
-            df_efficiency = np.around(df_dist/window, 3)
+            df_efficiency = np.around(df_dist/window/fps, 3)
 
             self.exp.add_new_dataset_from_df(df=df_efficiency, name=result_name, category=self.category,
                                              label='', description='')

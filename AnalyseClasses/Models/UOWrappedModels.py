@@ -349,8 +349,7 @@ class UOWrappedOutInModel3(BaseModels):
 
         self.init(new)
 
-        x = np.arange(self.duration*fps + 1)
-        # self.q2 = Fits.exp_fct(x, -0.062, 3.1, 0.64)
+        x = np.arange(0, self.duration + 1, 1/fps)
 
         self.p_outside = Fits.exp_fct(x, -.034, -.403, 0.498)/self.fps
         self.p_inside = Fits.exp_fct(x, -.025, .386, 0.135)/self.fps
@@ -398,62 +397,55 @@ class UOWrappedOutInModel3(BaseModels):
         self.name_column = str(self.para.get_parameter_tuple())
 
         if self.para.kappa_orientation == np.inf:
-            self.rd_orientation = np.zeros((self.duration+1)*self.n_replica)
+            self.rd_orientation = np.zeros((self.n_replica, self.duration+1))
         else:
             self.rd_orientation = np.random.vonmises(
-                mu=0, kappa=self.para.kappa_orientation, size=(self.duration+1)*self.n_replica)
+                mu=0, kappa=self.para.kappa_orientation*self.fps, size=(self.n_replica, self.duration+1))
 
         self.rd_info = np.random.vonmises(
-            mu=0, kappa=self.para.kappa_information, size=(self.duration+1)*self.n_replica)
-        self.rd_inside = np.random.uniform(low=-np.pi, high=np.pi, size=(self.duration+1)*self.n_replica)
-        self.rd_attachment = np.random.uniform(size=(self.duration+1)*self.n_replica)
+            mu=0, kappa=self.para.kappa_information, size=(self.n_replica, self.duration+1))
+        self.rd_inside = np.random.uniform(low=-np.pi, high=np.pi, size=(self.n_replica, self.duration+1))
+        self.rd_attachment = np.random.uniform(size=(self.n_replica, self.duration+1))
 
-        # self.rd_orientation /= self.fps
-        # self.rd_info /= self.fps
-
-        self.res_orient = []
-        self.res_attachments = []
+        self.res_orient = np.zeros((self.n_replica, self.duration+1))
+        self.res_attachments = np.zeros((self.n_replica, self.duration+1), dtype=int)
         print(self.name_column)
 
-        for id_exp in range(1, self.n_replica + 1):
-            self.id_exp = id_exp
+        for self.id_exp in range(self.n_replica):
             self.orientation = np.around(rd.uniform(-np.pi, np.pi), 6)
-            self.res_orient.append(self.orientation)
-            self.res_attachments.append(0)
+            self.res_orient[self.id_exp, 0] = self.orientation
             self.t = 0
 
             for t in range(1, self.duration + 1):
                 self.step()
 
-        self.exp.get_df(self.name_orient)[self.name_column] = self.res_orient
-        self.exp.get_df(self.name_orient+'_attachments')[self.name_column] = self.res_attachments
+        self.exp.get_df(self.name_orient)[self.name_column] = np.around(self.res_orient.ravel(), 6)
+        self.exp.get_df(self.name_orient+'_attachments')[self.name_column] = self.res_attachments.ravel()
 
     def step(self):
         self.t += 1
-        idx = (self.id_exp-1)*(self.duration+1) + self.t
 
-        u = self.rd_attachment[idx]
+        u = self.rd_attachment[self.id_exp, self.t]
         p_outside = self.get_p_outside()
         p_inside = self.get_p_inside()
 
         if u < p_outside:
-            theta_ant = self.rd_info[idx]
+            theta_ant = self.rd_info[self.id_exp, self.t]
             dtheta = Geo.angle_distance(self.para.c_outside*theta_ant, self.para.c_outside*self.orientation)
             self.orientation = Geo.angle_sum(self.orientation, dtheta)
-            self.res_attachments.append(1)
+            self.res_attachments[self.id_exp, self.t] = 1
 
         elif p_outside < u < p_outside+p_inside:
-            theta_ant = self.rd_inside[idx]
+            theta_ant = self.rd_inside[self.id_exp, self.t]
             dtheta = Geo.angle_distance(self.para.c_inside*theta_ant, self.para.c_inside*self.orientation)
             self.orientation = Geo.angle_sum(self.orientation, dtheta)
-            self.res_attachments.append(2)
+            self.res_attachments[self.id_exp, self.t] = 2
 
         else:
-            rho = self.rd_orientation[idx]
+            rho = self.rd_orientation[self.id_exp, self.t]
             self.orientation = Geo.angle_sum(self.orientation, rho)
-            self.res_attachments.append(0)
 
-        self.res_orient.append(np.around(self.orientation, 6))
+        self.res_orient[self.id_exp, self.t] = self.orientation
 
     def write(self):
         self.exp.write(self.name_orient)
