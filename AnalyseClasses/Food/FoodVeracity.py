@@ -1253,8 +1253,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         w = 10
         discrim_name = 'w'+str(w)+'s_food_path_efficiency'
 
-        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
-        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -1266,8 +1266,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         w = 16
         discrim_name = 'w'+str(w)+'s_food_path_efficiency'
 
-        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
-        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -1385,10 +1385,10 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         last_frame_name = 'food_exit_frames'
 
         name = '%s_hist_evol_%s' % (variable_name, discrim_name)
-        # start_eff_intervals = [0, 0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975]
-        # end_eff_intervals = [0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975, 1]
-        start_eff_intervals = np.around([0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95], 2)
-        end_eff_intervals = np.around([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1], 2)
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
+
         dtheta = np.pi / 25.
         bins = np.arange(0, np.pi + dtheta, dtheta)
         x = (bins[1:] + bins[:-1]) / 2.
@@ -1443,16 +1443,15 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        d_rate = 0.1
-        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
-        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+        start_rate_intervals = np.around([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
+        end_rate_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2], 1)
 
         result_name = self._get_food_direction_error_over_attachment_rate(
             bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
-                               title='')
+                               title='Directional error over attachment rate', label_suffix=r's$^{-1}$')
         ax.set_ylim((0, 0.6))
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
@@ -1465,16 +1464,15 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        d_rate = 0.1
-        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
-        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+        start_rate_intervals = np.around([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
+        end_rate_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2], 1)
 
         result_name = self._get_food_direction_error_over_attachment_rate(
             bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
-                               title='')
+                               title='Directional error over outside attachment rate', label_suffix=r's$^{-1}$')
         ax.set_ylim((0, 0.6))
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
@@ -1487,16 +1485,15 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        d_rate = 0.1
-        start_rate_intervals = np.around(np.arange(0, 1, d_rate), 1)
-        end_rate_intervals = np.around(start_rate_intervals+d_rate, 1)
+        start_rate_intervals = np.around([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
+        end_rate_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2], 1)
 
         result_name = self._get_food_direction_error_over_attachment_rate(
             bins, discrim_name, discrim_name2, end_rate_intervals, redo, start_rate_intervals, w)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
-                               title='')
+                               title='Directional error over inside attachment rate', label_suffix=r's$^{-1}$')
         ax.set_ylim((0, 0.6))
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
@@ -1518,7 +1515,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot(xlabel=r'$\theta_{error}$ (rad)', ylabel='PDF', normed=2,
-                               title='')
+                               title='Directional error over prop. of outside attachments')
         ax.set_ylim((0, 0.6))
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
@@ -1594,7 +1591,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         df.reset_index(inplace=True)
         df.drop(columns=id_ant_name, inplace=True)
         df.set_index([id_exp_name, id_frame_name], inplace=True)
-        df = df.rolling(window=w * 100, min_periods=100).mean() * 100
+        df = df.rolling(window=w * 100, min_periods=100).sum() / 10.
         self.exp.change_df(discrim_name, df)
 
     def _get_food_direction_error_over_attachment_prop_rate(
@@ -1637,7 +1634,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         result_name = '%s_hist_evol_%s' % (variable_name, discrim_name)
 
         start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
-        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 1)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 2], 1)
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -1655,7 +1652,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         discrim_name = 'inside_attachments'
 
         start_eff_intervals = np.around([0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 1)
-        end_eff_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1], 1)
+        end_eff_intervals = np.around([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 2], 1)
 
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
@@ -1689,10 +1686,12 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         self._add_attachment_rate_index(variable_name, 'outside_'+discrim_name, result_name)
 
         self._get_food_direction_error_over_attachment_rate_fit(
-            result_name, bins, 'outside_'+discrim_name, dtheta, end_eff_intervals, start_eff_intervals)
+            result_name, bins, 'outside_'+discrim_name, dtheta, end_eff_intervals, start_eff_intervals,
+            title=r'Prop. $\in$[%.1f, %.1f]')
 
     def _get_food_direction_error_over_attachment_rate_fit(self, name, bins, discrim_name, dtheta,
-                                                           end_eff_intervals, start_eff_intervals):
+                                                           end_eff_intervals, start_eff_intervals,
+                                                           title=r'Rate $\in$[%.1f, %.1f] $s^{-1}$'):
 
         x = (bins[1:] + bins[:-1]) / 2.
         self.exp.operation(name, np.abs)
@@ -1713,7 +1712,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(temp_name))
             plotter.plot(
                 preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
-                label_suffix=' s', title=r'Rate $\in$[%.2f, %.2f]' % (eff0, eff1), c=cols[str(ii)],
+                label_suffix=' s', title=title % (eff0, eff1), c=cols[str(ii)],
                 label='Experiment', normed=2)
 
             y = self.exp.get_df(temp_name).values.ravel()

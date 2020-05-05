@@ -236,7 +236,7 @@ class AnalyseFoodConfidence(AnalyseClassDecorator):
         result_name = 'w' + str(w) + 's_food_path_efficiency'
 
         hist_name = result_name + '_hist'
-        bins = np.arange(0, 1, 0.01)
+        bins = np.arange(0, 1, 0.05)
         label = 'Food path efficiency'
         description = 'Distance crossed by the food during ' + str(w) + ' s ' \
                       'divided by the total distance crossed by the food during the same time'

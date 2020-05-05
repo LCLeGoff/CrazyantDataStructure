@@ -842,6 +842,7 @@ class PlotUOModel(AnalyseClassDecorator):
         if suff is not None:
             name_model += '_'+suff
 
+        exp_name = 'w' + str(window) + 's_food_path_efficiency_hist'
         result_name = 'path_efficiency_%s' % name_model
 
         if redo:
@@ -863,14 +864,18 @@ class PlotUOModel(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
+        self.exp.load(exp_name)
+        plotter = Plotter(self.exp.root, self.exp.get_data_object(exp_name))
+        fig, ax = plotter.plot(normed=True, c='navy')
+
+        bins = np.arange(0, 1, 0.05)
+        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         labels = []
-        for column_name in self.exp.get_columns(result_name):
+        for column_name in self.exp.get_columns(hist_name):
             labels.append(self.get_label(column_name=column_name, option=label_option))
 
-        bins = np.arange(0, 1, 0.01)
-        hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
-        fig, ax = plotter.plot(normed=True, label=labels)
+        plotter.plot(preplot=(fig, ax), normed=True, label=labels)
         plotter.save(fig)
 
     def compute_plot_path_efficiency(self, name_model, para, suff=None, redo=False, label_option=None):
