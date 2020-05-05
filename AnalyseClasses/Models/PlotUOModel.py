@@ -1135,8 +1135,10 @@ class PlotUOModel(AnalyseClassDecorator):
 
         name_exp = 'food_direction_error'
         name_eff_exp = 'attachments'
+        last_frame_name = 'food_exit_frames'
 
-        self.exp.load([name_model, name_attachments, name_exp, name_eff_exp])
+        self.exp.load([name_model, name_attachments, name_exp, name_eff_exp, last_frame_name])
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(name_exp, last_frame_name)
 
         temp_name = 'temp'
         temp_exp_name = 'temp_exp'

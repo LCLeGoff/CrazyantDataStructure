@@ -1202,11 +1202,13 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         name = 'food_direction_error'
         temp_name = '%s_%s' % (name, discrim_name)
         result_name = '%s_hist_evol_%s' % (name, discrim_name)
+        last_frame_name = 'food_exit_frames'
         label = 'Food direction error distribution over path efficiency (rad)'
         description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
                       'which gives in radian how much the food is not going in the good direction (rad)'
         if redo:
-            self.exp.load([name, discrim_name])
+            self.exp.load([name, discrim_name, last_frame_name])
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, last_frame_name)
 
             self._add_path_efficiency_index(name, discrim_name, temp_name, w=w)
 
@@ -1276,9 +1278,11 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
     def _get_food_direction_error_over_path_efficiency_fit(self, bins, discrim_name, dtheta, end_eff_intervals,
                                                            start_eff_intervals):
         variable_name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
         name = '%s_hist_evol_%s' % (variable_name, discrim_name)
         x = (bins[1:] + bins[:-1]) / 2.
-        self.exp.load([variable_name, discrim_name])
+        self.exp.load([variable_name, discrim_name, last_frame_name])
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(variable_name, last_frame_name)
         self._add_path_efficiency_index(variable_name, discrim_name, name)
         self.exp.operation(name, np.abs)
         temp_name = 'temp'
@@ -1327,18 +1331,25 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
     def _get_direction_error_over_path_efficiency_resolution1pc(self, w, redo):
         discrim_name = 'w' + str(w) + 's_food_path_efficiency_resolution1pc'
         name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
+
         temp_name = '%s_%s' % (name, discrim_name)
         result_name = '%s_hist_evol_%s' % (name, discrim_name)
+
         dtheta = np.pi / 12.
         bins = np.arange(0, np.pi + dtheta, dtheta)
+
         start_eff_intervals = [0, 0.3, 0.5, 0.75, 0.8, 0.85, 0.9, 0.925, 0.95, 0.975]
         end_eff_intervals = [0.3, 0.5, 0.75, 0.8, 0.85, 0.9, 0.925, 0.95, 0.975, 1]
+
         label = 'Food direction error distribution over path efficiency (rad)'
         description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
                       'which gives in radian how much the food is not going in the good direction (rad)'
         if redo:
-            self.exp.load([name, discrim_name])
+            self.exp.load([name, discrim_name, last_frame_name])
             self.exp.change_df(name, self.exp.get_df(name).reindex(self.exp.get_index(discrim_name)))
+
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, last_frame_name)
 
             self._add_path_efficiency_index(name, discrim_name, temp_name, w=w)
 
@@ -1371,6 +1382,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
     def _get_direction_error_over_path_efficiency_resolution1pc_fit(self, w):
         discrim_name = 'w' + str(w) + 's_food_path_efficiency_resolution1pc'
         variable_name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
+
         name = '%s_hist_evol_%s' % (variable_name, discrim_name)
         # start_eff_intervals = [0, 0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975]
         # end_eff_intervals = [0.3, 0.5, 0.75, 0.8, 0.9, 0.925, 0.95, 0.975, 1]
@@ -1379,10 +1392,14 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi / 25.
         bins = np.arange(0, np.pi + dtheta, dtheta)
         x = (bins[1:] + bins[:-1]) / 2.
-        self.exp.load([variable_name, discrim_name])
+
+        self.exp.load([variable_name, discrim_name, last_frame_name])
         self.exp.change_df(variable_name, self.exp.get_df(variable_name).reindex(self.exp.get_index(discrim_name)))
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(variable_name, last_frame_name)
+
         self._add_path_efficiency_index(variable_name, discrim_name, name)
         self.exp.operation(name, np.abs)
+
         temp_name = 'temp'
         plotter = BasePlotters()
         cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
@@ -1510,12 +1527,15 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                                                        start_eff_intervals, w=10):
         name = 'food_direction_error'
         temp_name = '%s_%s' % (name, discrim_name)
+        last_frame_name = 'food_exit_frames'
+
         result_name = '%s_hist_evol_%s' % (name, discrim_name2)
         label = 'Food direction error distribution over attachment rate (rad)'
         description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
                       'which gives in radian how much the food is not going in the good direction (rad)'
         if redo:
-            self.exp.load([name, discrim_name])
+            self.exp.load([name, discrim_name, last_frame_name])
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, last_frame_name)
 
             self._get_rolling_rate(discrim_name, w)
             self._add_attachment_rate_index(name, discrim_name, temp_name)
@@ -1581,6 +1601,7 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self, bins, discrim_name, discrim_name2, end_eff_intervals, redo, start_eff_intervals, w):
 
         name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
 
         temp_name = '%s_%s' % (name, discrim_name)
         result_name = '%s_hist_evol_%s' % (name, discrim_name2)
@@ -1588,7 +1609,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         description = 'Histogram of the angle between the food velocity and the food-exit vector,' \
                       'which gives in radian how much the food is not going in the good direction (rad)'
         if redo:
-            self.exp.load([name, 'outside_'+discrim_name, 'inside_'+discrim_name])
+            self.exp.load([name, 'outside_'+discrim_name, 'inside_'+discrim_name, last_frame_name])
+            self.cut_last_frames_for_indexed_by_exp_frame_indexed(name, last_frame_name)
 
             self._get_rolling_prop(discrim_name, w)
             self._add_attachment_rate_index(name, 'outside_'+discrim_name, temp_name)
@@ -1610,6 +1632,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
 
     def compute_food_direction_error_hist_evol_outside_attachment_rate_fit(self):
         discrim_name = 'outside_attachments'
+        variable_name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
+        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name)
 
         start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
         end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 1)
@@ -1617,9 +1642,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        variable_name = 'food_direction_error'
-        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name)
-        self.exp.load([variable_name, discrim_name])
+        self.exp.load([variable_name, discrim_name, last_frame_name])
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(variable_name, last_frame_name)
+
         self._get_rolling_rate(discrim_name, 10)
         self._add_attachment_rate_index(variable_name, discrim_name, result_name)
 
@@ -1647,6 +1672,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
     def compute_food_direction_error_hist_evol_attachment_prop_fit(self):
         discrim_name = 'attachments'
         discrim_name2 = 'attachment_prop_rate'
+        variable_name = 'food_direction_error'
+        last_frame_name = 'food_exit_frames'
+        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name2)
 
         start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 1)
         end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 1)
@@ -1654,9 +1682,9 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         dtheta = np.pi/25.
         bins = np.arange(0, np.pi+dtheta, dtheta)
 
-        variable_name = 'food_direction_error'
-        result_name = '%s_hist_evol_%s' % (variable_name, discrim_name2)
-        self.exp.load(variable_name)
+        self.exp.load([variable_name, last_frame_name])
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(variable_name, last_frame_name)
+
         self._get_rolling_prop(discrim_name, 10)
         self._add_attachment_rate_index(variable_name, 'outside_'+discrim_name, result_name)
 
