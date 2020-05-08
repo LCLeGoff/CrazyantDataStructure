@@ -1070,6 +1070,20 @@ class PlotUOModel(AnalyseClassDecorator):
 
         self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
 
+    def _get_rolling_rate(self, discrim_name, para, w, temp_name):
+
+        df_out = self.exp.get_df(discrim_name)[para].copy()
+        df_out[df_out == 2] = 0
+        df_out = df_out.rolling(window=w, min_periods=2).mean()
+
+        df_in = self.exp.get_df(discrim_name)[para].copy()
+        df_in[df_in == 1] = 0
+        df_in[df_in == 2] = 1
+        df_in = df_in.rolling(window=w, min_periods=2).mean()
+
+        self.exp.add_new_dataset_from_df(df=df_out, name=temp_name % 'outside', replace=True)
+        self.exp.add_new_dataset_from_df(df=df_in, name=temp_name % 'inside', replace=True)
+
     def _get_rolling_prop4exp(self, discrim_name, w):
         self.exp.load(['outside_' + discrim_name, 'inside_' + discrim_name])
 
@@ -1088,6 +1102,17 @@ class PlotUOModel(AnalyseClassDecorator):
         df = df_out / (df_in + df_out)
 
         self.exp.change_df('outside_' + discrim_name, df)
+
+    def _get_rolling_rate4exp(self, discrim_name, w):
+        self.exp.load(discrim_name)
+
+        df = self.exp.get_df(discrim_name).copy()
+        df.reset_index(inplace=True)
+        df.drop(columns=id_ant_name, inplace=True)
+        df.set_index([id_exp_name, id_frame_name], inplace=True)
+        df = df.rolling(window=w * 100, min_periods=100).mean() * 100
+
+        self.exp.change_df(discrim_name, df)
 
     def _add_attachment_index(self, name, discrim_name, para, temp_name):
 
@@ -1128,6 +1153,103 @@ class PlotUOModel(AnalyseClassDecorator):
         df.index = index2
 
         self.exp.add_new_dataset_from_df(df=df, name=temp_name, replace=True)
+
+    def compute_plot_attachment_rate_fit(self, name_model, para, suff=None, title_option=None):
+        if suff is not None:
+            name_model += '_' + suff
+
+        name_attachments = name_model + '_attachments'
+
+        name_exp = 'food_direction_error'
+        name_eff_exp = '%s_attachments'
+        last_frame_name = 'food_exit_frames'
+
+        self.exp.load([name_model, name_attachments, name_exp,
+                       name_eff_exp % 'outside', name_eff_exp % 'inside', last_frame_name])
+        self.cut_last_frames_for_indexed_by_exp_frame_indexed(name_exp, last_frame_name)
+
+        temp_name = 'temp_%s'
+        temp_exp_name = 'temp_exp'
+        result_name = '%s_hist_evol_%s_%s_%s_fit'
+
+        start_eff_intervals = np.around([0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 2)
+        end_eff_intervals = np.around([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 2)
+
+        dtheta = np.pi/25.
+        bins = np.arange(0, np.pi+dtheta, dtheta)
+        x = (bins[1:]+bins[:-1])/2.
+
+        df = self.exp.get_df(name_model).copy()
+        fps = int(100 / float(df.index.get_level_values('t')[1]))
+
+        self._get_rolling_rate(name_attachments, para, 10*fps, temp_name)
+
+        for suff in ['outside', 'inside']:
+            self._add_attachment_index(name_model, temp_name % suff, para, temp_name)
+
+            self._get_rolling_rate4exp(name_eff_exp % suff, 10)
+            self._add_attachment_index_for_exp(name_exp, name_eff_exp % suff, temp_exp_name)
+
+            self.exp.operation(temp_name, np.abs)
+            self.exp.operation(temp_exp_name, np.abs)
+
+            plotter = BasePlotters()
+            cols = plotter.color_object.create_cmap('hot', range(len(start_eff_intervals)))
+            fig, ax = plotter.create_plot(
+                figsize=(8, 8), nrows=3, ncols=3,  left=0.08, bottom=0.06, top=0.96, hspace=0.4, wspace=0.3)
+
+            title = self.get_label(para, option=title_option)
+            fig.suptitle(title)
+
+            for ii in range(len(start_eff_intervals)):
+                j0 = int(ii/3)
+                j1 = ii-j0*3
+
+                c = cols[str(ii)]
+                eff0 = start_eff_intervals[ii]
+                eff1 = end_eff_intervals[ii]
+
+                hist_name = self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=[eff0],
+                                                      end_frame_intervals=[eff1], bins=bins,
+                                                      category=self.category, replace=True)
+
+                hist_exp_name = self.exp.hist1d_evolution(name_to_hist=temp_exp_name, start_frame_intervals=[eff0],
+                                                          end_frame_intervals=[eff1], bins=bins,
+                                                          category=self.category, replace=True)
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_exp_name))
+                plotter.plot(
+                    preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF',
+                    title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), label='Experiment', normed=2,
+                    marker=None, c='navy', display_legend=False
+                    )
+
+                plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+                plotter.plot(
+                    preplot=(fig, ax[j0, j1]), xlabel=r'$\theta$ (rad)', ylabel='PDF', ls='',
+                    title=r'Eff.$\in$[%.2f, %.2f]' % (eff0, eff1), c=c,
+                    display_legend=False, label='model', normed=2)
+
+                y = self.exp.get_df(hist_name).values.ravel()
+                mask = np.where(~np.isnan(y))[0]
+                if len(mask) > 0:
+                    y = y[mask]
+                    x2 = x[mask]
+                    s = np.sum(y)
+                    if s > 0:
+                        y = y/s / dtheta/2.
+                    popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x2, y, p0=[0.2, 2.], bounds=(0, [1, np.inf]))
+                    q = round(popt[0], 2)
+                    kappa = round(popt[1], 2)
+
+                    y_fit = self._uniform_vonmises_dist(x2, q, kappa)
+
+                    ax[j0, j1].plot(x, y_fit, c=c, label=r'q=%.2f, $\kappa$=%.2f' % (q, kappa))
+                ax[j0, j1].set_ylim(0, 1)
+                plotter.draw_legend(ax[j0, j1])
+
+            plotter.save(fig, name=result_name % (name_model, suff, 'attachment_rate', para))
+        self.exp.remove_object(name_exp)
 
     def compute_plot_attachment_prop_fit(self, name_model, para, suff=None, title_option=None):
         if suff is not None:

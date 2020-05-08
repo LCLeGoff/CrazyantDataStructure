@@ -161,6 +161,7 @@ def show_new_results2(n_replica, fps=None):
     for kappa_orient, c, k_i, p_l in para_list:
         para = "(%s, %s, %s, %s, %s)" % (str(c), str(c), str(kappa_orient), str(k_i), str(p_l))
         PlotUOModel.compute_plot_attachment_prop_fit(name_model, para, suff)
+        PlotUOModel.compute_plot_attachment_rate_fit(name_model, para, suff)
 
 
 # show_previous_results(5000)
