@@ -904,7 +904,7 @@ class PlotUOModel(AnalyseClassDecorator):
         if redo:
             self.exp.load([name_model, name_eff])
 
-            self._add_path_efficiency_index(name_model, para, name_eff, temp_name, w=16)
+            self._add_path_efficiency_index(name_model, para, name_eff, temp_name)
             self.exp.operation(temp_name, lambda a: np.abs(a))
 
             self.exp.hist1d_evolution(name_to_hist=temp_name, start_frame_intervals=start_eff_intervals,
@@ -928,19 +928,15 @@ class PlotUOModel(AnalyseClassDecorator):
         plotter.draw_legend(ax=ax, ncol=2)
         plotter.save(fig)
 
-    def _add_path_efficiency_index(self, name, para, name_eff, temp_name, w):
+    def _add_path_efficiency_index(self, name, para, name_eff, temp_name):
 
         index_error = self.exp.get_index(name).copy()
         index_exp = index_error.get_level_values(id_exp_name)
         index_frame = index_error.get_level_values('t')
 
         df_eff = pd.DataFrame(self.exp.get_df(name_eff)[para], columns=[para])
-        df_eff.reset_index(inplace=True)
-        df_eff['t'] += 50*w
-        df_eff.set_index([id_exp_name, 't'], inplace=True)
-        df_eff = df_eff.reindex(index_error)
-
         index_discrim = np.around(df_eff.loc[index_error].values.ravel(), 3)
+
         mask = np.where(~np.isnan(index_discrim))[0]
         index1 = list(zip(index_exp[mask], index_frame[mask]))
         index2 = list(zip(index_exp[mask], index_frame[mask], index_discrim[mask]))
@@ -981,7 +977,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
         name_eff = 'path_efficiency_%s' % name_model
         name_exp = 'food_direction_error'
-        name_eff_exp = 'w16s_food_path_efficiency_resolution1pc'
+        name_eff_exp = 'w10s_food_path_efficiency'
 
         self.exp.load([name_model, name_eff, name_exp, name_eff_exp])
 
@@ -996,8 +992,8 @@ class PlotUOModel(AnalyseClassDecorator):
         bins = np.arange(0, np.pi+dtheta, dtheta)
         x = (bins[1:]+bins[:-1])/2.
 
-        self._add_path_efficiency_index(name_model, para, name_eff, temp_name, w=16)
-        self._add_path_efficiency_index_for_exp(name_exp, name_eff_exp, temp_exp_name, w=16)
+        self._add_path_efficiency_index(name_model, para, name_eff, temp_name)
+        self._add_path_efficiency_index_for_exp(name_exp, name_eff_exp, temp_exp_name, w=10)
 
         self.exp.operation(temp_name, np.abs)
         self.exp.operation(temp_exp_name, np.abs)
@@ -1157,7 +1153,10 @@ class PlotUOModel(AnalyseClassDecorator):
         bins = np.arange(0, np.pi+dtheta, dtheta)
         x = (bins[1:]+bins[:-1])/2.
 
-        self._get_rolling_prop(name_attachments, para, 10, temp_name)
+        df = self.exp.get_df(name_model).copy()
+        fps = int(100 / float(df.index.get_level_values('t')[1]))
+
+        self._get_rolling_prop(name_attachments, para, 10*fps, temp_name)
         self._add_attachment_index(name_model, temp_name, para, temp_name)
 
         self._get_rolling_prop4exp(name_eff_exp, 10)
