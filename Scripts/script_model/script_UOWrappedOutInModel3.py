@@ -137,10 +137,12 @@ def show_new_results(n_replica, fps=None):
 
 
 def show_new_results2(n_replica, fps=None):
-    kappa_orientation = 2
-    c_list = [0.5, 0.9, 0.95, 1.]
+    kappa_orientation = 3
+    kappa_info = 6
+    u = 0.4
+    c_list = [0.5, 0.85, 0.9, 0.95, 1.0]
 
-    para_list = [(kappa_orientation, c, 4, 0.5) for c in c_list]
+    para_list = [(kappa_orientation, c, kappa_info, u) for c in c_list]
     suff = 'kappa_orient'+str(kappa_orientation)
     if fps is not None:
         suff += '_'+str(int(fps))+'fps'
@@ -170,11 +172,11 @@ def show_new_results2(n_replica, fps=None):
 # show_new_results(2500)
 # show_new_results2(5000)
 
-show_previous_results(2000, fps=100)
-show_previous_results2(2000, fps=100)
-show_path_efficiency(200, fps=100)
-show_new_results(2000, fps=100)
-show_new_results2(2000, fps=100)
+# show_previous_results(2000, fps=100)
+# show_previous_results2(2000, fps=100)
+# show_path_efficiency(200, fps=100)
+# show_new_results(2000, fps=100)
+show_new_results2(1000, fps=100)
 
 
 # suff = 'test'
