@@ -60,7 +60,7 @@ class Plotter(BasePlotters):
 
     def plot_with_error(
             self, normed=False, title=None, title_prefix=None, label_suffix=None, label=None,
-            preplot=None, figsize=None, draw_lims=False, **kwargs):
+            preplot=None, figsize=None, draw_lims=False, bar_width=None, **kwargs):
 
         if self.obj.get_dimension() == 3:
             fig, ax, label = self.__prepare_plot(preplot, figsize, label, label_suffix, title, title_prefix, kwargs)
@@ -68,7 +68,7 @@ class Plotter(BasePlotters):
             x = self.obj.get_index_array()
 
             y = self.__get_y(normed, x)
-            self.__plot_xy_with_error(ax, x, y, label, draw_lims=draw_lims)
+            self.__plot_xy_with_error(ax, x, y, label, draw_lims=draw_lims, bar_width=bar_width)
 
             return fig, ax
         else:
@@ -186,9 +186,11 @@ class Plotter(BasePlotters):
     def draw_legend(ax, loc=0, framealpha=0.2, ncol=1):
         ax.legend(loc=loc, framealpha=framealpha, ncol=ncol)
 
-    def __plot_xy_with_error(self, ax, x, y, label, draw_lims=False):
+    def __plot_xy_with_error(self, ax, x, y, label, draw_lims=False, bar_width=None):
         self.line['markerfacecolor'] = 'w'
-        ax.errorbar(x, y[0], yerr=[y[1], y[2]], label=label, lolims=draw_lims, uplims=draw_lims, **self.line)
+        ax.errorbar(
+            x, y[0], yerr=[y[1], y[2]], label=label, lolims=draw_lims, uplims=draw_lims,
+            elinewidth=bar_width, **self.line)
         if self.column_name not in self.obj.get_column_names():
             self.column_name = str(self.column_name)
 

@@ -217,7 +217,7 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
         name = 'outside_leading_attachment_intervals'
 
         result_name = 'nb_outside_leading_attachments_evol_around_first_outside_attachment'
-        init_frame_name = 'first_leading_attachment_time_of_outside_ant'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
 
         dx = 0.05
         dx2 = 1/6.
@@ -232,24 +232,24 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
         fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
-                                          label='probability', marker='', title='')
+                                          label=r'$r_{out}$', marker='', title='', c='r')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
-        ax.set_xlim(0, 80)
+        ax.set_xlim(0, 120)
         ax.set_ylim(0, 0.15)
         plotter.draw_horizontal_line(ax, val=0.057, c='w', ls='-', label='y=0.057')
         plotter.draw_legend(ax)
         plotter.save(fig)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$p_{out}$',
-                                          label='probability', marker='', title='')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$r_{out}$',
+                                          label=r'$r_{out}$', marker='', title='', c='r')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[2, 100])
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[17, 100])
         # lim = 20
         # plotter.plot_fit(preplot=(fig, ax), typ='linear', window=[2, lim], c='orange')
         # plotter.plot_fit(preplot=(fig, ax), typ='cst', window=[lim, 100], c='red')
-        ax.set_xlim(0, 80)
-        ax.set_ylim(0, 0.14)
+        ax.set_xlim(0, 120)
+        ax.set_ylim(0, 0.15)
         plotter.draw_legend(ax)
         ax.grid()
         plotter.save(fig, suffix='2')
@@ -274,22 +274,22 @@ class AnalyseLeadingAttachments(AnalyseClassDecorator):
                                       label % typ, description % typ, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$p_{in}$',
-                                          label='probability', marker='', title='')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$r_{in}$',
+                                          label=r'$r_{in}$', marker='', title='', c='navy')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
         plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[20, 100])
 
-        ax.set_xlim(0, 80)
-        ax.set_ylim(0, .14)
+        ax.set_xlim(0, 120)
+        ax.set_ylim(0, .15)
         plotter.draw_vertical_line(ax)
         ax.grid()
         plotter.save(fig)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$p_{in}(t)$',
-                                          label=r'$p_{in}$', marker='', title='')
+        fig, ax = plotter.plot_with_error(xlabel='Time (s)', ylabel=r'$r_{in}(t)$',
+                                          label=r'$r_{in}$', marker='', title='', c='navy')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='p')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[20, 100])
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[21, 100])
         x = np.arange(0, 150, 0.1)
         p_in = Fits.exp_fct(x, -0.062, 3.1, 0.64)*0.057
         ax.plot(x, p_in, label=r'$(1-q)/q(t) p_{out}$', c='navy')

@@ -7,6 +7,8 @@ from matplotlib.ticker import MultipleLocator
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools.ArrayManipulation import get_max_entropy, get_entropy2
+from Tools.MiscellaneousTools.FoodFisherInformation import compute_fisher_information_uniform_von_mises, \
+    compute_fisher_information_uniform_von_mises_fix
 from Tools.Plotter.ColorObject import ColorObject
 from Tools.Plotter.Plotter import Plotter
 
@@ -41,21 +43,42 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
     def __compute_fisher_info(self, time_intervals, variable_name, info_result_name):
         for t in time_intervals:
             print(t)
-            values = np.array(self.exp.get_df(variable_name)[str(t)].dropna())
-            fisher_info = round(1 / np.var(values), 5)
+            values = np.array(self.exp.get_df(variable_name).loc[pd.IndexSlice[:], str(t-0.5):str(t+0.5)].dropna())
+            # values = np.array(self.exp.get_df(variable_name)[str(t)].dropna())
+            fisher_info, q, kappa, cov_mat = compute_fisher_information_uniform_von_mises(values, get_fit_quality=True)
+            # fisher_info = round(1 / np.var(values), 5)
+            q_err, kappa_err = 1.96*np.sqrt(np.diagonal(cov_mat))
 
-            lg = len(values)
-            fisher_list = []
-            for i in range(1000):
-                idx = np.random.randint(0, lg, lg)
-                val = values[idx]
-                fisher_list.append(1 / np.var(val))
+            q1 = max(q - q_err, 0)
+            q2 = min(q + q_err, 1)
+            kappa1 = max(kappa - kappa_err, 0)
+            kappa2 = kappa + kappa_err
+            fi1 = compute_fisher_information_uniform_von_mises_fix(q1, kappa1)
+            fi2 = compute_fisher_information_uniform_von_mises_fix(q2, kappa2)
 
             self.exp.get_df(info_result_name).loc[t, 'info'] = fisher_info
-            ci95 = round(fisher_info - np.percentile(fisher_list, 2.5), 5)
-            self.exp.get_df(info_result_name).loc[t, 'CI95_1'] = ci95
-            ci95 = round(np.percentile(fisher_list, 97.5) - fisher_info, 5)
-            self.exp.get_df(info_result_name).loc[t, 'CI95_2'] = ci95
+            self.exp.get_df(info_result_name).loc[t, 'CI95_2'] = fi2-fisher_info
+            self.exp.get_df(info_result_name).loc[t, 'CI95_1'] = fisher_info-fi1
+
+            # lg = len(values)
+            # fisher_list = []
+            # i = 0
+            # while i < 1000:
+            #     try:
+            #         idx = np.random.randint(0, lg, lg)
+            #         val = values[idx]
+            #         fi = compute_fisher_information_uniform_von_mises(val)
+            #         # fisher_list.append(1 / np.var(val))
+            #         fisher_list.append(fi)
+            #         i += 1
+            #     except RuntimeError:
+            #         pass
+
+            # self.exp.get_df(info_result_name).loc[t, 'info'] = fisher_info
+            # ci95 = round(fisher_info - np.percentile(fisher_list, 2.5), 5)
+            # self.exp.get_df(info_result_name).loc[t, 'CI95_1'] = ci95
+            # ci95 = round(np.percentile(fisher_list, 97.5) - fisher_info, 5)
+            # self.exp.get_df(info_result_name).loc[t, 'CI95_2'] = ci95
 
     def compute_mm1s_food_direction_error_around_outside_leader_attachments(self):
         attachment_name = 'outside_attachment_intervals'
@@ -1007,7 +1030,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self, fct, variable_name, info_result_name, info_label, info_description,
             ylim_zoom, redo, plot=True):
 
-        t0, t1, dt = -10, 10, .5
+        t0, t1, dt = -9.5, 10, .5
         time_intervals = np.around(np.arange(t0, t1 + dt, dt), 1)
         if redo:
 
@@ -1040,7 +1063,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         fig, ax = plotter.create_plot()
         plotter.plot_with_error(
             preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
-            title='', label='outside', c='red')
+            title='', label='outside', c='red', bar_width=2.7)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
         plotter.plot_with_error(
@@ -1048,38 +1071,16 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             title='', label='inside', c='navy')
 
         ax.set_xlim(-2, 8)
-        ax.set_ylim(0.3, .8)
+        ax.set_ylim(0., 1.25)
         plotter.draw_vertical_line(ax, label='attachment')
         m = []
-        m += list(self.exp.get_df(outside_name).loc[-2:0, 'info'])[:-1]
-        m += list(self.exp.get_df(inside_name).loc[-2:0, 'info'])[:-1]
+        m += list(self.exp.get_df(outside_name).loc[-2:0.5, 'info'])[:-1]
+        m += list(self.exp.get_df(inside_name).loc[-2:0.5, 'info'])[:-1]
         y0 = np.around(np.mean(m), 2)
         plotter.draw_horizontal_line(ax, val=y0, c='w', label='y= %.2f' % y0)
         plotter.draw_legend(ax)
 
         plotter.save(fig, name=result_name)
-
-        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(outside_name))
-        plotter.column_name = 'info'
-        fig, ax = plotter.create_plot()
-
-        plotter.plot(
-            fct_y=lambda x: 1 / x,
-            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance', title='', label='outside', c='red')
-
-        plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
-        plotter.column_name = 'info'
-        plotter.plot(
-            fct_y=lambda x: 1 / x,
-            preplot=(fig, ax), xlabel='Time (s)', ylabel='Variance',
-            title='', label='inside', c='navy')
-
-        ax.set_xlim(-2, 8)
-        # ax.set_ylim(0.3, .8)
-        plotter.draw_vertical_line(ax, label='attachment')
-        plotter.draw_legend(ax)
-
-        plotter.save(fig, name=result_name+'_var')
 
     def compute_fisher_information_mm1s_food_direction_error_around_outside_leader_attachments_evol(
             self, redo=False):
@@ -1099,7 +1100,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         start_frame_intervals = np.array([0, ])*100
         end_frame_intervals = np.array([45, 140])*100
 
-        ylim = (0.25, 1.25)
+        ylim = None
 
         self.__compute_fisher_information_around_leader_attachments_evol(
             self.__compute_fisher_info_evol, ylim, variable_name, info_result_name,
@@ -1126,7 +1127,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         start_frame_intervals = np.arange(0, 1.5, dx)*60*100
         end_frame_intervals = start_frame_intervals + dx2*60*100
 
-        ylim = (0.25, 1.25)
+        ylim = None
 
         self.__compute_fisher_information_around_leader_attachments_evol(
             self.__compute_fisher_info_evol, ylim, variable_name, info_result_name,
@@ -1165,21 +1166,45 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             print(t)
             for t1, t2 in list(zip(start_intervals, end_intervals)):
                 values = np.array(self.exp.get_df(variable_name)[str(t)].loc[:, t1:t2].dropna())
-                fisher_info = round(1 / np.var(values), 5)
+                # fisher_info = round(1 / np.var(values), 5)
+                # fisher_info = compute_fisher_information_uniform_von_mises(values)
 
-                lg = len(values)
-                fisher_list = []
-                for i in range(1000):
-                    idx = np.random.randint(0, lg, lg)
-                    val = values[idx]
-                    fisher_list.append(1 / np.var(val))
+                fisher_info, q, kappa, cov_mat = compute_fisher_information_uniform_von_mises(
+                    values, get_fit_quality=True)
+                q_err, kappa_err = 1.96 * np.sqrt(np.diagonal(cov_mat))
 
-                q1 = np.percentile(fisher_list, 2.5)
-                q2 = np.percentile(fisher_list, 97.5)
+                q1 = max(q - q_err, 0)
+                q2 = min(q + q_err, 1)
+                kappa1 = max(kappa - kappa_err, 0)
+                kappa2 = kappa + kappa_err
+                fi1 = compute_fisher_information_uniform_von_mises_fix(q1, kappa1)
+                fi2 = compute_fisher_information_uniform_von_mises_fix(q2, kappa2)
 
-                self.exp.get_df(info_result_name).loc[(t1, t), 'info'] = fisher_info
-                self.exp.get_df(info_result_name).loc[(t1, t), 'CI95_1'] = round(fisher_info - q1, 5)
-                self.exp.get_df(info_result_name).loc[(t1, t), 'CI95_2'] = round(q2 - fisher_info, 5)
+                self.exp.get_df(info_result_name).loc[t, 'info'] = fisher_info
+                self.exp.get_df(info_result_name).loc[t, 'CI95_2'] = fi2 - fisher_info
+                self.exp.get_df(info_result_name).loc[t, 'CI95_1'] = fisher_info - fi1
+
+                # lg = len(values)
+                # fisher_list = []
+                #
+                # i = 0
+                # while i < 500:
+                #     try:
+                #         idx = np.random.randint(0, lg, lg)
+                #         val = values[idx]
+                #         fi = compute_fisher_information_uniform_von_mises(val)
+                #         # fisher_list.append(1 / np.var(val))
+                #         fisher_list.append(fi)
+                #         i += 1
+                #     except RuntimeError:
+                #         pass
+                #
+                # q1 = np.percentile(fisher_list, 2.5)
+                # q2 = np.percentile(fisher_list, 97.5)
+                #
+                # self.exp.get_df(info_result_name).loc[(t1, t), 'info'] = fisher_info
+                # self.exp.get_df(info_result_name).loc[(t1, t), 'CI95_1'] = round(fisher_info - q1, 5)
+                # self.exp.get_df(info_result_name).loc[(t1, t), 'CI95_2'] = round(q2 - fisher_info, 5)
 
     def __plot_info_evol(self, info_result_name, ylabel, ylim, start_intervals, end_intervals):
 
@@ -1240,7 +1265,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
 
         self.exp.get_df(variable_name).index = index2
 
-        ylim = (0.25, 1.25)
+        ylim = None
         labels = ['short', 'long']
 
         self.__compute_fisher_information_around_leader_attachments_split(
@@ -1283,21 +1308,38 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             print(t)
             for i, (t1, t2) in enumerate([(0, med), (med, maxi+1)]):
                 values = np.array(self.exp.get_df(variable_name)[str(t)].loc[:, t1:t2].dropna())
-                fisher_info = round(1 / np.var(values), 5)
+                # fisher_info = compute_fisher_information_uniform_von_mises(values)
+                # fisher_info = round(1 / np.var(values), 5)
 
-                lg = len(values)
-                fisher_list = []
-                for _ in range(1000):
-                    idx = np.random.randint(0, lg, lg)
-                    val = values[idx]
-                    fisher_list.append(1 / np.var(val))
+                fisher_info, q, kappa, cov_mat = compute_fisher_information_uniform_von_mises(
+                    values, get_fit_quality=True)
+                q_err, kappa_err = 1.96 * np.sqrt(np.diagonal(cov_mat))
 
-                q1 = np.percentile(fisher_list, 2.5)
-                q2 = np.percentile(fisher_list, 97.5)
+                q1 = max(q - q_err, 0)
+                q2 = min(q + q_err, 1)
+                kappa1 = max(kappa - kappa_err, 0)
+                kappa2 = kappa + kappa_err
+                fi1 = compute_fisher_information_uniform_von_mises_fix(q1, kappa1)
+                fi2 = compute_fisher_information_uniform_von_mises_fix(q2, kappa2)
 
-                self.exp.get_df(info_result_name).loc[(labels[i], t), 'info'] = fisher_info
-                self.exp.get_df(info_result_name).loc[(labels[i], t), 'CI95_1'] = round(fisher_info - q1, 5)
-                self.exp.get_df(info_result_name).loc[(labels[i], t), 'CI95_2'] = round(q2 - fisher_info, 5)
+                self.exp.get_df(info_result_name).loc[t, 'info'] = fisher_info
+                self.exp.get_df(info_result_name).loc[t, 'CI95_2'] = fi2 - fisher_info
+                self.exp.get_df(info_result_name).loc[t, 'CI95_1'] = fisher_info - fi1
+                # lg = len(values)
+                # fisher_list = []
+                # for _ in range(1000):
+                #     idx = np.random.randint(0, lg, lg)
+                #     val = values[idx]
+                #     fi = compute_fisher_information_uniform_von_mises(val)
+                #     # fisher_list.append(1 / np.var(val))
+                #     fisher_list.append(fi)
+                #
+                # q1 = np.percentile(fisher_list, 2.5)
+                # q2 = np.percentile(fisher_list, 97.5)
+                #
+                # self.exp.get_df(info_result_name).loc[(labels[i], t), 'info'] = fisher_info
+                # self.exp.get_df(info_result_name).loc[(labels[i], t), 'CI95_1'] = round(fisher_info - q1, 5)
+                # self.exp.get_df(info_result_name).loc[(labels[i], t), 'CI95_2'] = round(q2 - fisher_info, 5)
 
     def __plot_info_split(self, info_result_name, ylabel, ylim, labels):
 
@@ -1351,7 +1393,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
         fig, ax = plotter.create_plot()
         plotter.plot_with_error(
             preplot=(fig, ax), xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
-            title='', label='outside', c='red')
+            title='', label='outside', c='red', bar_width=2.7)
 
         plotter = Plotter(self.exp.root, obj=self.exp.get_data_object(inside_name))
         plotter.plot_with_error(
@@ -1359,12 +1401,12 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             title='', label='inside', c='navy')
 
         ax.set_xlim(-2, 8)
-        ax.set_ylim(0.3, .8)
+        ax.set_ylim(0., 1.6)
         plotter.draw_vertical_line(ax, label='attachment')
 
         m = []
-        m += list(self.exp.get_df(outside_name).loc[-2:0, 'info'][:-1])
-        m += list(self.exp.get_df(inside_name).loc[-2:0, 'info'][:-1])
+        m += list(self.exp.get_df(outside_name).loc[-2:0.5, 'info'][:-1])
+        m += list(self.exp.get_df(inside_name).loc[-2:0.5, 'info'][:-1])
         y0 = np.around(np.mean(m), 2)
 
         plotter.draw_horizontal_line(ax, val=y0, c='w', label='y= %.2f' % y0)
@@ -1476,8 +1518,9 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                               label=label, description=description)
 
             df = self.exp.get_df(name).copy().dropna()
-            df = df.rolling(window=w*100, center=True, min_periods=100).var()
-            df = 1/df
+            df = df.rolling(window=w*100, center=True, min_periods=100).apply(
+                compute_fisher_information_uniform_von_mises)
+            # df = 1/df
             df = df.reindex(self.exp.get_index(result_name))
             self.exp.change_df(result_name, df)
 
@@ -1687,19 +1730,44 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
                 values = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, :, fi0:fi1], str(t)]
                 r += len(values)
 
-                fisher_info = round(1 / np.var(values), 3)
-                lg = len(values)
-                fisher_list = []
-                for i in range(500):
-                    idx = np.random.randint(0, lg, lg)
-                    val = values[idx]
-                    fisher_list.append(1 / np.var(val))
+                # fisher_info = round(1 / np.var(values), 3)
+                # fisher_info = round(compute_fisher_information_uniform_von_mises(values), 3)
 
-                self.exp.get_df(result_name).loc[fi0, t]['info'] = fisher_info
-                ci95 = round(fisher_info - np.percentile(fisher_list, 2.5), 3)
-                self.exp.get_df(result_name).loc[fi0, t]['CI95_1'] = ci95
-                ci95 = round(np.percentile(fisher_list, 97.5) - fisher_info, 3)
-                self.exp.get_df(result_name).loc[fi0, t]['CI95_2'] = ci95
+                fisher_info, q, kappa, cov_mat = compute_fisher_information_uniform_von_mises(
+                    values, get_fit_quality=True)
+                q_err, kappa_err = 1.96 * np.sqrt(np.diagonal(cov_mat))
+
+                q1 = max(q - q_err, 0)
+                q2 = min(q + q_err, 1)
+                kappa1 = max(kappa - kappa_err, 0)
+                kappa2 = kappa + kappa_err
+                fi1 = compute_fisher_information_uniform_von_mises_fix(q1, kappa1)
+                fi2 = compute_fisher_information_uniform_von_mises_fix(q2, kappa2)
+
+                self.exp.get_df(result_name).loc[t, 'info'] = fisher_info
+                self.exp.get_df(result_name).loc[t, 'CI95_2'] = fi2 - fisher_info
+                self.exp.get_df(result_name).loc[t, 'CI95_1'] = fisher_info - fi1
+
+                # lg = len(values)
+                # fisher_list = []
+                #
+                # i = 0
+                # while i < 500:
+                #     try:
+                #         idx = np.random.randint(0, lg, lg)
+                #         val = values[idx]
+                #         fi = compute_fisher_information_uniform_von_mises(val)
+                #         # fisher_list.append(1 / np.var(val))
+                #         fisher_list.append(fi)
+                #         i += 1
+                #     except RuntimeError:
+                #         pass
+                #
+                # self.exp.get_df(result_name).loc[fi0, t]['info'] = fisher_info
+                # ci95 = round(fisher_info - np.percentile(fisher_list, 2.5), 3)
+                # self.exp.get_df(result_name).loc[fi0, t]['CI95_1'] = ci95
+                # ci95 = round(np.percentile(fisher_list, 97.5) - fisher_info, 3)
+                # self.exp.get_df(result_name).loc[fi0, t]['CI95_2'] = ci95
 
             print(fi0, r / (len(fi_intervals) - 1))
 
@@ -1707,7 +1775,7 @@ class AnalyseFoodInformationLeader(AnalyseClassDecorator):
             self, fct, fi_intervals, variable_name, info_result_name, hist_result_name,
             info_label, info_description, hist_label, hist_description, redo, list_exps=None):
 
-        t0, t1, dt = -2, 8, 2.
+        t0, t1, dt = -9.5, 9.5, 2.
         time_intervals = np.around(np.arange(t0, t1+1 + dt, dt), 1)
 
         dtheta = np.pi/10.

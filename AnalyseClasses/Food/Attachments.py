@@ -739,36 +739,36 @@ class AnalyseAttachments(AnalyseClassDecorator):
         typ = ''
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ))
         fig, ax = plotter.plot_with_error(
-            xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
-            label='probability', marker='', title='', c='k')
+            xlabel='Time (s)', ylabel=r'$r$',
+            label='Attachment rate', marker='', title='', c='k')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ), column_name='p')
         plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[2, 100])
         plotter.draw_vertical_line(ax)
-        ax.set_xlim(-30, 80)
+        ax.set_xlim(-30, 120)
         ax.set_ylim(0, 1)
         plotter.save(fig)
 
         typ = 'outside_'
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ))
         fig, ax = plotter.plot_with_error(
-             xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
-             label='probability', marker='', title='', c='r')
+             xlabel='Time (s)', ylabel=r'$r_{out}$',
+             label=r'$r_{out}$', marker='', title='', c='r')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ), column_name='p')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-.03, -.6, .8), window=[20, 75])
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-.03, -.6, .8), window=[20, 60])
         plotter.plot()
-        ax.set_xlim(0, 80)
+        ax.set_xlim(0, 120)
         ax.set_ylim(0, 1)
         plotter.save(fig)
 
         typ = 'inside_'
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ))
         fig, ax = plotter.plot_with_error(
-            xlabel='Time (s)', ylabel='Attachment probability (for 1s)',
-            label='probability', marker='', title='', c='navy')
+            xlabel='Time (s)', ylabel=r'$r_{in}$',
+            label=r'$r_{in}$', marker='', title='', c='navy')
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name % typ), column_name='p')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[2, 75])
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1), window=[10, 60])
         plotter.draw_vertical_line(ax)
-        ax.set_xlim(-30, 80)
+        ax.set_xlim(-30, 120)
         ax.set_ylim(0, 1)
         plotter.save(fig)
 
@@ -786,7 +786,7 @@ class AnalyseAttachments(AnalyseClassDecorator):
 
             # list_exp = [3, 12, 20, 30, 42, 45, 47, 49, 55]
 
-            x = np.around(start_frame_intervals / 2. / 100., 2)
+            x = np.around(start_frame_intervals / 100., 2)
             y = np.full((len(start_frame_intervals), 3), np.nan)
 
             for i in range(len(start_frame_intervals)):
@@ -837,11 +837,11 @@ class AnalyseAttachments(AnalyseClassDecorator):
                                          label, description, redo)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=r'$p_{out}/(p_{out}+p_{in})$',
-                               label='probability', marker='', title='')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, 1, 1), window=[0, 300])
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=r'$r_{in}/r_{out}$',
+                               label='$r_{in}/r_{out}$', marker='', title='')
+        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, 1, 1), window=[2, 50])
 
-        ax.set_xlim((0, 80))
+        ax.set_xlim((0, 120))
         ax.grid()
         plotter.save(fig)
 
@@ -860,7 +860,7 @@ class AnalyseAttachments(AnalyseClassDecorator):
 
             # list_exp = [3, 12, 20, 30, 42, 45, 47, 49, 55]
 
-            x = start_frame_intervals / 2. / 100.
+            x = start_frame_intervals / 100.
             y = np.full(len(start_frame_intervals), np.nan)
 
             for i in range(len(start_frame_intervals)):
@@ -875,7 +875,7 @@ class AnalyseAttachments(AnalyseClassDecorator):
                 if len(df_outside) + len(df_inside) != 0:
                     n_out = float(len(df_outside))
                     n_in = len(df_inside)
-                    y[i] = n_out/(n_out+n_in)
+                    y[i] = n_in/n_out
 
             mask = np.where(~np.isnan(y))[0]
 
@@ -889,3 +889,62 @@ class AnalyseAttachments(AnalyseClassDecorator):
 
         else:
             self.exp.load(result_name)
+
+    def _get_pulling_direction(self, result_name, name_attachment, label, description, bins, redo, redo_hist):
+        if redo:
+            name_exit = 'mm10_food_direction_error'
+            init_frame_name = 'first_attachment_time_of_outside_ant'
+            self.exp.load([name_attachment, name_exit, init_frame_name])
+
+            self.exp.add_copy(old_name=name_attachment, new_name=result_name,
+                              category=self.category, label=label, description=description)
+
+            df_error = self.exp.get_df(name_exit).copy()
+            df_error.reset_index(inplace=True)
+            df_error[id_frame_name] -= 200
+            df_error.set_index([id_exp_name, id_frame_name], inplace=True)
+            index = self.exp.get_df(name_attachment).reset_index().set_index([id_exp_name, id_frame_name]).index
+            df_error = df_error.reindex(index)
+            self.exp.get_df(result_name)[:] = np.c_[df_error[:]]
+
+            self.change_first_frame(result_name, init_frame_name)
+            df_res = self.exp.get_df(result_name).loc[pd.IndexSlice[:, :, 0:], :]
+            self.exp.change_df(result_name, df_res)
+
+            self.exp.write(result_name)
+
+        hist_name = self.compute_hist(result_name, bins=bins, redo=redo, redo_hist=redo_hist, error=True)
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(hist_name))
+        fig, ax = plotter.plot_with_error(xlabel='(rad)', ylabel='PDF', title='', label='PDF')
+        ax.set_ylim(0, 0.4)
+        plotter.save(fig)
+
+    def compute_pulling_direction_after_attachments(self, redo, redo_hist=False):
+        dtheta = .4
+        bins = np.arange(dtheta / 2., np.pi + dtheta / 2., dtheta)
+        bins = np.array(list(-bins[::-1]) + list(bins))
+
+        result_name = 'pulling_direction_after_%s_attachment'
+        label = 'pulling direction after %s attachment'
+        description = 'pulling direction after %s attachment'
+        name_attachment = '%s_attachment_intervals'
+        for suff in ['inside', 'outside']:
+            self._get_pulling_direction(
+                result_name % suff, name_attachment % suff, label % suff, description % suff, bins, redo, redo_hist)
+
+        name = 'pulling_direction_after_%s_attachment_hist'
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name % 'outside'))
+        fig, ax = plotter.plot_with_error(
+             xlabel='Pulling directions (rad)', ylabel='Probability', title='', label='outside', c='red')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(name % 'inside'))
+        plotter.plot_with_error(
+            preplot=(fig, ax),
+            xlabel='Pulling directions (rad)', ylabel='Probability', title='', label='inside', c='navy')
+
+        plotter.draw_horizontal_line(ax, val=1/(2*np.pi)*dtheta, label='uniform')
+        plotter.draw_legend(ax)
+        ax.set_xlim(-np.pi, np.pi)
+        # ax.set_ylim(0, .6)
+        plotter.save(fig, name='pulling_direction_after_attachments')

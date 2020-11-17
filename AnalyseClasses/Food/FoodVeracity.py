@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import MultipleLocator
+import pylab as pb
 
 import Tools.MiscellaneousTools.Geometry as Geo
 import scipy.stats as scs
 import scipy.optimize as scopt
 
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
+from Tools.MiscellaneousTools.FoodFisherInformation import compute_fisher_information_uniform_von_mises
 from Tools.Plotter.BasePlotters import BasePlotters
 from DataStructure.VariableNames import id_exp_name, id_frame_name, id_ant_name
 from Tools.MiscellaneousTools import Fits
@@ -237,8 +239,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         self.exp.operation(name, np.abs)
 
         steady_state_name = 'food_direction_error_hist_steady_state'
-        self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[45 * 100],
-                                  end_frame_intervals=[150 * 100], bins=bins,
+        self.exp.hist1d_evolution(name_to_hist=name, start_frame_intervals=[60 * 100],
+                                  end_frame_intervals=[120 * 100], bins=bins,
                                   result_name=steady_state_name, category=self.category,
                                   label=result_label, description=result_description)
         self.exp.write(steady_state_name)
@@ -596,13 +598,13 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         result_name = name2 + '2_vonmises'
         init_frame_name = 'first_attachment_time_of_outside_ant'
 
-        dx = 0.25
-        dx2 = 0.01
-        start_frame_intervals = np.arange(-.1, 3., dx2)*60*100
-        end_frame_intervals = start_frame_intervals + dx*60*100
+        dx = 0.05
+        dx2 = 2/6.
+        start_frame_intervals = np.arange(-1, 4, dx) * 60 * 100
+        end_frame_intervals = start_frame_intervals + dx2 * 60 * 100
 
-        dtheta = 0.1
-        bins = np.arange(-np.pi-dtheta/2., np.pi+dtheta, dtheta)
+        dtheta = 0.2
+        bins = np.arange(-np.pi+dtheta/2., np.pi+dtheta/2, dtheta)
 
         label = 'Variance of the food direction error distribution over time'
         description = 'Variance of the angle between the food velocity and the food-exit vector,' \
@@ -614,7 +616,8 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
             self.exp.load(name)
             self.change_first_frame(name, init_frame_name)
 
-            res = []
+            res_q = []
+            res_kappa = []
             for i in range(len(start_frame_intervals)):
                 frame0 = start_frame_intervals[i]
                 frame1 = end_frame_intervals[i]
@@ -627,57 +630,81 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
                     x = (bins[:-1]+bins[1:])/2.
 
                     try:
-                        kappa, b, k, _, _ = Fits.vonmises_cst_fit(x, y, p0=(1, 0.01, 0.1))
-                        popt, _ = scopt.curve_fit(self._uniform_vonmises_dist, x, y, p0=0.2)
-                        q = popt[0]
-                        res.append((frame0/100., kappa, b, k, q))
+                        # q = max(min(1-np.mean(y[x > 2.5])*2*np.pi, 1), 0)
+                        # kappa, _, _ = Fits.uniform_vonmises_q_fit(x, y, q)
+                        q, kappa, err, _, _ = Fits.uniform_vonmises_fit(x, y, get_err=True)
+                        res_q.append((frame0/100., q, 1.96*err[0], 1.96*err[0]))
+                        res_kappa.append((frame0/100., kappa, 1.96*err[1], 1.96*err[1]))
+
+                        # pb.plot(x, y)
+                        # pb.plot(x, Fits.uniform_vonmises_fct(x, q, kappa))
+                        # pb.title((frame0/100, frame1/100, round(q, 2), round(kappa, 2)))
+                        # pb.ylim(0, 0.5)
+                        # pb.show()
                     except RuntimeError:
                         pass
 
-            res = np.array(res)
-            self.exp.add_new_dataset_from_array(array=res, name=result_name, index_names='t',
-                                                column_names=['kappa', 'd', 'k', 'q'],
-                                                category=self.category, label=label,
-                                                description=description)
+            res_q = np.array(res_q)
+            res_kappa = np.array(res_kappa)
+            self.exp.add_new_dataset_from_array(array=np.around(res_q, 3), name=result_name+'_q', index_names='t',
+                                                column_names=['q', 'err1', 'err2'],
+                                                category=self.category, label=label, description=description)
 
-            self.exp.write(result_name)
+            self.exp.add_new_dataset_from_array(array=np.around(res_kappa, 3), name=result_name+'_kappa',
+                                                index_names='t', column_names=['kappa', 'err1', 'err2'],
+                                                category=self.category, label=label, description=description)
+
+            self.exp.write(result_name+'_q')
+            self.exp.write(result_name+'_kappa')
         else:
-            self.exp.load(result_name)
+            self.exp.load(result_name+'_q')
+            self.exp.load(result_name+'_kappa')
 
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='k')
-        fig, ax = plotter.plot(
-            xlabel='t (s)', ylabel='k(t)', label='k(t)', title='', marker='')
-        plotter.draw_vertical_line(ax)
-        ax.set_ylim(0, .15)
-        plotter.save(fig, result_name+'_k')
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='d')
-        fig, ax = plotter.plot(
-            xlabel='t (s)', ylabel='d(t)', label='d(t)', title='', marker='')
-        plotter.draw_vertical_line(ax)
-        plotter.save(fig, result_name+'_d')
-
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='kappa')
-        fig, ax = plotter.plot(
-            xlabel='t (s)', ylabel=r'$\kappa(t)$',
-            label_suffix='s', label=r'$\kappa(t)$', title='', marker='')
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_kappa'))
+        fig, ax = plotter.plot_with_error(
+            xlabel='t (s)', ylabel=r'$\kappa(t)$', label_suffix='s', label=r'$\kappa(t)$', title='', marker='')
+        ax.set_xlim(-30, 120)
         ax.set_ylim(0, 5)
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
 
-        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name), column_name='q')
-        fig, ax = plotter.plot(
-            xlabel='t (s)', ylabel='q(t)', label='q(t)', title='', marker='')
-        plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1))
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_q'))
+        fig, ax = plotter.plot_with_error(xlabel='t (s)', ylabel='q(t)', label='q(t)', title='', marker='')
+        # plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1))
+        ax.set_xlim(-30, 120)
+        ax.set_ylim(0, 1)
         plotter.draw_vertical_line(ax)
         plotter.save(fig, result_name+'_q')
 
+        name_p_out = 'nb_outside_attachments_evol_around_first_outside_attachment'
+        name_p_in = 'nb_inside_attachments_evol_around_first_outside_attachment'
+        self.exp.load([name_p_out, name_p_in])
+
+        self.exp.add_copy(name_p_out, 'temp', replace=True)
+        self.exp.operation_between_2names('temp', name_p_in, lambda a, b: a/b, col_name1='p', col_name2='p')
+        self.exp.operation_between_2names(
+            'temp', result_name+'_q', lambda a, b: a*(1-b)/b, col_name1='p', col_name2='q')
+
+        plotter2 = Plotter(root=self.exp.root, obj=self.exp.get_data_object('temp'), column_name='p')
+        fig, ax = plotter2.plot(
+            xlabel='t (s)', ylabel=r'\alpha(t)', label=r'\alpha(t)', title='', marker='')
+        ax.set_xlim(-30, 120)
+        ax.set_ylim(0, 3)
+        plotter.draw_vertical_line(ax)
+        plotter.save(fig, result_name+'_q3')
+
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_q'))
         fig, ax = plotter.plot(
             xlabel='t (s)', fct_y=lambda z: (1-z)/z, ylabel='(1-q)/q(t)', label='(1-q)/q(t)', title='', marker='')
+        plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name+'_q'), column_name='q')
         plotter.plot_fit(preplot=(fig, ax), typ='exp', cst=(-1, -1, 1))
+        ax.set_xlim(-30, 120)
         ax.set_ylim(0, 3)
         plotter.draw_vertical_line(ax)
         plotter.save(fig, result_name+'_q2')
+
+        self.exp.remove_object(result_name+'_q')
+        self.exp.remove_object(result_name+'_kappa')
 
     def compute_food_direction_error_variance_evol_around_first_attachment3(self, redo=False):
         name = 'food_direction_error'
@@ -804,25 +831,43 @@ class AnalyseFoodVeracity(AnalyseClassDecorator):
         plotter.save(fig)
 
     def compute_fisher_info_evol_around_first_attachment(self, redo=False):
-        name = 'food_direction_error_var_evol_around_first_attachment'
+        name = 'food_direction_error'
         result_name = 'fisher_info_evol_around_first_attachment'
+        init_frame_name = 'first_attachment_time_of_outside_ant'
 
         label = 'Fisher information over time'
-        description = 'Fisher information over time (inverse of the variance of the food direction error)'
+        description = 'Fisher information over time'
+
+        dx = 0.2
+        dx2 = 0.01
+        start_frame_intervals = np.arange(-1, 3., dx2)*60*100
+        end_frame_intervals = start_frame_intervals + dx*60*100
 
         if redo:
             self.exp.load(name)
-            self.exp.add_copy(old_name=name, new_name=result_name, category=self.category,
-                              label=label, description=description)
-            self.exp.operation(result_name, lambda a: 1/a)
+            self.change_first_frame(name, init_frame_name)
+
+            y = np.zeros((len(start_frame_intervals), 2))
+            y[:, 0] = (end_frame_intervals + start_frame_intervals) / 2. / 100.
+            for i in range(len(start_frame_intervals)):
+                frame0 = start_frame_intervals[i]
+                frame1 = end_frame_intervals[i]
+
+                values = self.exp.get_df(name).loc[pd.IndexSlice[:, frame0:frame1], :].values.ravel()
+                y[i, 1] = compute_fisher_information_uniform_von_mises(values)
+
+            self.exp.add_new_dataset_from_array(array=y, name=result_name, index_names='t',
+                                                column_names=['fisher_info'],
+                                                category=self.category, label=label,
+                                                description=description)
             self.exp.write(result_name)
         else:
             self.exp.load(result_name)
 
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object(result_name))
-        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=r'Fisher information (rad$^{-2}$)',
-                               label_suffix='s', label=r'Fisher information', marker='', title='')
-        plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-1, 1, 1))
+        fig, ax = plotter.plot(xlabel='Time (s)', ylabel=r'Fisher information',
+                               label_suffix='s', label=r'Fisher information', marker='', title='', display_legend=False)
+        # plotter.plot_fit(typ='exp', preplot=(fig, ax), window=[90, 400], cst=(-1, 1, 1))
         plotter.draw_vertical_line(ax)
         plotter.save(fig)
 

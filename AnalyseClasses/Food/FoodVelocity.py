@@ -811,6 +811,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
         dx = 1.2
         res2 = np.zeros(1000)
         for id_exp in range(1, 61):
+            print(id_exp)
             tab_x = self.exp.get_df('mm10_food_x').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
             tab_y = self.exp.get_df('mm10_food_y').loc[pd.IndexSlice[id_exp, :0], :].values.ravel()
 
@@ -822,7 +823,7 @@ class AnalyseFoodVelocity(AnalyseClassDecorator):
             x_i, y_i = interpolate.splev(np.linspace(0, 1, 10000), spline[0])
             traj_length = np.sum(np.sqrt(np.diff(x_i)**2+np.diff(y_i)**2))
 
-            x_i, y_i = interpolate.splev(np.linspace(0, 1, traj_length/dx), spline[0])
+            x_i, y_i = interpolate.splev(np.linspace(0, 1, int(traj_length/dx)), spline[0])
             traj = np.array(list(zip(x_i, y_i)))
             d_traj = np.diff(traj, axis=0)
             orient = Geo.angle(d_traj).ravel()

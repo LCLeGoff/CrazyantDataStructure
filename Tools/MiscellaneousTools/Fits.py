@@ -175,10 +175,26 @@ def uniform_vonmises_fct(x, q, kappa):
     return q*scs.vonmises.pdf(x, kappa)+(1-q)/2/np.pi
 
 
-def uniform_vonmises_fit(x, y, p0=None):
-    popt, _ = scopt.curve_fit(uniform_vonmises_fct, x, y, p0=p0)
+def uniform_vonmises_fit(x, y, p0=None, get_err=False):
+    popt, cov = scopt.curve_fit(uniform_vonmises_fct, x, y, p0=p0, bounds=((0, 0), (1, np.inf)))
     q, kappa = popt
 
     x_fit = x
     y_fit = uniform_vonmises_fct(x, q, kappa)
-    return q, kappa, x_fit, y_fit
+
+    if get_err is True:
+        return q, kappa, np.sqrt(np.diagonal(cov)), x_fit, y_fit
+    else:
+        return q, kappa, x_fit, y_fit
+
+
+def uniform_vonmises_q_fit(x, y, q, p0=None):
+
+    def uniform_vonmises_q_fct(x0, kappa0):
+        return q*scs.vonmises.pdf(x0, kappa0)+(1-q)/2/np.pi
+
+    popt, _ = scopt.curve_fit(uniform_vonmises_q_fct, x, y, p0=p0, bounds=(0, 5))
+    kappa = popt[0]
+    x_fit = x
+    y_fit = uniform_vonmises_fct(x, q, kappa)
+    return kappa, x_fit, y_fit

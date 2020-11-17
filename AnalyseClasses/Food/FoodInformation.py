@@ -4,6 +4,7 @@ import pandas as pd
 from AnalyseClasses.AnalyseClassDecorator import AnalyseClassDecorator
 from DataStructure.VariableNames import id_exp_name, id_frame_name
 from Tools.MiscellaneousTools.ArrayManipulation import get_entropy, get_max_entropy, get_interval_containing
+from Tools.MiscellaneousTools.FoodFisherInformation import compute_fisher_information_uniform_von_mises
 from Tools.Plotter.ColorObject import ColorObject
 from Tools.Plotter.Plotter import Plotter
 
@@ -846,7 +847,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
                 for th in rank_list:
                     df = self.exp.get_df(hists_result_name).loc[(th, t)]
-                    df = pd.DataFrame(data=np.array(df), index=bins2, columns=['temp'])
+                    df = pd.DataFrame(data=np.array(df), index=list(bins2), columns=['temp'])
                     self.exp.add_new_dataset_from_df(df=df, name='temp', category=self.category, replace=True)
 
                     plotter = Plotter(self.exp.root, obj=self.exp.get_data_object('temp'))
@@ -1553,14 +1554,14 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
         self.exp.get_df(variable_name).index = pd.MultiIndex.from_tuples(
             idx2, names=[id_exp_name, id_frame_name, 'nb_attachments'])
 
-    def _get_ratio_attachments(self, attachment_name, variable_name, attach_intervals):
+    def _get_ratio_attachments(self, outside_attachment_name, variable_name, attach_intervals):
 
-        inside_attachment_name = 'non_'+attachment_name
-        self.exp.load([attachment_name, inside_attachment_name, 'fps'])
+        inside_attachment_name = 'in' + outside_attachment_name[3:]
+        self.exp.load([outside_attachment_name, inside_attachment_name, 'fps'])
         idx = self.exp.get_index(variable_name)
 
         for i, (nb_attachment_name, attachment_name2) in enumerate(
-                [('nb_outside_attachment', attachment_name),
+                [('nb_outside_attachment', outside_attachment_name),
                  ('nb_inside_attachment', inside_attachment_name)]):
             print(nb_attachment_name)
 
@@ -1621,8 +1622,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
             for (th, t) in index_values:
                 values = self.exp.get_df(first_attach_name).loc[pd.IndexSlice[:, th], str(t)].dropna()
-
-                fisher_info = 1/np.var(values)
+                fisher_info = compute_fisher_information_uniform_von_mises(values)
+                # fisher_info = 1/np.var(values)
 
                 self.exp.get_df(info_result_name).loc[t, th] = np.around(fisher_info, 5)
 
@@ -1798,7 +1799,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
 
             for t in time_intervals:
                 values = self.exp.get_df('temp').loc[t].dropna()
-                fisher_info = 1/np.var(values)
+                fisher_info = compute_fisher_information_uniform_von_mises(values)
+                # fisher_info = 1/np.var(values)
 
                 self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
 
@@ -1877,7 +1879,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def _compute_fisher_info(self, variable_name, info_result_name, time_intervals):
         for t in time_intervals:
             values = self.exp.get_df(variable_name)[str(t)].dropna()
-            fisher_info = 1 / np.var(values)
+            fisher_info = compute_fisher_information_uniform_von_mises(values)
+            # fisher_info = 1 / np.var(values)
 
             self.exp.get_df(info_result_name).loc[t] = np.around(fisher_info, 5)
 
@@ -1971,7 +1974,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_fisher_information_mm1s_food_direction_error_over_nbr_new_outside_attachments(
             self, redo=False):
 
-        attachment_name = 'outside_ant_carrying_intervals'
+        attachment_name = 'outside_carrying_intervals'
 
         fct_get_attachment = self._get_nb_attachments
         fct_info = self._compute_fisher_info_nb_attach
@@ -2012,7 +2015,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_fisher_information_mm1s_food_direction_error_over_nbr_new_non_outside_attachments(
             self, redo=False):
 
-        attachment_name = 'non_outside_ant_carrying_intervals'
+        attachment_name = 'inside_carrying_intervals'
 
         fct_get_attachment = self._get_nb_attachments
         fct_info = self._compute_fisher_info_nb_attach
@@ -2067,7 +2070,7 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
     def compute_fisher_information_mm1s_food_direction_error_over_ratio_new_attachments(
             self, redo=False):
 
-        attachment_name = 'outside_ant_carrying_intervals'
+        attachment_name = 'outside_carrying_intervals'
 
         fct_get_attachment = self._get_ratio_attachments
         fct_info = self._compute_fisher_info_nb_attach
@@ -2147,7 +2150,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
             values = df.values
 
             if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
-                fisher_info = 1 / np.var(values)
+                fisher_info = compute_fisher_information_uniform_von_mises(values)
+                # fisher_info = 1 / np.var(values)
 
                 self.exp.get_df(info_result_name).loc[nb, :] = np.around(fisher_info, 5)
 
@@ -2163,7 +2167,8 @@ class AnalyseFoodInformation(AnalyseClassDecorator):
                 df = self.exp.get_df(variable_name).loc[pd.IndexSlice[:, frame0:frame1, nb], :].dropna()
                 if len(df) > 100 and len(set(df.index.get_level_values(id_exp_name))) > 2:
                     values = df.values
-                    fisher_info = 1 / np.var(values)
+                    fisher_info = compute_fisher_information_uniform_von_mises(values)
+                    # fisher_info = 1 / np.var(values)
 
                     self.exp.get_df(info_result_name).loc[nb, column_name] = np.around(fisher_info, 5)
 

@@ -20,7 +20,7 @@ mlt.rcParams['axes.labelsize'] = 13
 class PlotUOModel(AnalyseClassDecorator):
     def __init__(self, group, exp=None):
         AnalyseClassDecorator.__init__(self, group, exp)
-        self.category = 'Models'
+        self.category = None
         self.model = None
 
     def get_model(self, name):
@@ -60,6 +60,7 @@ class PlotUOModel(AnalyseClassDecorator):
     def __plot_cosinus_correlation_vs_length(self, name, suff=None):
 
         self.exp.load(name, reload=False)
+        self.category = self.exp.get_category(name)
         column_names = self.exp.get_data_object(name).get_column_names()
 
         n_replica = max(self.exp.get_df(name).index.get_level_values(id_exp_name))
@@ -99,7 +100,6 @@ class PlotUOModel(AnalyseClassDecorator):
         self.exp.get_data_object('plot').df /= float(n_replica)
         self.exp.get_data_object('plot2').df /= float(n_replica)
 
-
         plotter = Plotter(root=self.exp.root, obj=self.exp.get_data_object('plot'))
         fig, ax = plotter.plot(xlabel='Distance along trajectory (cm)', ylabel='Cosine correlation', marker=None)
         ax.axhline(0, ls='--', c='grey')
@@ -124,6 +124,7 @@ class PlotUOModel(AnalyseClassDecorator):
     def __plot_cosinus_correlation_vs_arclength(self, name, suff=None):
 
         self.exp.load(name)
+        self.category = self.exp.get_category(name)
         column_names = self.exp.get_data_object(name).get_column_names()
 
         radius = 0.85
@@ -183,6 +184,7 @@ class PlotUOModel(AnalyseClassDecorator):
     def _plot_confidence_evol(self, name, n=None, m=None, model=None, suff=None):
 
         self.exp.load(name)
+        self.category = self.exp.get_category(name)
 
         column_names = self.exp.get_data_object(name).get_column_names()
 
@@ -426,6 +428,7 @@ class PlotUOModel(AnalyseClassDecorator):
         experimental_name = 'food_direction_error_var_evol'
         experimental_name_attach = 'food_direction_error_var_evol_around_first_attachment'
         self.exp.load([name, experimental_name, experimental_name_attach])
+        self.category = self.exp.get_category(name)
 
         time_name = 't'
         column_names = self.exp.get_data_object(name).get_column_names()
@@ -502,7 +505,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
     def plot_hist_model_pretty(
             self, name, n=None, m=None, title_option=None, suff=None,
-            start_frame_intervals=None, end_frame_intervals=None, fps=100., adjust=None):
+            start_frame_intervals=None, end_frame_intervals=None, fps=100., adjust=None, save=True):
 
         if suff is not None:
             name += '_'+suff
@@ -519,7 +522,7 @@ class PlotUOModel(AnalyseClassDecorator):
             end_frame_intervals = np.array(start_frame_intervals + 1000, dtype=int)
 
         dtheta = np.pi / 25.
-        bins = np.arange(0, np.pi, dtheta)
+        bins = np.arange(0, np.pi+dtheta, dtheta)
 
         if n is None:
             n = int(np.floor(np.sqrt(len(column_names))))
@@ -560,10 +563,13 @@ class PlotUOModel(AnalyseClassDecorator):
             if k == 0:
                 plotter.draw_legend(ax0, ncol=2)
 
-        fig_name = name + '_hist_pretty'
-        plotter.save(fig, name=fig_name)
+        if save is True:
+            fig_name = name + '_hist_pretty'
+            plotter.save(fig, name=fig_name)
 
-        self.exp.remove_object(name)
+            self.exp.remove_object(name)
+        else:
+            return plotter, fig, ax, m
 
     def plot_hist_fit_model_pretty(
             self, name, para, n=None, m=None,
@@ -575,6 +581,7 @@ class PlotUOModel(AnalyseClassDecorator):
         exp_name = 'food_direction_error'
         first_attachment_name = 'first_attachment_time_of_outside_ant'
         self.exp.load([name, exp_name, first_attachment_name], reload=False)
+        self.category = self.exp.get_category(name)
 
         self.change_first_frame(exp_name, first_attachment_name)
         self.exp.operation(name, np.abs)
@@ -728,6 +735,7 @@ class PlotUOModel(AnalyseClassDecorator):
             name += '_'+suff
         name_exp_variance = 'food_direction_error_var_evol_around_first_attachment'
         self.exp.load([name, name_exp_variance], reload=False)
+        self.category = self.exp.get_category(name)
         if plot_fisher is True:
             name_exp_fisher_info = 'fisher_info_evol_around_first_attachment'
             self.exp.load(name_exp_fisher_info, reload=False)
@@ -832,10 +840,11 @@ class PlotUOModel(AnalyseClassDecorator):
         ax.set_xlabel('x (rad)')
         ax.set_ylabel('pdf')
 
-        address = '%s%s/Plots/%s.png' % (self.exp.root, self.category, 'gaussian_vs_vonmises')
+        address = '%s%s/Plots/%s.png' % (self.exp.root, 'Models', 'gaussian_vs_vonmises')
         fig.savefig(address)
 
-    def compute_path_efficiency(self, name_model, suff=None, redo=False, redo_hist=False, label_option=None):
+    def compute_path_efficiency(
+            self, name_model, title=None, suff=None, redo=False, redo_hist=False, label_option=None):
 
         window = 10
 
@@ -847,6 +856,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
         if redo:
             self.exp.load(name_model, reload=False)
+            self.category = self.exp.get_category(name_model)
 
             df = self.exp.get_df(name_model).copy()
             fps = int(100/float(df.index.get_level_values('t')[1]))
@@ -864,10 +874,6 @@ class PlotUOModel(AnalyseClassDecorator):
 
             self.exp.write(result_name)
 
-        self.exp.load(exp_name)
-        plotter = Plotter(self.exp.root, self.exp.get_data_object(exp_name))
-        fig, ax = plotter.plot(normed=True, c='navy')
-
         bins = np.arange(0, 1, 0.05)
         hist_name = self.compute_hist(name=result_name, bins=bins, redo=redo, redo_hist=redo_hist)
         labels = []
@@ -875,7 +881,15 @@ class PlotUOModel(AnalyseClassDecorator):
             labels.append(self.get_label(column_name=column_name, option=label_option))
 
         plotter = Plotter(self.exp.root, self.exp.get_data_object(hist_name))
-        plotter.plot(preplot=(fig, ax), normed=True, label=labels)
+        fig, ax = plotter.plot(normed=True, label=labels)
+
+        self.exp.load(exp_name)
+        plotter_exp = Plotter(self.exp.root, self.exp.get_data_object(exp_name))
+        plotter_exp.plot(preplot=(fig, ax), normed=True, c='navy', lw=3)
+
+        if title is not None:
+            ax.set_title(title)
+
         plotter.save(fig)
 
     def compute_plot_path_efficiency(self, name_model, para, suff=None, redo=False, label_option=None):
@@ -886,6 +900,7 @@ class PlotUOModel(AnalyseClassDecorator):
         name_eff = 'path_efficiency_%s' % name_model
 
         self.exp.load([name_model, name_eff])
+        self.category = self.exp.get_category(name_model)
 
         temp_name = '%s_%s' % (name_model, name_eff)
         result_name = '%s_hist_evol_%s_%s' % (name_model, name_eff, para)
@@ -980,6 +995,7 @@ class PlotUOModel(AnalyseClassDecorator):
         name_eff_exp = 'w10s_food_path_efficiency'
 
         self.exp.load([name_model, name_eff, name_exp, name_eff_exp])
+        self.category = self.exp.get_category(name_model)
 
         temp_name = 'temp'
         temp_exp_name = 'temp_exp'
@@ -1166,6 +1182,7 @@ class PlotUOModel(AnalyseClassDecorator):
 
         self.exp.load([name_model, name_attachments, name_exp,
                        name_eff_exp % 'outside', name_eff_exp % 'inside', last_frame_name])
+        self.category = self.exp.get_category(name_model)
         self.cut_last_frames_for_indexed_by_exp_frame_indexed(name_exp, last_frame_name)
 
         temp_name = 'temp_%s'
@@ -1262,6 +1279,7 @@ class PlotUOModel(AnalyseClassDecorator):
         last_frame_name = 'food_exit_frames'
 
         self.exp.load([name_model, name_attachments, name_exp, name_eff_exp, last_frame_name])
+        self.category = self.exp.get_category(name_model)
         self.cut_last_frames_for_indexed_by_exp_frame_indexed(name_exp, last_frame_name)
 
         temp_name = 'temp'
